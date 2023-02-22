@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "robusta-krr"
+version = "0.1.0"
+description = "Robusta's Resource Recommendation engine for Kubernetes"
+authors = ["Павел Жуков <33721692+LeaveMyYard@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "robusta_krr"}]
+
+[tool.black]
+line-length = 120
+target-version = ['py37']
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.poetry.scripts]
+krr = "robusta_krr.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+typer = {extras = ["all"], version = "^0.7.0"}
+pydantic = "^1.10.5"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.0.1"
+black = "^23.1.0"
+isort = "^5.12.0"
+flake8 = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
