@@ -1,6 +1,14 @@
 from robusta_krr.core.result import Result
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.version import get_version
+from robusta_krr.core.strategies import (
+    BaseStrategy,
+    StrategySettings,
+    HistoryData,
+    ObjectData,
+    ResourceType,
+    get_strategy_from_name,
+)
 
 
 class Runner(Configurable):
@@ -12,6 +20,11 @@ class Runner(Configurable):
         self.echo(formatted)
 
     def _collect_result(self) -> Result:
+        data: HistoryData = {}
+        strategy = self.config.create_strategy()
+
+        strategy.run(data, {}, ResourceType.cpu)
+
         return Result()
 
     def run(self) -> None:
