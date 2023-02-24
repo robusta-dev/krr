@@ -16,6 +16,9 @@ class BaseFormatter(abc.ABC):
 
     __display_name__: str
 
+    def __str__(self) -> str:
+        return self.__display_name__.title()
+
     @abc.abstractmethod
     def format(self, result: Result) -> str:
         """Format the result.

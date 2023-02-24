@@ -35,6 +35,9 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     def __init__(self, settings: _StrategySettings):
         self.settings = settings
 
+    def __str__(self) -> str:
+        return self.__display_name__.title()
+
     @abc.abstractmethod
     def run(
         self, history_data: HistoryData, object_data: K8sObjectData, resource_type: ResourceType

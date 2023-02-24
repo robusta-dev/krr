@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 
 from robusta_krr.core.config import Config
 from robusta_krr.core.kubernetes import KubernetesLoader
@@ -8,6 +9,7 @@ from robusta_krr.core.result import ResourceAllocations, ResourceScan, ResourceT
 from robusta_krr.core.strategies import ResourceRecommendation
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.version import get_version
+from robusta_krr.utils.logo import ASCII_LOGO
 
 
 class Runner(Configurable):
@@ -18,7 +20,11 @@ class Runner(Configurable):
         self._strategy = self.config.create_strategy()
 
     def _greet(self) -> None:
-        self.echo(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
+        self.echo(ASCII_LOGO, no_prefix=True)
+        self.echo(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}", no_prefix=True)
+        self.echo(f"Using strategy: {self._strategy}", no_prefix=True)
+        self.echo(f"Using formatter: {self.config.format}", no_prefix=True)
+        self.echo(no_prefix=True)
 
     def _process_result(self, result: Result) -> None:
         formatted = result.format(self.config.format)
@@ -41,28 +47,21 @@ class Runner(Configurable):
         # But keep in mind that numpy calcluations will not block the GIL
         return await asyncio.to_thread(self._strategy.run, data, object, resource)
 
-    async def _gather_objects_recommendations_for_resource(
-        self, objects: list[K8sObjectData], resource: ResourceType
-    ) -> list[ResourceRecommendation]:
-        return await asyncio.gather(*[self._calculate_object_recommendations(obj, resource) for obj in objects])
-
     async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
-        per_resource_recommendations = await asyncio.gather(
-            *[self._gather_objects_recommendations_for_resource(objects, resource) for resource in ResourceType]
+        recommendations: list[ResourceRecommendation] = await asyncio.gather(
+            *[
+                self._calculate_object_recommendations(object, resource)
+                for object, resource in itertools.product(objects, ResourceType)
+            ]
         )
+        recommendations_dict = dict(zip(itertools.product(objects, ResourceType), recommendations))
 
         return [
             ResourceAllocations(
-                requests={
-                    resource_type: recommendations[i].request
-                    for resource_type, recommendations in zip(ResourceType, per_resource_recommendations)
-                },
-                limits={
-                    resource_type: recommendations[i].limit
-                    for resource_type, recommendations in zip(ResourceType, per_resource_recommendations)
-                },
+                requests={resource: recommendations_dict[object, resource].request for resource in ResourceType},
+                limits={resource: recommendations_dict[object, resource].limit for resource in ResourceType},
             )
-            for i, _ in enumerate(objects)
+            for object in objects
         ]
 
     async def _collect_result(self) -> Result:
