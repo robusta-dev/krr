@@ -1,5 +1,6 @@
-from robusta_krr.core.config import Config
 import typer
+
+from robusta_krr.core.config import Config
 
 
 class Configurable:

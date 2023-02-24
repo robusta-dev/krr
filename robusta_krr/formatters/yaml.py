@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from .base import BaseFormatter
-
-if TYPE_CHECKING:
-    from robusta_krr.core.result import Result
+from robusta_krr.core.formatters import BaseFormatter
+from robusta_krr.core.result import Result
 
 
-class JSONFormatter(BaseFormatter):
-    """Formatter for JSON output."""
+class YAMLFormatter(BaseFormatter):
+    """Formatter for YAML output."""
+
+    __display_name__ = "yaml"
 
     def format(self, result: Result) -> str:
-        """Format the result as JSON.
+        """Format the result as YAML.
 
         :param result: The results to format.
         :type result: :class:`core.result.Result`

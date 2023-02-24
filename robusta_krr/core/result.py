@@ -1,12 +1,10 @@
-import pydantic as pd
 import enum
+from typing import Any
 
-from robusta_krr.core.formatters import BaseFormatter, get_formatter, FormatType
+import pydantic as pd
 
-
-class ResourceRecommendation(pd.BaseModel):
-    current: float
-    recommended: float
+from robusta_krr.core.formatters import BaseFormatter
+from robusta_krr.core.objects import K8sObjectData
 
 
 class ResourceType(str, enum.Enum):
@@ -14,22 +12,21 @@ class ResourceType(str, enum.Enum):
     memory = "memory"
 
 
-class ObjectData(pd.BaseModel):
-    name: str
-    kind: str
-    namespace: str
+class ResourceAllocations(pd.BaseModel):
+    requests: dict[ResourceType, float]
+    limits: dict[ResourceType, float]
 
 
 class ResourceScan(pd.BaseModel):
-    object: ObjectData
-    requests: dict[ResourceType, ResourceRecommendation]
-    limits: dict[ResourceType, ResourceRecommendation]
+    object: K8sObjectData
+    current: ResourceAllocations
+    recommended: ResourceAllocations
 
 
 class Result(pd.BaseModel):
     scans: list[ResourceScan]
 
-    def format(self, formatter: BaseFormatter | FormatType) -> str:
+    def format(self, formatter: type[BaseFormatter] | str, **kwargs: Any) -> str:
         """Format the result.
 
         Args:
@@ -39,7 +36,6 @@ class Result(pd.BaseModel):
             The formatted result.
         """
 
-        if isinstance(formatter, str):
-            formatter = get_formatter(formatter)
-
-        return formatter.format(self)
+        FormatterType = BaseFormatter.find(formatter) if isinstance(formatter, str) else formatter
+        _formatter = FormatterType(**kwargs)
+        return _formatter.format(self)
