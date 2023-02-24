@@ -34,6 +34,6 @@ class KubernetesLoader(Configurable):
         await asyncio.sleep(1.5)  # Simulate a slow API call
 
         return ResourceAllocations(
-            requests={ResourceType.cpu: 30, ResourceType.memory: 300},
-            limits={ResourceType.cpu: 50, ResourceType.memory: 600},
+            requests={ResourceType.CPU: 30, ResourceType.Memory: 300},
+            limits={ResourceType.CPU: 50, ResourceType.Memory: 600},
         )

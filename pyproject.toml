@@ -29,6 +29,7 @@ mypy = "^1.0.1"
 black = "^23.1.0"
 isort = "^5.12.0"
 flake8 = "^6.0.0"
+types-pyyaml = "^6.0.12.8"
 
 [build-system]
 requires = ["poetry-core"]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from robusta_krr.core.result import Result
@@ -20,7 +20,7 @@ class BaseFormatter(abc.ABC):
         return self.__display_name__.title()
 
     @abc.abstractmethod
-    def format(self, result: Result) -> str:
+    def format(self, result: Result) -> Any:
         """Format the result.
 
         Args:

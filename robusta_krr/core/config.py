@@ -11,8 +11,8 @@ class Config(pd.BaseSettings):
     verbose: bool = pd.Field(False)
 
     prometheus_url: str | None = pd.Field(None)
-    format: str = pd.Field("text")
-    strategy: str = pd.Field("simple")
+    format: str
+    strategy: str
 
     def create_strategy(self) -> BaseStrategy:
         StrategyType = BaseStrategy.find(self.strategy)

@@ -23,7 +23,7 @@ def run(
         "-p",
         help="Prometheus URL. If not provided, will attempt to find it in kubernetes cluster",
     ),
-    format: str = typer.Option("text", "--formatter", "-f", help="Output formatter"),
+    format: str = typer.Option("table", "--formatter", "-f", help="Output formatter"),
     strategy: str = typer.Option("simple", "--strategy", "-s", help="Strategy to use"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode"),

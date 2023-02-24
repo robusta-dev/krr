@@ -1,3 +1,3 @@
 from .json import JSONFormatter
-from .text import TextFormatter
+from .table import TableFormatter
 from .yaml import YAMLFormatter

@@ -28,7 +28,8 @@ class Runner(Configurable):
 
     def _process_result(self, result: Result) -> None:
         formatted = result.format(self.config.format)
-        self.echo(formatted)
+        self.echo("\n", no_prefix=True)
+        self.console.print(formatted)
 
     async def _gather_objects_current_allocations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
         return await asyncio.gather(*[self._k8s_loader.get_object_current_recommendations(obj) for obj in objects])

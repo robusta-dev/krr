@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from robusta_krr.core.formatters import BaseFormatter
 from robusta_krr.core.result import Result
+import yaml
+import json
 
 
 class YAMLFormatter(BaseFormatter):
@@ -17,4 +19,4 @@ class YAMLFormatter(BaseFormatter):
         :returns: The formatted results.
         :rtype: str
         """
-        raise NotImplementedError
+        return yaml.dump(json.loads(result.json()), sort_keys=False)
