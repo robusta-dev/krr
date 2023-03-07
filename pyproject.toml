@@ -23,6 +23,7 @@ krr = "robusta_krr.main:app"
 python = "^3.11"
 typer = {extras = ["all"], version = "^0.7.0"}
 pydantic = "^1.10.5"
+kubernetes = "^26.1.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.0.1"

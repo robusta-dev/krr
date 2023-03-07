@@ -66,7 +66,12 @@ class Runner(Configurable):
         ]
 
     async def _collect_result(self) -> Result:
-        objects = await self._k8s_loader.list_scannable_objects()
+        clusters = await self._k8s_loader.list_clusters()
+        cluster_objects = await asyncio.gather(
+            *[self._k8s_loader.list_scannable_objects(cluster) for cluster in clusters]
+        )
+        objects = list(itertools.chain(*cluster_objects))
+
         async with asyncio.TaskGroup() as tg:
             current_allocations_task = tg.create_task(self._gather_objects_current_allocations(objects))
             resource_recommendations_task = tg.create_task(self._gather_objects_recommendations(objects))

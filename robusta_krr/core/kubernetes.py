@@ -1,14 +1,35 @@
 import asyncio
 
+from kubernetes import client, config
+
 from robusta_krr.core.objects import K8sObjectData
 from robusta_krr.core.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
 
-# TODO: We need a way to connect to both being in the cluster and outside of a cluster
 class KubernetesLoader(Configurable):
-    # TODO: This is just a mock data for now, implement this later
-    async def list_scannable_objects(self) -> list[K8sObjectData]:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.debug("Initializing Kubernetes client")
+        config.load_kube_config()
+
+        self._kubernetes_object_allocation_cache: dict[K8sObjectData, ResourceAllocations] = {}
+
+    async def list_clusters(self) -> list[str]:
+        """List all clusters.
+
+        Returns:
+            A list of clusters.
+        """
+
+        self.debug("Listing clusters")
+
+        contexts, _ = await asyncio.to_thread(config.list_kube_config_contexts)
+
+        return [context["name"] for context in contexts]
+
+    async def list_scannable_objects(self, cluster: str) -> list[K8sObjectData]:
         """List all scannable objects.
 
         Returns:
@@ -16,24 +37,46 @@ class KubernetesLoader(Configurable):
         """
 
         self.debug("Listing scannable objects")
-        await asyncio.sleep(2.5)  # Simulate a slow API call
 
-        return [
-            K8sObjectData(name="prometheus", kind="Deployment", namespace="default"),
-            K8sObjectData(name="grafana", kind="Deployment", namespace="default"),
-            K8sObjectData(name="alertmanager", kind="Deployment", namespace="default"),
-            K8sObjectData(name="robusta-runner", kind="Deployment", namespace="default"),
-            K8sObjectData(name="robusta-forwarder", kind="Deployment", namespace="default"),
+        v1 = client.CoreV1Api(api_client=config.new_client_from_config(context=cluster))
+        try:
+            ret = await asyncio.to_thread(v1.list_pod_for_all_namespaces, watch=False)
+        except Exception as e:
+            self.error(f"Error trying to list pods in cluster {cluster}: {e}")
+            return []
+
+        objects = [
+            (
+                item,
+                container,
+                K8sObjectData(
+                    cluster=cluster,
+                    namespace=item.metadata.namespace,
+                    name=item.metadata.name,
+                    kind="Pod",
+                    container=container.name,
+                ),
+            )
+            for item in ret.items
+            for container in item.spec.containers
         ]
 
-    # TODO: This is just a mock data for now, implement this later
+        for _, container, obj in objects:
+            self.debug(f"Found scannable object {obj}")
+            self._kubernetes_object_allocation_cache[obj] = ResourceAllocations.from_container(container)
+
+        return [obj for _, _, obj in objects]
+
     async def get_object_current_recommendations(self, object: K8sObjectData) -> ResourceAllocations:
-        from robusta_krr.core.result import ResourceType
+        """Get the current recommendations for a given object.
+
+        Args:
+            object: The object to get the recommendations for.
+
+        Returns:
+            The current recommendations for the object.
+        """
 
         self.debug(f"Getting current recommendations for {object}")
-        await asyncio.sleep(1.5)  # Simulate a slow API call
 
-        return ResourceAllocations(
-            requests={ResourceType.CPU: 30, ResourceType.Memory: 300},
-            limits={ResourceType.CPU: 50, ResourceType.Memory: 600},
-        )
+        return self._kubernetes_object_allocation_cache[object]
