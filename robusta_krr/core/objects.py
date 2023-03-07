@@ -1,5 +1,7 @@
 import pydantic as pd
 
+from robusta_krr.core.allocations import ResourceAllocations
+
 
 class K8sObjectData(pd.BaseModel):
     cluster: str
@@ -7,6 +9,7 @@ class K8sObjectData(pd.BaseModel):
     container: str
     namespace: str
     kind: str | None
+    allocations: ResourceAllocations
 
     def __str__(self) -> str:
         return f"{self.kind} {self.namespace}/{self.name}/{self.container}"

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import itertools
+
 from robusta_krr.core.formatters import BaseFormatter
 from robusta_krr.core.result import Result, ResourceType
 from robusta_krr.utils import resource_units
@@ -33,19 +35,30 @@ class TableFormatter(BaseFormatter):
             table.add_column(f"{resource.name} Requests", style="green")
             table.add_column(f"{resource.name} Limits", style="green")
 
-        for i, item in enumerate(result.scans):
-            table.add_row(
-                str(i),
-                item.object.cluster,
-                item.object.namespace,
-                item.object.name,
-                item.object.kind or "Unknown",
-                item.object.container,
-                *[
-                    f"{getattr(item.current, selector)[resource]} -> {resource_units.format(getattr(item.recommended, selector)[resource])}"
-                    for resource in ResourceType
-                    for selector in ["requests", "limits"]
-                ],
-            )
+        for _, group in itertools.groupby(
+            enumerate(result.scans), key=lambda x: (x[1].object.cluster, x[1].object.namespace, x[1].object.name)
+        ):
+            group_items = list(group)
+
+            for j, (i, item) in enumerate(group_items):
+                last_row = j == len(group_items) - 1
+                full_info_row = j == 0
+
+                table.add_row(
+                    str(i),
+                    item.object.cluster if full_info_row else "",
+                    item.object.namespace if full_info_row else "",
+                    item.object.name if full_info_row else "",
+                    item.object.kind if full_info_row else "",
+                    item.object.container,
+                    *[
+                        f"{getattr(item.object.allocations, selector)[resource]}"
+                        + "->"
+                        + f"{resource_units.format(getattr(item.recommended, selector)[resource])}"
+                        for resource in ResourceType
+                        for selector in ["requests", "limits"]
+                    ],
+                    end_section=last_row,
+                )
 
         return table

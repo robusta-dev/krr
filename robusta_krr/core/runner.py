@@ -31,9 +31,6 @@ class Runner(Configurable):
         self.echo("\n", no_prefix=True)
         self.console.print(formatted)
 
-    async def _gather_objects_current_allocations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
-        return await asyncio.gather(*[self._k8s_loader.get_object_current_recommendations(obj) for obj in objects])
-
     async def _calculate_object_recommendations(
         self, object: K8sObjectData, resource: ResourceType
     ) -> ResourceRecommendation:
@@ -67,18 +64,13 @@ class Runner(Configurable):
 
     async def _collect_result(self) -> Result:
         clusters = await self._k8s_loader.list_clusters()
-        cluster_objects = await self._k8s_loader.list_scannable_objects(clusters)
-
-        async with asyncio.TaskGroup() as tg:
-            current_allocations_task = tg.create_task(self._gather_objects_current_allocations(cluster_objects))
-            resource_recommendations_task = tg.create_task(self._gather_objects_recommendations(cluster_objects))
+        objects = await self._k8s_loader.list_scannable_objects(clusters)
+        resource_recommendations = await self._gather_objects_recommendations(objects)
 
         return Result(
             scans=[
-                ResourceScan(object=obj, current=current, recommended=recommended)
-                for obj, current, recommended in zip(
-                    cluster_objects, current_allocations_task.result(), resource_recommendations_task.result()
-                )
+                ResourceScan(object=obj, recommended=recommended)
+                for obj, recommended in zip(objects, resource_recommendations)
             ]
         )
 

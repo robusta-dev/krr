@@ -16,7 +16,7 @@ class ClusterLoader(Configurable):
         self.cluster = cluster
         self.v1 = client.AppsV1Api(api_client=config.new_client_from_config(context=cluster))
 
-    async def list_scannable_objects(self) -> list[tuple[V1Container, K8sObjectData]]:
+    async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.
 
         Returns:
@@ -30,7 +30,7 @@ class ClusterLoader(Configurable):
                 self._list_deployments(),
                 self._list_all_statefulsets(),
                 self._list_all_daemon_set(),
-                # self._list_all_jobs(),
+                # self._list_all_jobs(),  # TODO: Add support for Jobs
             )
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
@@ -38,95 +38,85 @@ class ClusterLoader(Configurable):
 
         return list(itertools.chain(*objects_tuple))
 
-    async def _list_deployments(self) -> list[tuple[V1Container, K8sObjectData]]:
+    async def _list_deployments(self) -> list[K8sObjectData]:
         ret: V1DeploymentList = await asyncio.to_thread(self.v1.list_deployment_for_all_namespaces, watch=False)
 
         return [
-            (
-                container,
-                K8sObjectData(
-                    cluster=self.cluster,
-                    namespace=item.metadata.namespace,
-                    name=item.metadata.name,
-                    kind="Deployment",
-                    container=container.name,
-                ),
+            K8sObjectData(
+                cluster=self.cluster,
+                namespace=item.metadata.namespace,
+                name=item.metadata.name,
+                kind="Deployment",
+                container=container.name,
+                allocations=ResourceAllocations.from_container(container),
             )
             for item in ret.items
             for container in item.spec.template.spec.containers
         ]
 
-    async def _list_all_statefulsets(self) -> list[tuple[V1Container, K8sObjectData]]:
+    async def _list_all_statefulsets(self) -> list[K8sObjectData]:
         ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_stateful_set_for_all_namespaces, watch=False)
 
         return [
-            (
-                container,
-                K8sObjectData(
-                    cluster=self.cluster,
-                    namespace=item.metadata.namespace,
-                    name=item.metadata.name,
-                    kind="StatefulSet",
-                    container=container.name,
-                ),
+            K8sObjectData(
+                cluster=self.cluster,
+                namespace=item.metadata.namespace,
+                name=item.metadata.name,
+                kind="StatefulSet",
+                container=container.name,
+                allocations=ResourceAllocations.from_container(container),
             )
             for item in ret.items
             for container in item.spec.template.spec.containers
         ]
 
-    async def _list_all_daemon_set(self) -> list[tuple[V1Container, K8sObjectData]]:
+    async def _list_all_daemon_set(self) -> list[K8sObjectData]:
         ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_daemon_set_for_all_namespaces, watch=False)
 
         return [
-            (
-                container,
-                K8sObjectData(
-                    cluster=self.cluster,
-                    namespace=item.metadata.namespace,
-                    name=item.metadata.name,
-                    kind="DaemonSet",
-                    container=container.name,
-                ),
+            K8sObjectData(
+                cluster=self.cluster,
+                namespace=item.metadata.namespace,
+                name=item.metadata.name,
+                kind="DaemonSet",
+                container=container.name,
+                allocations=ResourceAllocations.from_container(container),
             )
             for item in ret.items
             for container in item.spec.template.spec.containers
         ]
 
-    async def _list_all_jobs(self) -> list[tuple[V1Container, K8sObjectData]]:
+    async def _list_all_jobs(self) -> list[K8sObjectData]:
         """Not working yet."""
 
         ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_, watch=False)
 
         return [
-            (
-                container,
-                K8sObjectData(
-                    cluster=self.cluster,
-                    namespace=item.metadata.namespace,
-                    name=item.metadata.name,
-                    kind="Job",
-                    container=container.name,
-                ),
+            K8sObjectData(
+                cluster=self.cluster,
+                namespace=item.metadata.namespace,
+                name=item.metadata.name,
+                kind="Job",
+                container=container.name,
+                allocations=ResourceAllocations.from_container(container),
             )
             for item in ret.items
             for container in item.spec.template.spec.containers
         ]
 
-    async def _list_pods(self) -> list[tuple[V1Container, K8sObjectData]]:
+    async def _list_pods(self) -> list[K8sObjectData]:
         """For future use, not supported yet."""
 
         ret: V1PodList = await asyncio.to_thread(self.v1.list_pod_for_all_namespaces, watch=False)
 
         return [
-            (
-                container,
-                K8sObjectData(
-                    cluster=self.cluster,
-                    namespace=item.metadata.namespace,
-                    name=item.metadata.name,
-                    kind="Pod",
-                    container=container.name,
-                ),
+            K8sObjectData(
+                cluster=self.cluster,
+                namespace=item.metadata.namespace,
+                name=item.metadata.name,
+                kind="Pod",
+                container=container.name,
+                allocations=ResourceAllocations.from_container(container),
             )
             for item in ret.items
             for container in item.spec.containers
@@ -165,26 +155,5 @@ class KubernetesLoader(Configurable):
         self.debug("Listing scannable objects")
 
         cluster_loaders = [ClusterLoader(cluster=cluster, config=self.config) for cluster in clusters]
-        objects_res = await asyncio.gather(
-            *[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders]
-        )
-        objects = list(itertools.chain(*objects_res))
-
-        for container, obj in objects:
-            self._kubernetes_object_allocation_cache[obj] = ResourceAllocations.from_container(container)
-
-        return [obj for _, obj in objects]
-
-    async def get_object_current_recommendations(self, object: K8sObjectData) -> ResourceAllocations:
-        """Get the current recommendations for a given object.
-
-        Args:
-            object: The object to get the recommendations for.
-
-        Returns:
-            The current recommendations for the object.
-        """
-
-        self.debug(f"Getting current recommendations for {object}")
-
-        return self._kubernetes_object_allocation_cache[object]
+        objects = await asyncio.gather(*[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders])
+        return list(itertools.chain(*objects))
