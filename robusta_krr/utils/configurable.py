@@ -2,7 +2,7 @@ from rich.console import Console
 
 from typing import Literal
 
-from robusta_krr.core.config import Config
+from robusta_krr.core.models.config import Config
 
 
 console = Console()

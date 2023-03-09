@@ -2,8 +2,8 @@ from typing import get_args
 
 import pydantic as pd
 
-from robusta_krr.core.formatters import BaseFormatter
-from robusta_krr.core.strategies import BaseStrategy, StrategySettings
+from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr.core.abstract.strategies import BaseStrategy, StrategySettings
 
 
 class Config(pd.BaseSettings):

@@ -1,6 +1,6 @@
 import pydantic as pd
 
-from robusta_krr.core.allocations import ResourceAllocations
+from robusta_krr.core.models.allocations import ResourceAllocations
 
 
 class K8sObjectData(pd.BaseModel):

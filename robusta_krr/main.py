@@ -3,7 +3,7 @@ from typing import Optional
 
 import typer
 
-from robusta_krr.core.config import Config
+from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
 

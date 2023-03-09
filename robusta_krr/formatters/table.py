@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 
-from robusta_krr.core.formatters import BaseFormatter
+from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.result import Result, ResourceType
 from robusta_krr.utils import resource_units
 

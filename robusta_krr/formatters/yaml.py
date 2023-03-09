@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from robusta_krr.core.formatters import BaseFormatter
+from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.result import Result
 import yaml
 import json

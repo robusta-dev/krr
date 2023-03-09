@@ -1,6 +1,6 @@
 import pydantic as pd
 
-from robusta_krr.core.strategies import (
+from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
     HistoryData,
     K8sObjectData,

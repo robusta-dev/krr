@@ -2,9 +2,17 @@ import asyncio
 import itertools
 
 from kubernetes import client, config
-from kubernetes.client.models import V1PodList, V1DeploymentList, V1Container, V1StatefulSetList
+from kubernetes.client.models import (
+    V1PodList,
+    V1DeploymentList,
+    V1StatefulSetList,
+    V1Deployment,
+    V1Container,
+    V1DaemonSet,
+    V1StatefulSet,
+)
 
-from robusta_krr.core.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
@@ -38,52 +46,35 @@ class ClusterLoader(Configurable):
 
         return list(itertools.chain(*objects_tuple))
 
+    def __build_obj(self, item: V1Deployment | V1DaemonSet | V1StatefulSet, container: V1Container) -> K8sObjectData:
+        return K8sObjectData(
+            cluster=self.cluster,
+            namespace=item.metadata.namespace,
+            name=item.metadata.name,
+            kind=item.__class__.__name__[2:],
+            container=container.name,
+            allocations=ResourceAllocations.from_container(container),
+        )
+
     async def _list_deployments(self) -> list[K8sObjectData]:
         ret: V1DeploymentList = await asyncio.to_thread(self.v1.list_deployment_for_all_namespaces, watch=False)
 
         return [
-            K8sObjectData(
-                cluster=self.cluster,
-                namespace=item.metadata.namespace,
-                name=item.metadata.name,
-                kind="Deployment",
-                container=container.name,
-                allocations=ResourceAllocations.from_container(container),
-            )
-            for item in ret.items
-            for container in item.spec.template.spec.containers
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
         ]
 
     async def _list_all_statefulsets(self) -> list[K8sObjectData]:
         ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_stateful_set_for_all_namespaces, watch=False)
 
         return [
-            K8sObjectData(
-                cluster=self.cluster,
-                namespace=item.metadata.namespace,
-                name=item.metadata.name,
-                kind="StatefulSet",
-                container=container.name,
-                allocations=ResourceAllocations.from_container(container),
-            )
-            for item in ret.items
-            for container in item.spec.template.spec.containers
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
         ]
 
     async def _list_all_daemon_set(self) -> list[K8sObjectData]:
         ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_daemon_set_for_all_namespaces, watch=False)
 
         return [
-            K8sObjectData(
-                cluster=self.cluster,
-                namespace=item.metadata.namespace,
-                name=item.metadata.name,
-                kind="DaemonSet",
-                container=container.name,
-                allocations=ResourceAllocations.from_container(container),
-            )
-            for item in ret.items
-            for container in item.spec.template.spec.containers
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
         ]
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
@@ -92,16 +83,7 @@ class ClusterLoader(Configurable):
         ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_, watch=False)
 
         return [
-            K8sObjectData(
-                cluster=self.cluster,
-                namespace=item.metadata.namespace,
-                name=item.metadata.name,
-                kind="Job",
-                container=container.name,
-                allocations=ResourceAllocations.from_container(container),
-            )
-            for item in ret.items
-            for container in item.spec.template.spec.containers
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
         ]
 
     async def _list_pods(self) -> list[K8sObjectData]:
@@ -109,18 +91,7 @@ class ClusterLoader(Configurable):
 
         ret: V1PodList = await asyncio.to_thread(self.v1.list_pod_for_all_namespaces, watch=False)
 
-        return [
-            K8sObjectData(
-                cluster=self.cluster,
-                namespace=item.metadata.namespace,
-                name=item.metadata.name,
-                kind="Pod",
-                container=container.name,
-                allocations=ResourceAllocations.from_container(container),
-            )
-            for item in ret.items
-            for container in item.spec.containers
-        ]
+        return [self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
 
 
 class KubernetesLoader(Configurable):

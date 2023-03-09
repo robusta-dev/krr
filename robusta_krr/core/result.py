@@ -5,9 +5,9 @@ from typing import Any
 
 import pydantic as pd
 
-from robusta_krr.core.formatters import BaseFormatter
-from robusta_krr.core.objects import K8sObjectData
-from robusta_krr.core.allocations import ResourceAllocations, ResourceType
+from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.allocations import ResourceAllocations, ResourceType
 
 
 class ResourceScan(pd.BaseModel):
