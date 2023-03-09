@@ -81,8 +81,6 @@ class ClusterLoader(Configurable):
         ]
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
-        """Not working yet."""
-
         ret: V1JobList = await asyncio.to_thread(self.batch.list_job_for_all_namespaces, watch=False)
 
         return [
