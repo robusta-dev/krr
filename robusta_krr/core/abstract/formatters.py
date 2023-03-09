@@ -5,7 +5,7 @@ import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from robusta_krr.core.result import Result
+    from robusta_krr.core.models.result import Result
 
 
 DEFAULT_FORMATTERS_PATH = os.path.join(os.path.dirname(__file__), "formatters")

@@ -6,7 +6,7 @@ from typing import Generic, TypeVar
 
 import pydantic as pd
 
-from robusta_krr.core.result import K8sObjectData, ResourceType
+from robusta_krr.core.models.result import K8sObjectData, ResourceType
 
 
 class ResourceRecommendation(pd.BaseModel):

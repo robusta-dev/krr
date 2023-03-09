@@ -2,10 +2,10 @@ import asyncio
 import itertools
 
 from robusta_krr.core.models.config import Config
-from robusta_krr.core.models.kubernetes import KubernetesLoader
+from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.prometheus import PrometheusLoader
-from robusta_krr.core.result import ResourceAllocations, ResourceScan, ResourceType, Result
+from robusta_krr.core.integrations.prometheus import PrometheusLoader
+from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result
 from robusta_krr.core.abstract.strategies import ResourceRecommendation
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.version import get_version

@@ -3,7 +3,7 @@ import datetime
 import random
 
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.result import ResourceType
+from robusta_krr.core.models.result import ResourceType
 from robusta_krr.core.abstract.strategies import HistoryData
 from robusta_krr.utils.configurable import Configurable
 

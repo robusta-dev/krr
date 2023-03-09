@@ -6,6 +6,8 @@ from kubernetes.client.models import (
     V1PodList,
     V1DeploymentList,
     V1StatefulSetList,
+    V1JobList,
+    V1DaemonSetList,
     V1Deployment,
     V1Container,
     V1DaemonSet,
@@ -13,7 +15,7 @@ from kubernetes.client.models import (
 )
 
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.result import ResourceAllocations
+from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
 
@@ -22,7 +24,8 @@ class ClusterLoader(Configurable):
         super().__init__(*args, **kwargs)
 
         self.cluster = cluster
-        self.v1 = client.AppsV1Api(api_client=config.new_client_from_config(context=cluster))
+        self.apps = client.AppsV1Api(api_client=config.new_client_from_config(context=cluster))
+        self.batch = client.BatchV1Api(api_client=config.new_client_from_config(context=cluster))
 
     async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.
@@ -38,7 +41,7 @@ class ClusterLoader(Configurable):
                 self._list_deployments(),
                 self._list_all_statefulsets(),
                 self._list_all_daemon_set(),
-                # self._list_all_jobs(),  # TODO: Add support for Jobs
+                self._list_all_jobs(),
             )
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
@@ -57,21 +60,21 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_deployments(self) -> list[K8sObjectData]:
-        ret: V1DeploymentList = await asyncio.to_thread(self.v1.list_deployment_for_all_namespaces, watch=False)
+        ret: V1DeploymentList = await asyncio.to_thread(self.apps.list_deployment_for_all_namespaces, watch=False)
 
         return [
             self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
         ]
 
     async def _list_all_statefulsets(self) -> list[K8sObjectData]:
-        ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_stateful_set_for_all_namespaces, watch=False)
+        ret: V1StatefulSetList = await asyncio.to_thread(self.apps.list_stateful_set_for_all_namespaces, watch=False)
 
         return [
             self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
         ]
 
     async def _list_all_daemon_set(self) -> list[K8sObjectData]:
-        ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_daemon_set_for_all_namespaces, watch=False)
+        ret: V1DaemonSetList = await asyncio.to_thread(self.apps.list_daemon_set_for_all_namespaces, watch=False)
 
         return [
             self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
@@ -80,7 +83,7 @@ class ClusterLoader(Configurable):
     async def _list_all_jobs(self) -> list[K8sObjectData]:
         """Not working yet."""
 
-        ret: V1StatefulSetList = await asyncio.to_thread(self.v1.list_, watch=False)
+        ret: V1JobList = await asyncio.to_thread(self.batch.list_job_for_all_namespaces, watch=False)
 
         return [
             self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
@@ -89,7 +92,7 @@ class ClusterLoader(Configurable):
     async def _list_pods(self) -> list[K8sObjectData]:
         """For future use, not supported yet."""
 
-        ret: V1PodList = await asyncio.to_thread(self.v1.list_pod_for_all_namespaces, watch=False)
+        ret: V1PodList = await asyncio.to_thread(self.apps.list_pod_for_all_namespaces, watch=False)
 
         return [self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
 
