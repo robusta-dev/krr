@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import datetime
+from decimal import Decimal
 from typing import Generic, TypeVar
 
 import pydantic as pd
@@ -10,8 +11,8 @@ from robusta_krr.core.models.result import K8sObjectData, ResourceType
 
 
 class ResourceRecommendation(pd.BaseModel):
-    request: float
-    limit: float
+    request: Decimal | None
+    limit: Decimal | None
 
 
 class StrategySettings(pd.BaseModel):
@@ -25,7 +26,8 @@ class StrategySettings(pd.BaseModel):
 
 
 _StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
-HistoryData = dict[str, list[float]]
+HistoryData = dict[ResourceType, list[int]]
+RunResult = dict[ResourceType, ResourceRecommendation]
 
 
 class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
@@ -39,9 +41,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         return self.__display_name__.title()
 
     @abc.abstractmethod
-    def run(
-        self, history_data: HistoryData, object_data: K8sObjectData, resource_type: ResourceType
-    ) -> ResourceRecommendation:
+    def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         """Run the strategy to calculate the recommendation"""
 
     @staticmethod

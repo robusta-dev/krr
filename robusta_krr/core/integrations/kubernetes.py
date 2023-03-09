@@ -3,15 +3,15 @@ import itertools
 
 from kubernetes import client, config
 from kubernetes.client.models import (
-    V1PodList,
-    V1DeploymentList,
-    V1StatefulSetList,
-    V1JobList,
-    V1DaemonSetList,
-    V1Deployment,
     V1Container,
     V1DaemonSet,
+    V1DaemonSetList,
+    V1Deployment,
+    V1DeploymentList,
+    V1JobList,
+    V1PodList,
     V1StatefulSet,
+    V1StatefulSetList,
 )
 
 from robusta_krr.core.models.objects import K8sObjectData
@@ -34,7 +34,7 @@ class ClusterLoader(Configurable):
             A list of scannable objects.
         """
 
-        self.debug("Listing scannable objects")
+        self.debug(f"Listing scannable objects in {self.cluster}")
 
         try:
             objects_tuple = await asyncio.gather(
@@ -45,6 +45,7 @@ class ClusterLoader(Configurable):
             )
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
+            self.debug_exception()
             return []
 
         return list(itertools.chain(*objects_tuple))
@@ -98,11 +99,7 @@ class ClusterLoader(Configurable):
 class KubernetesLoader(Configurable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.debug("Initializing Kubernetes client")
         config.load_kube_config()
-
-        self._kubernetes_object_allocation_cache: dict[K8sObjectData, ResourceAllocations] = {}
 
     async def list_clusters(self) -> list[str]:
         """List all clusters.
@@ -110,8 +107,6 @@ class KubernetesLoader(Configurable):
         Returns:
             A list of clusters.
         """
-
-        self.debug("Listing clusters")
 
         contexts, _ = await asyncio.to_thread(config.list_kube_config_contexts)
 
@@ -123,8 +118,6 @@ class KubernetesLoader(Configurable):
         Returns:
             A list of scannable objects.
         """
-
-        self.debug("Listing scannable objects")
 
         cluster_loaders = [ClusterLoader(cluster=cluster, config=self.config) for cluster in clusters]
         objects = await asyncio.gather(*[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders])

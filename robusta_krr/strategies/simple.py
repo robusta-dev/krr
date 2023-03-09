@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pydantic as pd
 
 from robusta_krr.core.abstract.strategies import (
@@ -6,6 +8,7 @@ from robusta_krr.core.abstract.strategies import (
     K8sObjectData,
     ResourceRecommendation,
     ResourceType,
+    RunResult,
     StrategySettings,
 )
 
@@ -22,15 +25,21 @@ class SimpleStrategySettings(StrategySettings):
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     __display_name__ = "simple"
 
-    def run(
-        self, history_data: HistoryData, object_data: K8sObjectData, resource_type: ResourceType
-    ) -> ResourceRecommendation:
-        points_flatten = [point for points in history_data.values() for point in points]
-        return ResourceRecommendation(
-            request=self._calculate_percentile(points_flatten, self.settings.request_percentile),
-            limit=self._calculate_percentile(points_flatten, self.settings.limit_percentile),
-        )
+    def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
+        cpu_usage = self._calculate_percentile(history_data[ResourceType.CPU], self.settings.request_percentile)
+        memory_usage = self._calculate_percentile(history_data[ResourceType.Memory], self.settings.request_percentile)
 
-    def _calculate_percentile(self, data: list[float], percentile: float) -> float:
+        return {
+            ResourceType.CPU: ResourceRecommendation(
+                request=Decimal(cpu_usage) / 1000,
+                limit=None,
+            ),
+            ResourceType.Memory: ResourceRecommendation(
+                request=memory_usage,
+                limit=memory_usage,
+            ),
+        }
+
+    def _calculate_percentile(self, data: list[int], percentile: float) -> int:
         data = sorted(data)
         return data[int(len(data) * percentile)]

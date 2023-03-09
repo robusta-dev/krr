@@ -1,18 +1,32 @@
 from __future__ import annotations
 
 import itertools
-
-from robusta_krr.core.abstract.formatters import BaseFormatter
-from robusta_krr.core.models.result import Result, ResourceType
-from robusta_krr.utils import resource_units
+from decimal import Decimal
 
 from rich.table import Table
+
+from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
+from robusta_krr.utils import resource_units
+
+NONE_LITERAL = "none"
+PRESCISION = 4
 
 
 class TableFormatter(BaseFormatter):
     """Formatter for text output."""
 
     __display_name__ = "table"
+
+    def _format_united_decimal(self, value: Decimal | None, prescision: int | None = None) -> str:
+        return resource_units.format(value, prescision=prescision) if value is not None else NONE_LITERAL
+
+    def _format_request_str(self, item: ResourceScan, resource: ResourceType, selector: str) -> str:
+        return (
+            self._format_united_decimal(getattr(item.object.allocations, selector)[resource])
+            + " -> "
+            + self._format_united_decimal(getattr(item.recommended, selector)[resource], prescision=PRESCISION)
+        )
 
     def format(self, result: Result) -> Table:
         """Format the result as text.
@@ -52,9 +66,7 @@ class TableFormatter(BaseFormatter):
                     item.object.kind if full_info_row else "",
                     item.object.container,
                     *[
-                        f"{getattr(item.object.allocations, selector)[resource]}"
-                        + "->"
-                        + f"{resource_units.format(getattr(item.recommended, selector)[resource])}"
+                        self._format_request_str(item, resource, selector)
                         for resource in ResourceType
                         for selector in ["requests", "limits"]
                     ],

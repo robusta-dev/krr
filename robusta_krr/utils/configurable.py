@@ -1,9 +1,8 @@
-from rich.console import Console
-
 from typing import Literal
 
-from robusta_krr.core.models.config import Config
+from rich.console import Console
 
+from robusta_krr.core.models.config import Config
 
 console = Console()
 
@@ -17,6 +16,14 @@ class Configurable:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.console = console
+
+    @property
+    def debug_active(self) -> bool:
+        return self.config.verbose and not self.config.quiet
+
+    @property
+    def echo_active(self) -> bool:
+        return not self.config.quiet
 
     @staticmethod
     def __add_prefix(text: str, prefix: str, /, no_prefix: bool) -> str:
@@ -32,7 +39,7 @@ class Configurable:
 
         color = {"INFO": "green", "WARNING": "yellow", "ERROR": "red"}[type]
 
-        if not self.config.quiet:
+        if self.echo_active:
             self.console.print(
                 self.__add_prefix(message, f"[bold {color}][{type}][/bold {color}]", no_prefix=no_prefix)
             )
@@ -42,8 +49,16 @@ class Configurable:
         Echoes a message to the user if verbose mode is enabled
         """
 
-        if self.config.verbose and not self.config.quiet:
+        if self.debug_active:
             self.console.print(self.__add_prefix(message, "[bold green][DEBUG][/bold green]", no_prefix=False))
+
+    def debug_exception(self) -> None:
+        """
+        Echoes the exception traceback to the user if verbose mode is enabled
+        """
+
+        if self.debug_active:
+            self.console.print_exception()
 
     def info(self, message: str = "") -> None:
         """

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import itertools
+from decimal import Decimal
 from typing import Any
 
 import pydantic as pd
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
-from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.allocations import ResourceAllocations, ResourceType
+from robusta_krr.core.models.objects import K8sObjectData
 
 
 class ResourceScan(pd.BaseModel):
@@ -38,7 +39,7 @@ class Result(pd.BaseModel):
         return _formatter.format(self)
 
     @staticmethod
-    def __percentage_difference(current: float | str | None, recommended: float | str | None) -> float:
+    def __percentage_difference(current: Decimal | None, recommended: Decimal | None) -> float:
         """Get the percentage difference between two numbers.
 
         Args:
@@ -66,5 +67,8 @@ class Result(pd.BaseModel):
             total_diff += self.__percentage_difference(
                 scan.object.allocations.limits[resource_type], scan.recommended.limits[resource_type]
             )
+
+        if len(self.scans) == 0:
+            return 0.0
 
         return max(0, round(100 - total_diff / len(self.scans) / len(ResourceType) / 50, 2))  # 50 is just a constant
