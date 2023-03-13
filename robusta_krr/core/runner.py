@@ -15,8 +15,21 @@ class Runner(Configurable):
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self._k8s_loader = KubernetesLoader(self.config)
-        self._prometheus_loader = PrometheusLoader(self.config)
+        self._prometheus_loaders: dict[str, PrometheusLoader | Exception] = {}
         self._strategy = self.config.create_strategy()
+
+    def _get_prometheus_loader(self, cluster: str) -> PrometheusLoader:
+        if cluster not in self._prometheus_loaders:
+            try:
+                self._prometheus_loaders[cluster] = PrometheusLoader(self.config, cluster=cluster)
+            except Exception as e:
+                self._prometheus_loaders[cluster] = e
+
+        result = self._prometheus_loaders[cluster]
+        if isinstance(result, Exception):
+            raise result
+
+        return result
 
     def _greet(self) -> None:
         self.echo(ASCII_LOGO, no_prefix=True)
@@ -31,9 +44,11 @@ class Runner(Configurable):
         self.console.print(formatted)
 
     async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
+        prometheus_loader = self._get_prometheus_loader(object.cluster)
+
         data_tuple = await asyncio.gather(
             *[
-                self._prometheus_loader.gather_data(
+                prometheus_loader.gather_data(
                     object,
                     resource,
                     self._strategy.settings.history_timedelta,

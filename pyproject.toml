@@ -24,6 +24,7 @@ python = "^3.11"
 typer = {extras = ["all"], version = "^0.7.0"}
 pydantic = "^1.10.5"
 kubernetes = "^26.1.0"
+prometheus-api-client = "^0.5.3"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.0.1"
@@ -31,6 +32,8 @@ black = "^23.1.0"
 isort = "^5.12.0"
 flake8 = "^6.0.0"
 types-pyyaml = "^6.0.12.8"
+types-cachetools = "^5.3.0.4"
+types-requests = "^2.28.11.15"
 
 [build-system]
 requires = ["poetry-core"]

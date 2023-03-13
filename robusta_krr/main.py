@@ -7,7 +7,7 @@ from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
 
-app = typer.Typer(pretty_exceptions_show_locals=False)
+app = typer.Typer(pretty_exceptions_show_locals=False, pretty_exceptions_short=True)
 
 
 @app.command()

@@ -10,6 +10,7 @@ from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.utils import resource_units
 
 NONE_LITERAL = "none"
+NAN_LITERAL = "?"
 PRESCISION = 4
 
 
@@ -19,7 +20,12 @@ class TableFormatter(BaseFormatter):
     __display_name__ = "table"
 
     def _format_united_decimal(self, value: Decimal | None, prescision: int | None = None) -> str:
-        return resource_units.format(value, prescision=prescision) if value is not None else NONE_LITERAL
+        if value is None:
+            return NONE_LITERAL
+        elif value.is_nan():
+            return NAN_LITERAL
+        else:
+            return resource_units.format(value, prescision=prescision)
 
     def _format_request_str(self, item: ResourceScan, resource: ResourceType, selector: str) -> str:
         return (

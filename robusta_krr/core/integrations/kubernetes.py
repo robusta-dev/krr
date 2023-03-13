@@ -24,8 +24,9 @@ class ClusterLoader(Configurable):
         super().__init__(*args, **kwargs)
 
         self.cluster = cluster
-        self.apps = client.AppsV1Api(api_client=config.new_client_from_config(context=cluster))
-        self.batch = client.BatchV1Api(api_client=config.new_client_from_config(context=cluster))
+        self.api_client = config.new_client_from_config(context=cluster)
+        self.apps = client.AppsV1Api(api_client=self.api_client)
+        self.batch = client.BatchV1Api(api_client=self.api_client)
 
     async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.

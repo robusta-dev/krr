@@ -1,3 +1,4 @@
+import abc
 from typing import Literal
 
 from rich.console import Console
@@ -7,7 +8,7 @@ from robusta_krr.core.models.config import Config
 console = Console()
 
 
-class Configurable:
+class Configurable(abc.ABC):
     """
     A class that can be configured with a Config object.
     Opens the possibility to use echo and debug methods

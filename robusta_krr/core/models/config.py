@@ -10,7 +10,13 @@ class Config(pd.BaseSettings):
     quiet: bool = pd.Field(False)
     verbose: bool = pd.Field(False)
 
+    # Make this True if you are running KRR inside the cluster
+    inside_cluster: bool = pd.Field(False)
+
     prometheus_url: str | None = pd.Field(None)
+    prometheus_auth_header: str | None = pd.Field(None)
+    prometheus_ssl_enabled: bool = pd.Field(False)
+
     format: str
     strategy: str
 
