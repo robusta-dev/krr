@@ -1,10 +1,13 @@
 import asyncio
 import datetime
 from decimal import Decimal
+from typing import no_type_check
 
+import requests
 from kubernetes import config as k8s_config
 from kubernetes.client import ApiClient
-from prometheus_api_client import PrometheusConnect
+from prometheus_api_client import PrometheusConnect, Retry
+from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.models.config import Config
@@ -32,6 +35,21 @@ class PrometheusDiscovery(ServiceDiscovery):
 
 class PrometheusNotFound(Exception):
     pass
+
+
+class CustomPrometheusConnect(PrometheusConnect):
+    @no_type_check
+    def __init__(
+        self,
+        url: str = "http://127.0.0.1:9090",
+        headers: dict = None,
+        disable_ssl: bool = False,
+        retry: Retry = None,
+        auth: tuple = None,
+    ):
+        super().__init__(url, headers, disable_ssl, retry, auth)
+        self._session = requests.Session()
+        self._session.mount(self.url, HTTPAdapter(max_retries=retry, pool_maxsize=10, pool_block=True))
 
 
 class PrometheusLoader(Configurable):
@@ -66,7 +84,7 @@ class PrometheusLoader(Configurable):
         elif not self.config.inside_cluster:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
-        self.prometheus = PrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
+        self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
         self._check_prometheus_connection()
 
         self.debug(f"PrometheusLoader initialized for {cluster or 'default'} cluster")
