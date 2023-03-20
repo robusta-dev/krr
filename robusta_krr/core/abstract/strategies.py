@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import datetime
 from decimal import Decimal
-from typing import Generic, TypeVar
+from typing import Generic, Self, TypeVar, get_args
 
 import pydantic as pd
 
@@ -44,21 +44,32 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         """Run the strategy to calculate the recommendation"""
 
-    @staticmethod
-    def find(name: str) -> type[BaseStrategy]:
+    @classmethod
+    def find(cls, name: str) -> type[Self]:
         """Get a strategy from its name."""
 
-        # NOTE: Load default formatters
-        from robusta_krr import strategies as _  # noqa: F401
-
-        strategies = {cls.__display_name__.lower(): cls for cls in BaseStrategy.__subclasses__()}
+        strategies = cls.get_all()
         if name.lower() in strategies:
             return strategies[name.lower()]
 
         raise ValueError(f"Unknown strategy name: {name}. Available strategies: {', '.join(strategies)}")
 
+    @classmethod
+    def get_all(cls) -> dict[str, type[Self]]:
+        # NOTE: Load default formatters
+        from robusta_krr import strategies as _  # noqa: F401
+
+        return {sub_cls.__display_name__.lower(): sub_cls for sub_cls in cls.__subclasses__()}
+
+    @classmethod
+    def get_settings_type(cls) -> type[StrategySettings]:
+        return get_args(cls.__orig_bases__[0])[0]  # type: ignore
+
+
+AnyStrategy = BaseStrategy[StrategySettings]
 
 __all__ = [
+    "AnyStrategy",
     "BaseStrategy",
     "StrategySettings",
     "HistoryData",

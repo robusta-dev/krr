@@ -1,9 +1,7 @@
-from typing import get_args
-
 import pydantic as pd
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
-from robusta_krr.core.abstract.strategies import BaseStrategy, StrategySettings
+from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 
 
 class Config(pd.BaseSettings):
@@ -20,10 +18,23 @@ class Config(pd.BaseSettings):
     format: str
     strategy: str
 
+    other_args: list[str] = pd.Field([])
+
+    def _parse_other_args(self) -> dict[str, str]:
+        args = {}
+        for arg in self.other_args:
+            if "=" not in arg and not arg.startswith("--"):
+                continue
+
+            key, value = arg.split("=")
+            args[key[2:]] = value
+
+        return args
+
     def create_strategy(self) -> BaseStrategy:
-        StrategyType = BaseStrategy.find(self.strategy)
-        StrategySettingsType: type[StrategySettings] = get_args(StrategyType.__orig_bases__[0])[0]  # type: ignore
-        return StrategyType(StrategySettingsType())
+        StrategyType = AnyStrategy.find(self.strategy)
+        StrategySettingsType = StrategyType.get_settings_type()
+        return StrategyType(StrategySettingsType(**self._parse_other_args()))
 
     @pd.validator("strategy")
     def validate_strategy(cls, v: str) -> str:
