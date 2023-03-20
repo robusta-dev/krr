@@ -15,10 +15,7 @@ from robusta_krr.core.abstract.strategies import (
 
 class SimpleStrategySettings(StrategySettings):
     request_percentile: float = pd.Field(
-        0.9, gt=0, le=1, description="The percentile to use for the request recommendation."
-    )
-    limit_percentile: float = pd.Field(
-        0.99, gt=0, le=1, description="The percentile to use for the limit recommendation."
+        0.95, gt=0, le=1, description="The percentile to use for the request recommendation."
     )
 
 
