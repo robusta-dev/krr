@@ -12,6 +12,7 @@ from robusta_krr.utils import resource_units
 NONE_LITERAL = "none"
 NAN_LITERAL = "?"
 PRESCISION = 4
+ALLOWED_DIFFERENCE = 0.05
 
 
 class TableFormatter(BaseFormatter):
@@ -28,10 +29,13 @@ class TableFormatter(BaseFormatter):
             return resource_units.format(value, prescision=prescision)
 
     def _format_request_str(self, item: ResourceScan, resource: ResourceType, selector: str) -> str:
+        allocated = getattr(item.object.allocations, selector)[resource]
+        recommended = getattr(item.recommended, selector)[resource]
+
         return (
-            self._format_united_decimal(getattr(item.object.allocations, selector)[resource])
+            self._format_united_decimal(allocated)
             + " -> "
-            + self._format_united_decimal(getattr(item.recommended, selector)[resource], prescision=PRESCISION)
+            + self._format_united_decimal(recommended, prescision=PRESCISION)
         )
 
     def format(self, result: Result) -> Table:
@@ -49,6 +53,7 @@ class TableFormatter(BaseFormatter):
         table.add_column("Cluster", style="cyan")
         table.add_column("Namespace", style="cyan")
         table.add_column("Name", style="cyan")
+        table.add_column("Pods", style="cyan")
         table.add_column("Type", style="cyan")
         table.add_column("Container", style="cyan")
         for resource in ResourceType:
@@ -69,6 +74,7 @@ class TableFormatter(BaseFormatter):
                     item.object.cluster if full_info_row else "",
                     item.object.namespace if full_info_row else "",
                     item.object.name if full_info_row else "",
+                    str(len(item.object.pods)) if full_info_row else "",
                     item.object.kind if full_info_row else "",
                     item.object.container,
                     *[

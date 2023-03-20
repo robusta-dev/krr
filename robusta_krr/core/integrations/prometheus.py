@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from decimal import Decimal
 
 from kubernetes import config as k8s_config
 from kubernetes.client import ApiClient
@@ -92,35 +93,39 @@ class PrometheusLoader(Configurable):
         period: datetime.timedelta,
         *,
         timeframe: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> list[int]:
-        # TODO: Queries do not work properly
+    ) -> dict[str, list[Decimal]]:
         self.debug(f"Gathering data for {object} and {resource}")
 
         if resource == ResourceType.CPU:
-            return await asyncio.to_thread(
-                self.prometheus.custom_query_range,
-                query='sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace="$namespace", pod=~"$pod", container=~"$container"})',
-                start_time=datetime.datetime.now() - period,
-                end_time=datetime.datetime.now(),
-                step="30m",
-                params={
-                    "namespace": object.namespace,
-                    "pod": object.name,
-                    "container": object.container,
-                },
+            result = await asyncio.gather(
+                *[
+                    asyncio.to_thread(
+                        self.prometheus.custom_query_range,
+                        query=f'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}})',
+                        start_time=datetime.datetime.now() - period,
+                        end_time=datetime.datetime.now(),
+                        step=f"{int(timeframe.total_seconds()) // 60}m",
+                    )
+                    for pod in object.pods
+                ]
             )
         elif resource == ResourceType.Memory:
-            return await asyncio.to_thread(
-                self.prometheus.custom_query_range,
-                query='sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", pod=~"$pod", container=~"$container", image!=""})',
-                start_time=datetime.datetime.now() - period,
-                end_time=datetime.datetime.now(),
-                step="30m",
-                params={
-                    # "namespace": object.namespace,
-                    "pod": object.name,
-                    "container": object.container,
-                },
+            result = await asyncio.gather(
+                *[
+                    asyncio.to_thread(
+                        self.prometheus.custom_query_range,
+                        query=f'sum(container_memory_working_set_bytes{{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"}})',
+                        start_time=datetime.datetime.now() - period,
+                        end_time=datetime.datetime.now(),
+                        step=f"{int(timeframe.total_seconds()) // 60}m",
+                    )
+                    for pod in object.pods
+                ]
             )
         else:
             raise ValueError(f"Unknown resource type: {resource}")
+
+        if result == []:
+            return {pod: [] for pod in object.pods}
+
+        return {pod: [Decimal(value) for _, value in result[i][0]["values"]] for i, pod in enumerate(object.pods)}

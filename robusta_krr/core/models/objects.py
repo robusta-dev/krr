@@ -7,6 +7,7 @@ class K8sObjectData(pd.BaseModel):
     cluster: str
     name: str
     container: str
+    pods: list[str]
     namespace: str
     kind: str | None
     allocations: ResourceAllocations

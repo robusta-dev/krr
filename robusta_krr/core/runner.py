@@ -1,6 +1,8 @@
 import asyncio
+import math
+from decimal import Decimal
 
-from robusta_krr.core.abstract.strategies import RunResult
+from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import PrometheusLoader
 from robusta_krr.core.models.config import Config
@@ -43,6 +45,23 @@ class Runner(Configurable):
         self.echo("\n", no_prefix=True)
         self.console.print(formatted)
 
+    @staticmethod
+    def _round_value(value: Decimal | None) -> Decimal | None:
+        if value is None or value.is_nan():
+            return None
+
+        return Decimal(math.ceil(value * 1000)) / 1000
+
+    @staticmethod
+    def _format_result(result: RunResult) -> RunResult:
+        return {
+            resource: ResourceRecommendation(
+                request=Runner._round_value(recommendation.request),
+                limit=Runner._round_value(recommendation.limit),
+            )
+            for resource, recommendation in result.items()
+        }
+
     async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
@@ -60,7 +79,8 @@ class Runner(Configurable):
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
-        return await asyncio.to_thread(self._strategy.run, data, object)
+        result = await asyncio.to_thread(self._strategy.run, data, object)
+        return self._format_result(result)
 
     async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
         recommendations: list[RunResult] = await asyncio.gather(

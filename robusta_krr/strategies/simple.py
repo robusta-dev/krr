@@ -30,19 +30,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         memory_usage = self._calculate_percentile(history_data[ResourceType.Memory], self.settings.request_percentile)
 
         return {
-            ResourceType.CPU: ResourceRecommendation(
-                request=Decimal(cpu_usage) / 1000 if cpu_usage is not None else None,
-                limit=None,
-            ),
-            ResourceType.Memory: ResourceRecommendation(
-                request=Decimal(memory_usage),
-                limit=Decimal(memory_usage),
-            ),
+            ResourceType.CPU: ResourceRecommendation(request=cpu_usage, limit=None),
+            ResourceType.Memory: ResourceRecommendation(request=memory_usage, limit=memory_usage),
         }
 
-    def _calculate_percentile(self, data: list[float], percentile: float) -> float:
-        if len(data) == 0:
-            return float("nan")
+    def _calculate_percentile(self, data: dict[str, list[Decimal]], percentile: float) -> Decimal:
+        data_ = [value for values in data.values() for value in values]
 
-        data = sorted(data)
-        return data[int(len(data) * percentile)]
+        if len(data_) == 0:
+            return Decimal.from_float(float("nan"))
+
+        data_ = sorted(data_)
+        return data_[int(len(data_) * percentile)]
