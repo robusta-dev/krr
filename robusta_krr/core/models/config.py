@@ -1,5 +1,7 @@
 import pydantic as pd
 
+from typing import Literal
+
 from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 
@@ -8,9 +10,13 @@ class Config(pd.BaseSettings):
     quiet: bool = pd.Field(False)
     verbose: bool = pd.Field(False)
 
+    clusters: list[str] | Literal["*"] | None = None
+    namespaces: list[str] | Literal["*"] = pd.Field("*")
+
     # Make this True if you are running KRR inside the cluster
     inside_cluster: bool = pd.Field(False)
 
+    # Prometheus Settings
     prometheus_url: str | None = pd.Field(None)
     prometheus_auth_header: str | None = pd.Field(None)
     prometheus_ssl_enabled: bool = pd.Field(False)

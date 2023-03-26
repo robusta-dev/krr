@@ -52,7 +52,11 @@ class ClusterLoader(Configurable):
             self.debug_exception()
             return []
 
-        return list(itertools.chain(*objects_tuple))
+        return [
+            obj
+            for obj in itertools.chain(*objects_tuple)
+            if self.config.namespaces == "*" or obj.namespace in self.config.namespaces
+        ]
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
@@ -157,7 +161,7 @@ class KubernetesLoader(Configurable):
         super().__init__(*args, **kwargs)
         config.load_kube_config()
 
-    async def list_clusters(self, filter: list[str] | Literal["*"] | None = None) -> list[str]:
+    async def list_clusters(self) -> list[str]:
         """List all clusters.
 
         Returns:
@@ -166,13 +170,13 @@ class KubernetesLoader(Configurable):
 
         contexts, current_context = await asyncio.to_thread(config.list_kube_config_contexts)
 
-        if filter is None:
+        if self.config.clusters is None:
             return [current_context["name"]]
 
-        if filter == "*":
+        if self.config.clusters == "*":
             return [context["name"] for context in contexts]
 
-        return [context["name"] for context in contexts if context["name"] in filter]
+        return [context["name"] for context in contexts if context["name"] in self.config.clusters]
 
     async def list_scannable_objects(self, clusters: list[str]) -> list[K8sObjectData]:
         """List all scannable objects.

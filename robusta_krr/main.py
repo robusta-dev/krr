@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import textwrap
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Literal, Union
 from uuid import UUID
 
 import typer
@@ -41,14 +41,40 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
         @app.command(rich_help_panel="Strategies")
         def {func_name}(
             ctx: typer.Context,
+            clusters: Optional[Union[List[str], Literal["*"]]] = typer.Option(
+                None, 
+                "--clusters", 
+                "-c", 
+                help="List of clusters to run on. By default, will run on the current cluster.", 
+                rich_help_panel="Kubernetes Settings"
+            ),
+            namespaces: Optional[Union[List[str], Literal["*"]]] = typer.Option(
+                None, 
+                "--namespaces", 
+                "-n", 
+                help="List of clusters to run on. By default, will run on the current cluster.", 
+                rich_help_panel="Kubernetes Settings"
+            ),
             prometheus_url: Optional[str] = typer.Option(
                 None,
                 "--prometheus-url",
                 "-p",
                 help="Prometheus URL. If not provided, will attempt to find it in kubernetes cluster",
-                rich_help_panel="Global Settings",
+                rich_help_panel="Prometheus Settings",
             ),
-            format: str = typer.Option("table", "--formatter", "-f", help="Output formatter", rich_help_panel="Global Settings"),
+            prometheus_auth_header: Optional[str] = typer.Option(
+                None,
+                "--prometheus-auth-header",
+                help="Prometheus authentication header.",
+                rich_help_panel="Prometheus Settings",
+            ),
+            prometheus_ssl_enabled: bool = typer.Option(
+                False,
+                "--prometheus-ssl-enabled",
+                help="Enable SSL for Prometheus requests.",
+                rich_help_panel="Prometheus Settings",
+            ),
+            format: str = typer.Option("table", "--formatter", "-f", help="Output formatter", rich_help_panel="Logging Settings"),
             verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
             quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
             {strategy_settings},
@@ -56,7 +82,11 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
             '''Run KRR using the `{func_name}` strategy'''
 
             config = Config(
+                clusters=clusters,
+                namespaces=namespaces,
                 prometheus_url=prometheus_url,
+                prometheus_auth_header=prometheus_auth_header,
+                prometheus_ssl_enabled=prometheus_ssl_enabled,
                 format=format,
                 verbose=verbose,
                 quiet=quiet,
@@ -84,9 +114,11 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
             "Config": Config,
             "List": List,
             "Optional": Optional,
+            "Union": Union,
+            "Literal": Literal,
             "asyncio": asyncio,
             "typer": typer,
-        },  # Required imports
+        },  # Required imports, here to make the linter happy (it doesn't know that exec will use them)
         locals(),
     )
 
