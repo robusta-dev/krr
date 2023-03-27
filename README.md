@@ -75,7 +75,7 @@ To get a local copy up and running follow these simple example steps.
 
 _Depending on your operating system, select the appropriate installation method._
 
-#### Linux
+<!-- #### Linux
 
 ```sh
 sudo apt install robusta-krr
@@ -103,7 +103,7 @@ sudo apt install robusta-krr
 
 ```sh
 docker pull robusta/krr
-```
+```` -->
 
 #### Manual
 
@@ -129,7 +129,7 @@ poetry install
 5. Run the tool:
 
 ```sh
-poetry run krr
+poetry run krr --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -138,10 +138,46 @@ poetry run krr
 
 ## Usage
 
-A simple exaple of how to run the "Simple" strategy:
+Straightforward usage, to run the simple strategy:
 
 ```sh
-krr simple
+poetry run krr simple
+```
+
+If you want only specific namespaces (default and ingress-nginx):
+
+```sh
+poetry run krr simple -n default -n ingress-nginx
+```
+
+By default krr will run in the current context. If you want to run it in a different context:
+
+```sh
+poetry run krr simple -c my-cluster-1 -c my-cluster-2
+```
+
+If you want to get the output in JSON format (-q is for quiet mode):
+
+```sh
+poetry run krr simple -q -f json > result.json
+```
+
+If you want to get the output in YAML format:
+
+```sh
+poetry run krr simple -q -f yaml > result.yaml
+```
+
+If you want to see additional debug logs:
+
+```sh
+poetry run krr simple -v
+```
+
+More specific information on Strategy Settings can be found using
+
+```sh
+poetry run krr simple --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
