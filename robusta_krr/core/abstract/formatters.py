@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 if TYPE_CHECKING:
     from robusta_krr.core.models.result import Result
@@ -30,16 +30,24 @@ class BaseFormatter(abc.ABC):
             The formatted result.
         """
 
-    @staticmethod
-    def find(name: str) -> type[BaseFormatter]:
-        """Get a strategy from its name."""
+    @classmethod
+    def get_all(cls) -> dict[str, type[Self]]:
+        """Get all available formatters."""
 
         # NOTE: Load default formatters
         from robusta_krr import formatters as _  # noqa: F401
 
-        formatters = {cls.__display_name__.lower(): cls for cls in BaseFormatter.__subclasses__()}
-        if name.lower() in formatters:
-            return formatters[name.lower()]
+        return {sub_cls.__display_name__.lower(): sub_cls for sub_cls in cls.__subclasses__()}
+
+    @staticmethod
+    def find(name: str) -> type[BaseFormatter]:
+        """Get a strategy from its name."""
+
+        formatters = BaseFormatter.get_all()
+
+        l_name = name.lower()
+        if l_name in formatters:
+            return formatters[l_name]
 
         raise ValueError(f"Unknown formatter name: {name}. Available formatters: {', '.join(formatters)}")
 

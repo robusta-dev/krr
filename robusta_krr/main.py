@@ -3,12 +3,13 @@ from __future__ import annotations
 import asyncio
 import textwrap
 from datetime import datetime
-from typing import List, Optional, Literal, Union
+from typing import List, Literal, Optional, Union
 from uuid import UUID
 
 import typer
 import urllib3
 
+from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
@@ -41,18 +42,18 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
         @app.command(rich_help_panel="Strategies")
         def {func_name}(
             ctx: typer.Context,
-            clusters: Optional[Union[List[str], Literal["*"]]] = typer.Option(
-                None, 
-                "--clusters", 
-                "-c", 
-                help="List of clusters to run on. By default, will run on the current cluster.", 
+            clusters: List[str] = typer.Option(
+                None,
+                "--cluster",
+                "-c",
+                help="List of clusters to run on. By default, will run on the current cluster. Use '*' to run on all clusters.",
                 rich_help_panel="Kubernetes Settings"
             ),
-            namespaces: Optional[Union[List[str], Literal["*"]]] = typer.Option(
-                None, 
-                "--namespaces", 
-                "-n", 
-                help="List of clusters to run on. By default, will run on the current cluster.", 
+            namespaces: List[str] = typer.Option(
+                None,
+                "--namespace",
+                "-n",
+                help="List of namespaces to run on. By default, will run on all namespaces.",
                 rich_help_panel="Kubernetes Settings"
             ),
             prometheus_url: Optional[str] = typer.Option(
@@ -74,7 +75,7 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
                 help="Enable SSL for Prometheus requests.",
                 rich_help_panel="Prometheus Settings",
             ),
-            format: str = typer.Option("table", "--formatter", "-f", help="Output formatter", rich_help_panel="Logging Settings"),
+            format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
             verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
             quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
             {strategy_settings},
@@ -82,8 +83,8 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
             '''Run KubeKraken using the `{func_name}` strategy'''
 
             config = Config(
-                clusters=clusters,
-                namespaces=namespaces,
+                clusters="*" if "*" in clusters else clusters,
+                namespaces="*" if "*" in namespaces else namespaces,
                 prometheus_url=prometheus_url,
                 prometheus_auth_header=prometheus_auth_header,
                 prometheus_ssl_enabled=prometheus_ssl_enabled,
@@ -106,6 +107,7 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
                 f'{field_name}: {__process_type(field_meta.type_)} = typer.Option({field_meta.default!r}, "--{field_name}", help="{field_meta.field_info.description}", rich_help_panel="Strategy Settings")'
                 for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
             ),
+            formatters=", ".join(BaseFormatter.get_all()),
         ),
         globals()
         | {strategy.__name__: strategy for strategy in AnyStrategy.get_all().values()}  # Defined strategies
@@ -118,7 +120,8 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
             "Literal": Literal,
             "asyncio": asyncio,
             "typer": typer,
-        },  # Required imports, here to make the linter happy (it doesn't know that exec will use them)
+            # Required imports, here to make the linter happy (it doesn't know that exec will use them)
+        },
         locals(),
     )
 

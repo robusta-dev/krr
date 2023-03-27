@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-from typing import Literal
 
 from kubernetes import client, config
 from kubernetes.client.models import (
@@ -39,6 +38,7 @@ class ClusterLoader(Configurable):
         """
 
         self.debug(f"Listing scannable objects in {self.cluster}")
+        self.debug(f"Namespaces: {self.config.namespaces}")
 
         try:
             objects_tuple = await asyncio.gather(
@@ -170,9 +170,16 @@ class KubernetesLoader(Configurable):
 
         contexts, current_context = await asyncio.to_thread(config.list_kube_config_contexts)
 
-        if self.config.clusters is None:
+        self.debug(f"Found {len(contexts)} clusters: {', '.join([context['name'] for context in contexts])}")
+        self.debug(f"Current cluster: {current_context['name']}")
+
+        self.debug(f"Configured clusters: {self.config.clusters}")
+
+        # None, empty means current cluster
+        if not self.config.clusters:
             return [current_context["name"]]
 
+        # * means all clusters
         if self.config.clusters == "*":
             return [context["name"] for context in contexts]
 

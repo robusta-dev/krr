@@ -1,6 +1,6 @@
-import pydantic as pd
-
 from typing import Literal
+
+import pydantic as pd
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
@@ -25,6 +25,13 @@ class Config(pd.BaseSettings):
     strategy: str
 
     other_args: list[str] = pd.Field([])
+
+    @pd.validator("namespaces")
+    def validate_namespaces(cls, v: list[str] | Literal["*"]) -> list[str] | Literal["*"]:
+        if v == []:
+            return "*"
+
+        return v
 
     def _parse_other_args(self) -> dict[str, str]:
         args = {}
