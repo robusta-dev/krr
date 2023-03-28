@@ -3,11 +3,11 @@ from decimal import Decimal
 UNITS = {
     "m": Decimal("1e-3"),
     "Ki": Decimal(1024),
-    "Mi": Decimal(1024 ** 2),
-    "Gi": Decimal(1024 ** 3),
-    "Ti": Decimal(1024 ** 4),
-    "Pi": Decimal(1024 ** 5),
-    "Ei": Decimal(1024 ** 6),
+    "Mi": Decimal(1024**2),
+    "Gi": Decimal(1024**3),
+    "Ti": Decimal(1024**4),
+    "Pi": Decimal(1024**5),
+    "Ei": Decimal(1024**6),
     "k": Decimal(1e3),
     "M": Decimal(1e6),
     "G": Decimal(1e9),
@@ -36,6 +36,9 @@ def format(x: Decimal, prescision: int | None = None) -> str:
         exponent: int
         sign, digits, exponent = x.as_tuple()  # type: ignore
         x = Decimal((sign, list(digits[:prescision]) + [0] * (len(digits) - prescision), exponent))
+
+    if x == 0:
+        return "0"
 
     for unit, multiplier in reversed(UNITS.items()):
         if x % multiplier == 0:
