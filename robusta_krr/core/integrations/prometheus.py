@@ -146,4 +146,9 @@ class PrometheusLoader(Configurable):
         if result == []:
             return {pod: [] for pod in object.pods}
 
-        return {pod: [Decimal(value) for _, value in result[i][0]["values"]] for i, pod in enumerate(object.pods)}
+        pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}
+        return {
+            pod: [Decimal(value) for _, value in pod_result[0]["values"]]
+            for pod, pod_result in pod_results.items()
+            if pod_result != []
+        }
