@@ -37,10 +37,4 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if len(data_) == 0:
             return Decimal.from_float(float("nan"))
 
-        min_val, max_val = min(data_), max(data_)
-        # If the min and max are the same, we can't calculate a percentile
-        # Should'n happen on practice, but just in case
-        if min_val == max_val:
-            return min_val
-
-        return min_val + (max_val - min_val) * percentile / 100
+        return max(data_) * percentile / 100
