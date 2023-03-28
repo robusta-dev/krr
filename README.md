@@ -17,18 +17,16 @@
   <p align="center">
     Prometheus-based Kubernetes Resource Recommendations
     <br />
-    <a href="https://github.com/robusta/robusta-krr"><strong>Explore the docs »</strong></a>
+    <a href="#getting-started"><strong>Usage docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/robusta/robusta-krr">View Demo</a>
-    ·
     <a href="https://github.com/robusta/robusta-krr/issues">Report Bug</a>
     ·
     <a href="https://github.com/robusta/robusta-krr/issues">Request Feature</a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
-<details>
+<!-- <details>
   <summary>Table of Contents</summary>
   <ol>
     <li>
@@ -51,7 +49,7 @@
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
-</details>
+</details> -->
 <!-- ABOUT THE PROJECT -->
 
 ## About The Project
@@ -107,26 +105,27 @@ docker pull robusta/krr
 
 #### Manual
 
-1. Make sure you have [Python 3.11](https://www.python.org/downloads/) installed.
+1. Make sure you have [Python 3.11](https://www.python.org/downloads/) installed
 2. Clone the repo:
 
 ```sh
 git clone https://github.com/robusta-dev/robusta-krr
 ```
 
-3. Install poetry (the package manager):
+3. Navigate to the project root directory (`cd ./robusta-krr`)
+4. Install poetry (the package manager):
 
 ```sh
 pip install poetry
 ```
 
-4. Install the dependencies:
+5. Install the dependencies:
 
 ```sh
 poetry install
 ```
 
-5. Run the tool:
+6. Run the tool:
 
 ```sh
 poetry run krr --help
@@ -181,6 +180,61 @@ poetry run krr simple --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- BUILDING -->
+
+## Building
+
+_We are using pyinstaller to build the binary._
+
+1. Install the project manually (see above)
+2. Navigate to the project root directory
+3. Install dev dependencies:
+
+```sh
+poetry install --group dev
+```
+
+4. Build the binary:
+
+```sh
+poetry run pyinstaller krr.py
+```
+
+5. The binary will be located in the `dist` directory. Test that it works:
+
+```sh
+cd ./dist/krr
+./krr --help
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- TESTING -->
+
+## Testing
+
+_We are using pytest to run the tests._
+
+1. Install the project manually (see above)
+2. Navigate to the project root directory
+3. Install dev dependencies:
+
+```sh
+poetry install --group dev
+```
+
+4. Install robusta_krr as editable dependency:
+
+```sh
+pip install -e .
+```
+
+5. Run the tests:
+
+```sh
+poetry run pytest
+```
 
 <!-- CONTRIBUTING -->
 
