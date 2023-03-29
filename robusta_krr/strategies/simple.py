@@ -35,6 +35,6 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     def _calculate_percentile(self, data: dict[str, list[Decimal]], percentile: Decimal) -> Decimal:
         data_ = [value for values in data.values() for value in values]
         if len(data_) == 0:
-            return Decimal.from_float(float("nan"))
+            return Decimal("NaN")
 
         return max(data_) * percentile / 100

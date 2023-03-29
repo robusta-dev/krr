@@ -54,8 +54,11 @@ class Runner(Configurable):
             return Decimal(0)
 
     def _round_value(self, value: Decimal | None, resource: ResourceType) -> Decimal | None:
-        if value is None or value.is_nan():
+        if value is None:
             return None
+
+        if value.is_nan():
+            return value
 
         if resource == ResourceType.CPU:
             # NOTE: We use 10**3 as the minimal value for CPU is 1m
