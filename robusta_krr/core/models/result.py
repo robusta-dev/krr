@@ -33,12 +33,12 @@ class Severity(str, enum.Enum):
         if current is None or recommended is None or isinstance(recommended, str) or isinstance(current, str):
             return cls.OK
 
-        diff = abs((current - recommended) / recommended)
+        diff = (current - recommended) / recommended
 
-        if diff > 0.5:
-            return cls.WARNING
-        elif diff > 1:
+        if diff > 1.0 or diff < -0.5:
             return cls.CRITICAL
+        elif diff > 0.5 or diff < -0.25:
+            return cls.WARNING
         else:
             return cls.OK
 
