@@ -46,18 +46,30 @@ class Runner(Configurable):
         self.console.print(formatted)
 
     @staticmethod
-    def _round_value(value: Decimal | None) -> Decimal | None:
+    def _round_value(value: Decimal | None, prec: int = 4, minimal: Decimal = Decimal(0)) -> Decimal | None:
         if value is None or value.is_nan():
             return None
 
-        return Decimal(math.ceil(value * 1000)) / 1000
+        prec_power = 10 ** (prec - 1)
+        return max(Decimal(math.ceil(value * prec_power)) / prec_power, minimal)
 
-    @staticmethod
-    def _format_result(result: RunResult) -> RunResult:
+    def __get_resource_minimal(self, resource: ResourceType) -> Decimal:
+        if resource == ResourceType.CPU:
+            return Decimal(0.001) * self.config.cpu_min_value
+        elif resource == ResourceType.Memory:
+            return Decimal(1000) * self.config.memory_min_value
+        else:
+            return Decimal(0)
+
+    def _format_result(self, result: RunResult) -> RunResult:
         return {
             resource: ResourceRecommendation(
-                request=Runner._round_value(recommendation.request),
-                limit=Runner._round_value(recommendation.limit),
+                request=Runner._round_value(
+                    recommendation.request, self.config.precision, self.__get_resource_minimal(resource)
+                ),
+                limit=Runner._round_value(
+                    recommendation.limit, self.config.precision, self.__get_resource_minimal(resource)
+                ),
             )
             for resource, recommendation in result.items()
         }
