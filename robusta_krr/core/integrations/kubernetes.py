@@ -52,11 +52,11 @@ class ClusterLoader(Configurable):
             self.debug_exception()
             return []
 
-        return [
-            obj
-            for obj in itertools.chain(*objects_tuple)
-            if self.config.namespaces == "*" or obj.namespace in self.config.namespaces
-        ]
+        if self.config.namespaces == "*":
+            # NOTE: We are not scanning kube-system namespace by default
+            return [obj for obj in itertools.chain(*objects_tuple) if obj.namespace != "kube-system"]
+        else:
+            return [obj for obj in itertools.chain(*objects_tuple) if obj.namespace in self.config.namespaces]
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
