@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import itertools
-from decimal import Decimal
 
 from rich.table import Table
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr.core.models.allocations import RecommendationValue
 from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.utils import resource_units
 
@@ -20,10 +20,10 @@ class TableFormatter(BaseFormatter):
 
     __display_name__ = "table"
 
-    def _format_united_decimal(self, value: Decimal | None, prescision: int | None = None) -> str:
+    def _format_united_decimal(self, value: RecommendationValue, prescision: int | None = None) -> str:
         if value is None:
             return NONE_LITERAL
-        elif value.is_nan():
+        elif isinstance(value, str):
             return NAN_LITERAL
         else:
             return resource_units.format(value, prescision=prescision)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from decimal import Decimal
-from typing import Self
+from typing import Literal, Self
 
 import pydantic as pd
 from kubernetes.client.models import V1Container
@@ -20,15 +20,32 @@ class ResourceType(str, enum.Enum):
     Memory = "memory"
 
 
+RecommendationValue = Decimal | Literal["?"] | None
+
+
 class ResourceAllocations(pd.BaseModel):
-    requests: dict[ResourceType, Decimal | None]
-    limits: dict[ResourceType, Decimal | None]
+    requests: dict[ResourceType, RecommendationValue]
+    limits: dict[ResourceType, RecommendationValue]
+
+    @staticmethod
+    def __parse_resource_value(value: Decimal | str | None) -> RecommendationValue:
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            return resource_units.parse(value)
+
+        if value.is_nan():
+            return "?"
+
+        return value
 
     @pd.validator("requests", "limits", pre=True)
-    def validate_requests(cls, value: dict[ResourceType, str | Decimal | None]) -> dict[ResourceType, Decimal | None]:
+    def validate_requests(
+        cls, value: dict[ResourceType, Decimal | str | None]
+    ) -> dict[ResourceType, RecommendationValue]:
         return {
-            resource_type: resource_units.parse(resource_value) if isinstance(resource_value, str) else resource_value
-            for resource_type, resource_value in value.items()
+            resource_type: cls.__parse_resource_value(resource_value) for resource_type, resource_value in value.items()
         }
 
     @classmethod
