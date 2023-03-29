@@ -6,7 +6,7 @@ from rich.table import Table
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.models.allocations import RecommendationValue
-from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
+from robusta_krr.core.models.result import ResourceScan, ResourceType, Result, Severity
 from robusta_krr.utils import resource_units
 
 NONE_LITERAL = "none"
@@ -32,10 +32,14 @@ class TableFormatter(BaseFormatter):
         allocated = getattr(item.object.allocations, selector)[resource]
         recommended = getattr(item.recommended, selector)[resource]
 
+        severity = Severity.calculate(allocated, recommended)
+
         return (
-            self._format_united_decimal(allocated)
+            f"[{severity.color}]"
+            + self._format_united_decimal(allocated)
             + " -> "
             + self._format_united_decimal(recommended, prescision=PRESCISION)
+            + f"[/{severity.color}]"
         )
 
     def format(self, result: Result) -> Table:
@@ -57,8 +61,8 @@ class TableFormatter(BaseFormatter):
         table.add_column("Type", style="cyan")
         table.add_column("Container", style="cyan")
         for resource in ResourceType:
-            table.add_column(f"{resource.name} Requests", style="green")
-            table.add_column(f"{resource.name} Limits", style="green")
+            table.add_column(f"{resource.name} Requests")
+            table.add_column(f"{resource.name} Limits")
 
         for _, group in itertools.groupby(
             enumerate(result.scans), key=lambda x: (x[1].object.cluster, x[1].object.namespace, x[1].object.name)
@@ -70,7 +74,7 @@ class TableFormatter(BaseFormatter):
                 full_info_row = j == 0
 
                 table.add_row(
-                    str(i),
+                    f"[{item.severity.color}]{i + 1}.[/{item.severity.color}]",
                     item.object.cluster if full_info_row else "",
                     item.object.namespace if full_info_row else "",
                     item.object.name if full_info_row else "",

@@ -1,19 +1,73 @@
 from __future__ import annotations
 
+import enum
 import itertools
-from decimal import Decimal
+from functools import total_ordering
 from typing import Any
 
 import pydantic as pd
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
-from robusta_krr.core.models.allocations import ResourceAllocations, ResourceType
+from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
+
+
+@total_ordering
+class Severity(str, enum.Enum):
+    """The severity of the scan."""
+
+    OK = "OK"
+    WARNING = "WARNING"
+    CRITICAL = "CRITICAL"
+
+    @property
+    def color(self) -> str:
+        return {
+            self.OK: "gray",
+            self.WARNING: "yellow",
+            self.CRITICAL: "red",
+        }[self]
+
+    @classmethod
+    def calculate(cls, current: RecommendationValue, recommended: RecommendationValue) -> Severity:
+        if current is None or recommended is None or isinstance(recommended, str) or isinstance(current, str):
+            return cls.OK
+
+        diff = abs((current - recommended) / recommended)
+
+        if diff > 0.5:
+            return cls.WARNING
+        elif diff > 1:
+            return cls.CRITICAL
+        else:
+            return cls.OK
+
+    def __lt__(self, other: str) -> bool:
+        if not isinstance(other, Severity):
+            return super().__lt__(other)
+
+        order = [self.OK, self.WARNING, self.CRITICAL]
+        return order.index(self) < order.index(other)
 
 
 class ResourceScan(pd.BaseModel):
     object: K8sObjectData
     recommended: ResourceAllocations
+    severity: Severity = None  # type: ignore
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        severities = [Severity.OK]
+
+        for resource_type in ResourceType:
+            for selector in ["requests", "limits"]:
+                current = getattr(self.object.allocations, selector).get(resource_type)
+                recommended = getattr(self.recommended, selector).get(resource_type)
+
+                severities.append(Severity.calculate(current, recommended))
+
+        self.severity = max(severities)
 
 
 class Result(pd.BaseModel):
@@ -39,7 +93,7 @@ class Result(pd.BaseModel):
         return _formatter.format(self)
 
     @staticmethod
-    def __percentage_difference(current: Decimal | None, recommended: Decimal | None) -> float:
+    def __percentage_difference(current: RecommendationValue, recommended: RecommendationValue) -> float:
         """Get the percentage difference between two numbers.
 
         Args:
