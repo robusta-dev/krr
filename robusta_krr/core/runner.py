@@ -45,31 +45,38 @@ class Runner(Configurable):
         self.echo("\n", no_prefix=True)
         self.console.print(formatted)
 
-    @staticmethod
-    def _round_value(value: Decimal | None, prec: int = 4, minimal: Decimal = Decimal(0)) -> Decimal | None:
+    def __get_resource_minimal(self, resource: ResourceType) -> Decimal:
+        if resource == ResourceType.CPU:
+            return Decimal(1 / 1000) * self.config.cpu_min_value
+        elif resource == ResourceType.Memory:
+            return Decimal(1_000_000) * self.config.memory_min_value
+        else:
+            return Decimal(0)
+
+    def _round_value(self, value: Decimal | None, resource: ResourceType) -> Decimal | None:
         if value is None or value.is_nan():
             return None
 
-        prec_power = 10 ** (prec - 1)
-        return max(Decimal(math.ceil(value * prec_power)) / prec_power, minimal)
-
-    def __get_resource_minimal(self, resource: ResourceType) -> Decimal:
         if resource == ResourceType.CPU:
-            return Decimal(0.001) * self.config.cpu_min_value
+            # NOTE: We use 10**3 as the minimal value for CPU is 1m
+            prec_power = Decimal(10**3)
         elif resource == ResourceType.Memory:
-            return Decimal(1000) * self.config.memory_min_value
+            # NOTE: We use 10**6 as the minimal value for memory is 1M
+            prec_power = 1 / Decimal(10**6)
         else:
-            return Decimal(0)
+            # NOTE: We use 1 as the minimal value for other resources
+            prec_power = Decimal(1)
+
+        rounded = Decimal(math.ceil(value * prec_power)) / prec_power
+
+        minimal = self.__get_resource_minimal(resource)
+        return max(rounded, minimal)
 
     def _format_result(self, result: RunResult) -> RunResult:
         return {
             resource: ResourceRecommendation(
-                request=Runner._round_value(
-                    recommendation.request, self.config.precision, self.__get_resource_minimal(resource)
-                ),
-                limit=Runner._round_value(
-                    recommendation.limit, self.config.precision, self.__get_resource_minimal(resource)
-                ),
+                request=self._round_value(recommendation.request, resource),
+                limit=self._round_value(recommendation.limit, resource),
             )
             for resource, recommendation in result.items()
         }

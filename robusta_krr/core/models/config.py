@@ -17,9 +17,8 @@ class Config(pd.BaseSettings):
     inside_cluster: bool = pd.Field(False)
 
     # Value settings
-    cpu_min_value: int = pd.Field(5, ge=1)  # in millicores
-    memory_min_value: int = pd.Field(20_000, ge=1)  # in kilobytes
-    precision: int = pd.Field(5, ge=1)
+    cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
+    memory_min_value: int = pd.Field(0, ge=0)  # in megabytes
 
     # Prometheus Settings
     prometheus_url: str | None = pd.Field(None)
