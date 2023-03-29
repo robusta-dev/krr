@@ -10,6 +10,7 @@ from prometheus_api_client import PrometheusConnect, Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, HTTPError
 
+from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceType
@@ -111,7 +112,7 @@ class PrometheusLoader(Configurable):
         period: datetime.timedelta,
         *,
         timeframe: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> dict[str, list[Decimal]]:
+    ) -> ResourceHistoryData:
         self.debug(f"Gathering data for {object} and {resource}")
 
         if resource == ResourceType.CPU:

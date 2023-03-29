@@ -26,7 +26,8 @@ class StrategySettings(pd.BaseModel):
 
 
 _StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
-HistoryData = dict[ResourceType, dict[str, list[Decimal]]]
+ResourceHistoryData = dict[str, list[Decimal]]
+HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 
 
