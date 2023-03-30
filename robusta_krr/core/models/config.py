@@ -49,7 +49,7 @@ class Config(pd.BaseSettings):
 
         return args
 
-    def create_strategy(self) -> BaseStrategy:
+    def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
         StrategySettingsType = StrategyType.get_settings_type()
         return StrategyType(StrategySettingsType(**self._parse_other_args()))

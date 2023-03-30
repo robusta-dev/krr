@@ -93,6 +93,7 @@ class Runner(Configurable):
                     object,
                     resource,
                     self._strategy.settings.history_timedelta,
+                    timeframe=self._strategy.settings.timeframe_timedelta,
                 )
                 for resource in ResourceType
             ]
