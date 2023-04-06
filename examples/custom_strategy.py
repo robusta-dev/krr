@@ -17,30 +17,18 @@ from robusta_krr.core.abstract.strategies import (
 
 
 class CustomStrategySettings(StrategySettings):
-    cpu_percentile: Decimal = pd.Field(99, gt=0, description="The percentile to use for the request recommendation.")
-    memory_percentile: Decimal = pd.Field(
-        105, gt=0, description="The percentile to use for the request recommendation."
-    )
+    param_1: Decimal = pd.Field(99, gt=0, description="First example parameter")
+    param_2: Decimal = pd.Field(105_000, gt=0, description="Second example parameter")
 
 
 class CustomStrategy(BaseStrategy[CustomStrategySettings]):
     __display_name__ = "custom"
 
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
-        cpu_usage = self._calculate_percentile(history_data[ResourceType.CPU], self.settings.cpu_percentile)
-        memory_usage = self._calculate_percentile(history_data[ResourceType.Memory], self.settings.memory_percentile)
-
         return {
-            ResourceType.CPU: ResourceRecommendation(request=cpu_usage, limit=None),
-            ResourceType.Memory: ResourceRecommendation(request=memory_usage, limit=memory_usage),
+            ResourceType.CPU: ResourceRecommendation(request=self.settings.param_1, limit=None),
+            ResourceType.Memory: ResourceRecommendation(request=self.settings.param_2, limit=self.settings.param_2),
         }
-
-    def _calculate_percentile(self, data: dict[str, list[Decimal]], percentile: Decimal) -> Decimal:
-        data_ = [value for values in data.values() for value in values]
-        if len(data_) == 0:
-            return Decimal("NaN")
-
-        return max(data_) * percentile / 100
 
 
 # Running this file will register the strategy and make it available to the CLI
