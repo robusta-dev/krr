@@ -13,7 +13,7 @@
   <a href="https://github.com/robusta/robusta-krr">
     <img src="images/logo.png" alt="Logo" width="320" height="320">
   </a>
-  <h3 align="center">Robusta's KubeKraken</h3>
+  <h3 align="center">Robusta's KRR</h3>
   <p align="center">
     Prometheus-based Kubernetes Resource Recommendations
     <br />

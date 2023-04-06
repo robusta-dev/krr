@@ -80,7 +80,7 @@ for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ign
             quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
             {strategy_settings},
         ) -> None:
-            '''Run KubeKraken using the `{func_name}` strategy'''
+            '''Run KRR using the `{func_name}` strategy'''
 
             config = Config(
                 clusters="*" if "*" in clusters else clusters,
