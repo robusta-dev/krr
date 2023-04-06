@@ -1,4 +1,4 @@
-from robusta_krr import app
+from robusta_krr import run
 
 if __name__ == "__main__":
-    app()
+    run()

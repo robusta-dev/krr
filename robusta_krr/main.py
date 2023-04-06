@@ -36,95 +36,98 @@ def __process_type(_T: type) -> str:
         return "str"  # It the type is unknown, just use str and let pydantic handle it
 
 
-for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ignore
-    FUNC_TEMPLATE = textwrap.dedent(
-        """
-        @app.command(rich_help_panel="Strategies")
-        def {func_name}(
-            ctx: typer.Context,
-            clusters: List[str] = typer.Option(
-                None,
-                "--cluster",
-                "-c",
-                help="List of clusters to run on. By default, will run on the current cluster. Use '*' to run on all clusters.",
-                rich_help_panel="Kubernetes Settings"
-            ),
-            namespaces: List[str] = typer.Option(
-                None,
-                "--namespace",
-                "-n",
-                help="List of namespaces to run on. By default, will run on all namespaces.",
-                rich_help_panel="Kubernetes Settings"
-            ),
-            prometheus_url: Optional[str] = typer.Option(
-                None,
-                "--prometheus-url",
-                "-p",
-                help="Prometheus URL. If not provided, will attempt to find it in kubernetes cluster",
-                rich_help_panel="Prometheus Settings",
-            ),
-            prometheus_auth_header: Optional[str] = typer.Option(
-                None,
-                "--prometheus-auth-header",
-                help="Prometheus authentication header.",
-                rich_help_panel="Prometheus Settings",
-            ),
-            prometheus_ssl_enabled: bool = typer.Option(
-                False,
-                "--prometheus-ssl-enabled",
-                help="Enable SSL for Prometheus requests.",
-                rich_help_panel="Prometheus Settings",
-            ),
-            format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
-            verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
-            quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
-            {strategy_settings},
-        ) -> None:
-            '''Run KRR using the `{func_name}` strategy'''
+def run() -> None:
+    for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ignore
+        FUNC_TEMPLATE = textwrap.dedent(
+            """
+            @app.command(rich_help_panel="Strategies")
+            def {func_name}(
+                ctx: typer.Context,
+                clusters: List[str] = typer.Option(
+                    None,
+                    "--cluster",
+                    "-c",
+                    help="List of clusters to run on. By default, will run on the current cluster. Use '*' to run on all clusters.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
+                namespaces: List[str] = typer.Option(
+                    None,
+                    "--namespace",
+                    "-n",
+                    help="List of namespaces to run on. By default, will run on all namespaces.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
+                prometheus_url: Optional[str] = typer.Option(
+                    None,
+                    "--prometheus-url",
+                    "-p",
+                    help="Prometheus URL. If not provided, will attempt to find it in kubernetes cluster",
+                    rich_help_panel="Prometheus Settings",
+                ),
+                prometheus_auth_header: Optional[str] = typer.Option(
+                    None,
+                    "--prometheus-auth-header",
+                    help="Prometheus authentication header.",
+                    rich_help_panel="Prometheus Settings",
+                ),
+                prometheus_ssl_enabled: bool = typer.Option(
+                    False,
+                    "--prometheus-ssl-enabled",
+                    help="Enable SSL for Prometheus requests.",
+                    rich_help_panel="Prometheus Settings",
+                ),
+                format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
+                verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
+                quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
+                {strategy_settings},
+            ) -> None:
+                '''Run KRR using the `{func_name}` strategy'''
 
-            config = Config(
-                clusters="*" if "*" in clusters else clusters,
-                namespaces="*" if "*" in namespaces else namespaces,
-                prometheus_url=prometheus_url,
-                prometheus_auth_header=prometheus_auth_header,
-                prometheus_ssl_enabled=prometheus_ssl_enabled,
-                format=format,
-                verbose=verbose,
-                quiet=quiet,
-                strategy="{func_name}",
-                other_args=ctx.args,
-            )
-            runner = Runner(config)
-            asyncio.run(runner.run())
-        """
-    )
+                config = Config(
+                    clusters="*" if "*" in clusters else clusters,
+                    namespaces="*" if "*" in namespaces else namespaces,
+                    prometheus_url=prometheus_url,
+                    prometheus_auth_header=prometheus_auth_header,
+                    prometheus_ssl_enabled=prometheus_ssl_enabled,
+                    format=format,
+                    verbose=verbose,
+                    quiet=quiet,
+                    strategy="{func_name}",
+                    other_args=ctx.args,
+                )
+                runner = Runner(config)
+                asyncio.run(runner.run())
+            """
+        )
 
-    exec(
-        FUNC_TEMPLATE.format(
-            func_name=strategy_name,
-            strategy_name=strategy_type.__name__,
-            strategy_settings=",\n".join(
-                f'{field_name}: {__process_type(field_meta.type_)} = typer.Option({field_meta.default!r}, "--{field_name}", help="{field_meta.field_info.description}", rich_help_panel="Strategy Settings")'
-                for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
+        exec(
+            FUNC_TEMPLATE.format(
+                func_name=strategy_name,
+                strategy_name=strategy_type.__name__,
+                strategy_settings=",\n".join(
+                    f'{field_name}: {__process_type(field_meta.type_)} = typer.Option({field_meta.default!r}, "--{field_name}", help="{field_meta.field_info.description}", rich_help_panel="Strategy Settings")'
+                    for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
+                ),
+                formatters=", ".join(BaseFormatter.get_all()),
             ),
-            formatters=", ".join(BaseFormatter.get_all()),
-        ),
-        globals()
-        | {strategy.__name__: strategy for strategy in AnyStrategy.get_all().values()}  # Defined strategies
-        | {
-            "Runner": Runner,
-            "Config": Config,
-            "List": List,
-            "Optional": Optional,
-            "Union": Union,
-            "Literal": Literal,
-            "asyncio": asyncio,
-            "typer": typer,
-            # Required imports, here to make the linter happy (it doesn't know that exec will use them)
-        },
-        locals(),
-    )
+            globals()
+            | {strategy.__name__: strategy for strategy in AnyStrategy.get_all().values()}  # Defined strategies
+            | {
+                "Runner": Runner,
+                "Config": Config,
+                "List": List,
+                "Optional": Optional,
+                "Union": Union,
+                "Literal": Literal,
+                "asyncio": asyncio,
+                "typer": typer,
+                # Required imports, here to make the linter happy (it doesn't know that exec will use them)
+            },
+            locals(),
+        )
+
+    app()
 
 
 if __name__ == "__main__":
-    app()
+    run()
