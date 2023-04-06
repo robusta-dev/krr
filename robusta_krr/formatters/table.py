@@ -53,7 +53,7 @@ class TableFormatter(BaseFormatter):
 
         table = Table(show_header=True, header_style="bold magenta", title=f"Scan result ({result.score} points)")
 
-        table.add_column("Number", justify="right", style="dim", no_wrap=True)
+        table.add_column("Number", justify="right", no_wrap=True)
         table.add_column("Cluster", style="cyan")
         table.add_column("Namespace", style="cyan")
         table.add_column("Name", style="cyan")

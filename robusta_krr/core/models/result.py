@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import enum
 import itertools
-from functools import total_ordering
 from typing import Any
 
 import pydantic as pd
@@ -12,10 +11,11 @@ from robusta_krr.core.models.allocations import RecommendationValue, ResourceAll
 from robusta_krr.core.models.objects import K8sObjectData
 
 
-@total_ordering
-class Severity(str, enum.Enum):
+class Severity(enum.StrEnum):
     """The severity of the scan."""
 
+    UNKNOWN = "UNKNOWN"
+    GOOD = "GOOD"
     OK = "OK"
     WARNING = "WARNING"
     CRITICAL = "CRITICAL"
@@ -23,6 +23,8 @@ class Severity(str, enum.Enum):
     @property
     def color(self) -> str:
         return {
+            self.UNKNOWN: "dim",
+            self.GOOD: "green",
             self.OK: "gray",
             self.WARNING: "yellow",
             self.CRITICAL: "red",
@@ -30,8 +32,13 @@ class Severity(str, enum.Enum):
 
     @classmethod
     def calculate(cls, current: RecommendationValue, recommended: RecommendationValue) -> Severity:
-        if current is None or recommended is None or isinstance(recommended, str) or isinstance(current, str):
+        if isinstance(recommended, str) or isinstance(current, str):
+            return cls.UNKNOWN
+
+        if current is None and recommended is None:
             return cls.OK
+        if current is None or recommended is None:
+            return cls.WARNING
 
         diff = (current - recommended) / recommended
 
@@ -40,14 +47,7 @@ class Severity(str, enum.Enum):
         elif diff > 0.5 or diff < -0.25:
             return cls.WARNING
         else:
-            return cls.OK
-
-    def __lt__(self, other: str) -> bool:
-        if not isinstance(other, Severity):
-            return super().__lt__(other)
-
-        order = [self.OK, self.WARNING, self.CRITICAL]
-        return order.index(self) < order.index(other)
+            return cls.GOOD
 
 
 class ResourceScan(pd.BaseModel):
@@ -58,7 +58,7 @@ class ResourceScan(pd.BaseModel):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        severities = [Severity.OK]
+        severities = [Severity.UNKNOWN]
 
         for resource_type in ResourceType:
             for selector in ["requests", "limits"]:
@@ -67,7 +67,10 @@ class ResourceScan(pd.BaseModel):
 
                 severities.append(Severity.calculate(current, recommended))
 
-        self.severity = max(severities)
+        for severity in [Severity.CRITICAL, Severity.WARNING, Severity.OK, Severity.GOOD, Severity.UNKNOWN]:
+            if severity in severities:
+                self.severity = severity
+                break
 
 
 class Result(pd.BaseModel):
