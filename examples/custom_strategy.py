@@ -4,25 +4,19 @@ from decimal import Decimal
 
 import pydantic as pd
 
-from robusta_krr import run
-from robusta_krr.core.abstract.strategies import (
-    BaseStrategy,
-    HistoryData,
-    K8sObjectData,
-    ResourceRecommendation,
-    ResourceType,
-    RunResult,
-    StrategySettings,
-)
+import robusta_krr
+from robusta_krr.api.models import HistoryData, K8sObjectData, ResourceRecommendation, ResourceType, RunResult
+from robusta_krr.api.strategies import BaseStrategy, StrategySettings
 
 
+# Providing description to the settings will make it available in the CLI help
 class CustomStrategySettings(StrategySettings):
     param_1: Decimal = pd.Field(99, gt=0, description="First example parameter")
     param_2: Decimal = pd.Field(105_000, gt=0, description="Second example parameter")
 
 
 class CustomStrategy(BaseStrategy[CustomStrategySettings]):
-    __display_name__ = "custom"
+    __display_name__ = "my_strategy"
 
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         return {
@@ -32,5 +26,6 @@ class CustomStrategy(BaseStrategy[CustomStrategySettings]):
 
 
 # Running this file will register the strategy and make it available to the CLI
+# Run it as `python ./custom_strategy.py my_strategy`
 if __name__ == "__main__":
-    run()
+    robusta_krr.run()
