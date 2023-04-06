@@ -1,7 +1,5 @@
-import tomllib
+import robusta_krr
 
 
 def get_version() -> str:
-    with open("pyproject.toml", "rb") as file:
-        pyproject = tomllib.load(file)
-    return pyproject["tool"]["poetry"]["version"]
+    return robusta_krr.__version__
