@@ -56,9 +56,44 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-Robusta's Kubernetes Resource Recommender (KRR) is a tool that helps users to optimize the resource usage of their Kubernetes clusters. It is based on the Prometheus monitoring system and the Kubernetes API. It is designed to be used both as a CLI tool or as a Kubernetes operator. It is also designed to be easily integrated into Robusta UI, so if you are already using it you can easily start using KRR.
+Robusta KRR (Kubernetes Resource Recommender) is an extensible CLI tool designed to help optimize resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus, and applies customizable strategies to calculate CPU and memory requests and limits recommendations. This helps you get the most out of your cluster resources and improve overall efficiency.
 
-This tool is also designed to be easily extensible. It is possible to add additional calculation strategies yourself, if you want to use a different strategy than the ones provided by default.
+### Features
+
+-   Extensible Strategies: Easily create and use your own strategies for calculating resource recommendations.
+-   Custom Formatters: Write custom formatters to present the results in your preferred format.
+-   Prometheus Integration: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
+-   Future Support: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
+
+### Resource Allocation Statistics
+
+On average, Kubernetes clusters have:
+
+-   69% unused CPU
+-   18% unused memory
+-   59% of containers with no CPU limits
+-   49% of containers with no memory limits
+    By utilizing Robusta KRR's recommendations, you can significantly reduce these inefficiencies.
+
+### Metrics Gathering
+
+Robusta KRR uses the following Prometheus queries to gather usage data:
+
+-   CPU Usage:
+
+    ```
+    sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
+    ```
+
+-   Memory Usage:
+
+    ```
+    sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
+    ```
+
+_These queries can be customized to suit your specific needs in the future versions, allowing for even more accurate recommendations._
+
+By using Robusta KRR, you can optimize your Kubernetes cluster resource allocation, ensuring better performance and efficiency. Get started with Robusta KRR today, and unlock the full potential of your cluster.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
