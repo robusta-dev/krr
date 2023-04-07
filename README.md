@@ -92,7 +92,7 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
     sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
     ```
 
-_These queries can be customized to suit your specific needs in the future versions, allowing for even more accurate recommendations._
+[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/robusta-krr/issues/new)
 
 #### Resource Recommendations
 
