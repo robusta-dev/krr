@@ -60,22 +60,24 @@ Robusta KRR (Kubernetes Resource Recommender) is an extensible CLI tool designed
 
 ### Features
 
--   Extensible Strategies: Easily create and use your own strategies for calculating resource recommendations.
--   Custom Formatters: Write custom formatters to present the results in your preferred format.
+-   No Agent Required: Robusta KRR is a CLI tool that runs on your local machine, and does not require any agents to be installed on your cluster.
 -   Prometheus Integration: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
+-   Custom Formatters: Write custom formatters to present the results in your preferred format.
+-   Extensible Strategies: Easily create and use your own strategies for calculating resource recommendations.
 -   Future Support: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### Resource Allocation Statistics
 
-On average, Kubernetes clusters have:
+According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kubernetes/), on average, Kubernetes clusters have:
 
 -   69% unused CPU
 -   18% unused memory
--   59% of containers with no CPU limits
--   49% of containers with no memory limits
-    By utilizing Robusta KRR's recommendations, you can significantly reduce these inefficiencies.
 
-### Metrics Gathering
+By utilizing Robusta KRR's recommendations, you can significantly reduce these inefficiencies.
+
+### How it works
+
+#### Metrics Gathering
 
 Robusta KRR uses the following Prometheus queries to gather usage data:
 
@@ -92,6 +94,21 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
     ```
 
 _These queries can be customized to suit your specific needs in the future versions, allowing for even more accurate recommendations._
+
+#### Resource Recommendations
+
+The default calculation in Robusta KRR uses a simple strategy to determine resource recommendations based on historical usage data. This strategy takes into account the highest resource usage percentiles for both CPU and memory to provide appropriate recommendations.
+
+By default, the strategy uses the following percentiles (but these can be customized in CLI):
+
+-   CPU: 99th percentile
+-   Memory: 105th percentile
+
+These percentiles indicate the resource usage level at which a certain percentage of data points fall below. For example, a 99th percentile CPU usage means that 99% of the CPU usage data points are below this level. The strategy then calculates recommendations based on these percentiles to ensure that most of the historical usage is covered, optimizing resource allocation while avoiding over-provisioning.
+
+#### Creating a Custom Strategy
+
+Look into the `examples` directory for examples on how to create a custom strategy/formatter.
 
 By using Robusta KRR, you can optimize your Kubernetes cluster resource allocation, ensuring better performance and efficiency. Get started with Robusta KRR today, and unlock the full potential of your cluster.
 
@@ -112,7 +129,7 @@ _Depending on your operating system, select the appropriate installation method.
 
 ```sh
 sudo apt install robusta-krr
-```
+````
 
 #### MacOS
 
@@ -134,7 +151,7 @@ sudo apt install robusta-krr
 
 #### Docker
 
-```sh
+`````sh
 docker pull robusta/krr
 ```` -->
 
