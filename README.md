@@ -54,11 +54,68 @@
 
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+![Product Name Screen Shot][product-screenshot]
 
-Robusta's Kubernetes Resource Recommender (KRR) is a tool that helps users to optimize the resource usage of their Kubernetes clusters. It is based on the Prometheus monitoring system and the Kubernetes API. It is designed to be used both as a CLI tool or as a Kubernetes operator. It is also designed to be easily integrated into Robusta UI, so if you are already using it you can easily start using KRR.
+Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
-This tool is also designed to be easily extensible. It is possible to add additional calculation strategies yourself, if you want to use a different strategy than the ones provided by default.
+### Features
+
+-   No Agent Required: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster.
+-   Prometheus Integration: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
+-   Extensible Strategies: Easily create and use your own strategies for calculating resource recommendations.
+-   Future Support: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
+
+### Resource Allocation Statistics
+
+According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kubernetes/), on average, Kubernetes clusters have:
+
+-   69% unused CPU
+-   18% unused memory
+
+By utilizing Robusta KRR's recommendations, you can significantly reduce these inefficiencies.
+
+### How it works
+
+#### Metrics Gathering
+
+Robusta KRR uses the following Prometheus queries to gather usage data:
+
+-   CPU Usage:
+
+    ```
+    sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
+    ```
+
+-   Memory Usage:
+
+    ```
+    sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
+    ```
+
+[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/robusta-krr/issues/new)
+
+#### Resource Recommendations
+
+By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
+
+-   For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
+
+-   For memory, we take the maximum value over the past week and add a 5% buffer.
+
+### Difference with Kubernetes VPA
+
+| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                           |
+| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
+| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
+| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
+| Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
+| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
+| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
+| Reporting 📊                | 🔄 Support in future versions (Robusta can send you report in Slack, UI, etc.)                             | ❌ Not supported                                            |
+| Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
+| Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -77,7 +134,7 @@ _Depending on your operating system, select the appropriate installation method.
 
 ```sh
 sudo apt install robusta-krr
-```
+````
 
 #### MacOS
 
@@ -99,7 +156,7 @@ sudo apt install robusta-krr
 
 #### Docker
 
-```sh
+`````sh
 docker pull robusta/krr
 ```` -->
 
@@ -180,6 +237,12 @@ poetry run krr simple --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CUSTOM -->
+
+## Creating a Custom Strategy/Formatter
+
+Look into the `examples` directory for examples on how to create a custom strategy/formatter.
 
 <!-- BUILDING -->
 
@@ -286,4 +349,4 @@ Project Link: [https://github.com/robusta-dev/robusta-krr](https://github.com/ro
 [license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/othneildrew
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: images/screenshot.jpeg
