@@ -106,8 +106,6 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 Look into the `examples` directory for examples on how to create a custom strategy/formatter.
 
-By using Robusta KRR, you can optimize your Kubernetes cluster resource allocation, ensuring better performance and efficiency. Get started with Robusta KRR today, and unlock the full potential of your cluster.
-
 ### Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
