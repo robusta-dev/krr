@@ -54,7 +54,7 @@
 
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+![Product Name Screen Shot][product-screenshot]
 
 Robusta KRR (Kubernetes Resource Recommender) is an extensible CLI tool designed to help optimize resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus, and applies customizable strategies to calculate CPU and memory requests and limits recommendations. This helps you get the most out of your cluster resources and improve overall efficiency.
 
@@ -321,4 +321,4 @@ Project Link: [https://github.com/robusta-dev/robusta-krr](https://github.com/ro
 [license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/othneildrew
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: images/screenshot.jpeg
