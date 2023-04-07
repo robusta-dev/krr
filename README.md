@@ -97,14 +97,11 @@ _These queries can be customized to suit your specific needs in the future versi
 
 #### Resource Recommendations
 
-The default calculation in Robusta KRR uses a simple strategy to determine resource recommendations based on historical usage data. This strategy takes into account the highest resource usage percentiles for both CPU and memory to provide appropriate recommendations.
+By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
 
-By default, the strategy uses the following percentiles (but these can be customized in CLI):
+-   For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
 
--   CPU: 99th percentile
--   Memory: 105th percentile
-
-These percentiles indicate the resource usage level at which a certain percentage of data points fall below. For example, a 99th percentile CPU usage means that 99% of the CPU usage data points are below this level. The strategy then calculates recommendations based on these percentiles to ensure that most of the historical usage is covered, optimizing resource allocation while avoiding over-provisioning.
+-   For memory, we take the maximum value over the past week and add a 5% buffer.
 
 #### Creating a Custom Strategy
 
