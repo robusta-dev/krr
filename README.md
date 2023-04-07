@@ -112,6 +112,19 @@ Look into the `examples` directory for examples on how to create a custom strate
 
 By using Robusta KRR, you can optimize your Kubernetes cluster resource allocation, ensuring better performance and efficiency. Get started with Robusta KRR today, and unlock the full potential of your cluster.
 
+### Difference with Kubernetes VPA
+
+| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                                    |
+| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                              |
+| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload               |
+| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations          |
+| Extensibility 🔧            | ✅ Supports multiple recommendation strategies, extendable                                                 | ❌ Limited extensibility                                             |
+| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                                     |
+| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                                     |
+| Automatic Rescaling 🔀      | ❌ Manual application of recommendations                                                                   | ✅ Automatic application of recommendations (with possible downtime) |
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
