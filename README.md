@@ -56,13 +56,12 @@
 
 ![Product Name Screen Shot][product-screenshot]
 
-Robusta KRR (Kubernetes Resource Recommender) is an extensible CLI tool designed to help optimize resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus, and applies customizable strategies to calculate CPU and memory requests and limits recommendations. This helps you get the most out of your cluster resources and improve overall efficiency.
+Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
 ### Features
 
--   No Agent Required: Robusta KRR is a CLI tool that runs on your local machine, and does not require any agents to be installed on your cluster.
+-   No Agent Required: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster.
 -   Prometheus Integration: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
--   Custom Formatters: Write custom formatters to present the results in your preferred format.
 -   Extensible Strategies: Easily create and use your own strategies for calculating resource recommendations.
 -   Future Support: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
@@ -111,16 +110,18 @@ By using Robusta KRR, you can optimize your Kubernetes cluster resource allocati
 
 ### Difference with Kubernetes VPA
 
-| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                                    |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                                    |
-| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                              |
-| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload               |
-| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations          |
-| Extensibility 🔧            | ✅ Supports multiple recommendation strategies, extendable                                                 | ❌ Limited extensibility                                             |
-| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                                     |
-| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                                     |
-| Automatic Rescaling 🔀      | ❌ Manual application of recommendations                                                                   | ✅ Automatic application of recommendations (with possible downtime) |
+| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                           |
+| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
+| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
+| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
+| Extensibility 🔧            | ✅ Supports multiple recommendation strategies, extendable                                                 | ❌ Limited extensibility                                    |
+| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
+| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
+| Reporting 📊                | 🔄 Support in future versions (Robusta can send you report in Slack, UI, etc.)                             | ❌ Not supported                                            |
+| Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
+| Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
