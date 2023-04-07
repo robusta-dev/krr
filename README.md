@@ -102,10 +102,6 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 -   For memory, we take the maximum value over the past week and add a 5% buffer.
 
-#### Creating a Custom Strategy
-
-Look into the `examples` directory for examples on how to create a custom strategy/formatter.
-
 ### Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
@@ -241,6 +237,12 @@ poetry run krr simple --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CUSTOM -->
+
+## Creating a Custom Strategy/Formatter
+
+Look into the `examples` directory for examples on how to create a custom strategy/formatter.
 
 <!-- BUILDING -->
 
