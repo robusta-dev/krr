@@ -9,7 +9,7 @@ packages = [{include = "robusta_krr"}]
 
 [tool.black]
 line-length = 120
-target-version = ['py311']
+target-version = ['py39']
 
 [tool.isort]
 line_length = 120
