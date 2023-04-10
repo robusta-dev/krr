@@ -17,7 +17,7 @@ multi_line_output = 3
 include_trailing_comma = true
 
 [tool.poetry.scripts]
-krr = "robusta_krr.main:app"
+krr = "robusta_krr.main:run"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
