@@ -4,6 +4,8 @@ import abc
 import os
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from robusta_krr.utils.display_name import add_display_name
+
 if TYPE_CHECKING:
     from robusta_krr.core.models.result import Result
 
@@ -14,6 +16,7 @@ DEFAULT_FORMATTERS_PATH = os.path.join(os.path.dirname(__file__), "formatters")
 Self = TypeVar("Self", bound="BaseFormatter")
 
 
+@add_display_name(postfix="Formatter")
 class BaseFormatter(abc.ABC):
     """Base class for result formatters."""
 

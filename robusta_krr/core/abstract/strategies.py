@@ -8,6 +8,7 @@ from typing import Generic, Optional, TypeVar, get_args
 import pydantic as pd
 
 from robusta_krr.core.models.result import K8sObjectData, ResourceType
+from robusta_krr.utils.display_name import add_display_name
 
 
 class ResourceRecommendation(pd.BaseModel):
@@ -38,8 +39,10 @@ RunResult = dict[ResourceType, ResourceRecommendation]
 Self = TypeVar("Self", bound="BaseStrategy")
 
 
+@add_display_name(postfix="Strategy")
 class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     __display_name__: str
+
     settings: _StrategySettings
 
     def __init__(self, settings: _StrategySettings):
