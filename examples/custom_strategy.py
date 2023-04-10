@@ -16,8 +16,6 @@ class CustomStrategySettings(StrategySettings):
 
 
 class CustomStrategy(BaseStrategy[CustomStrategySettings]):
-    __display_name__ = "my_strategy"
-
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         return {
             ResourceType.CPU: ResourceRecommendation(request=self.settings.param_1, limit=None),

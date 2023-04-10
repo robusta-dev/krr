@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 
@@ -10,8 +10,8 @@ class Config(pd.BaseSettings):
     quiet: bool = pd.Field(False)
     verbose: bool = pd.Field(False)
 
-    clusters: list[str] | Literal["*"] | None = None
-    namespaces: list[str] | Literal["*"] = pd.Field("*")
+    clusters: Union[list[str], Literal["*"], None] = None
+    namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
 
     # Make this True if you are running KRR inside the cluster
     inside_cluster: bool = pd.Field(False)
@@ -21,8 +21,8 @@ class Config(pd.BaseSettings):
     memory_min_value: int = pd.Field(10, ge=0)  # in megabytes
 
     # Prometheus Settings
-    prometheus_url: str | None = pd.Field(None)
-    prometheus_auth_header: str | None = pd.Field(None)
+    prometheus_url: Optional[str] = pd.Field(None)
+    prometheus_auth_header: Optional[str] = pd.Field(None)
     prometheus_ssl_enabled: bool = pd.Field(False)
 
     # Logging Settings
@@ -32,7 +32,7 @@ class Config(pd.BaseSettings):
     other_args: list[str] = pd.Field([])
 
     @pd.validator("namespaces")
-    def validate_namespaces(cls, v: list[str] | Literal["*"]) -> list[str] | Literal["*"]:
+    def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
             return "*"
 

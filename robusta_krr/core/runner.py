@@ -1,6 +1,7 @@
 import asyncio
 import math
 from decimal import Decimal
+from typing import Optional, Union
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
@@ -17,7 +18,7 @@ class Runner(Configurable):
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self._k8s_loader = KubernetesLoader(self.config)
-        self._prometheus_loaders: dict[str, PrometheusLoader | Exception] = {}
+        self._prometheus_loaders: dict[str, Union[PrometheusLoader, Exception]] = {}
         self._strategy = self.config.create_strategy()
 
     def _get_prometheus_loader(self, cluster: str) -> PrometheusLoader:
@@ -53,7 +54,7 @@ class Runner(Configurable):
         else:
             return Decimal(0)
 
-    def _round_value(self, value: Decimal | None, resource: ResourceType) -> Decimal | None:
+    def _round_value(self, value: Optional[Decimal], resource: ResourceType) -> Optional[Decimal]:
         if value is None:
             return value
 

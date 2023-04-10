@@ -3,16 +3,17 @@ from __future__ import annotations
 import abc
 import datetime
 from decimal import Decimal
-from typing import Generic, Self, TypeVar, get_args
+from typing import Generic, Optional, TypeVar, get_args
 
 import pydantic as pd
 
 from robusta_krr.core.models.result import K8sObjectData, ResourceType
+from robusta_krr.utils.display_name import add_display_name
 
 
 class ResourceRecommendation(pd.BaseModel):
-    request: Decimal | None
-    limit: Decimal | None
+    request: Optional[Decimal]
+    limit: Optional[Decimal]
 
 
 class StrategySettings(pd.BaseModel):
@@ -35,9 +36,13 @@ ResourceHistoryData = dict[str, list[Decimal]]
 HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 
+Self = TypeVar("Self", bound="BaseStrategy")
 
+
+@add_display_name(postfix="Strategy")
 class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     __display_name__: str
+
     settings: _StrategySettings
 
     def __init__(self, settings: _StrategySettings):
@@ -51,7 +56,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         """Run the strategy to calculate the recommendation"""
 
     @classmethod
-    def find(cls, name: str) -> type[Self]:
+    def find(cls: type[Self], name: str) -> type[Self]:
         """Get a strategy from its name."""
 
         strategies = cls.get_all()
@@ -61,7 +66,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         raise ValueError(f"Unknown strategy name: {name}. Available strategies: {', '.join(strategies)}")
 
     @classmethod
-    def get_all(cls) -> dict[str, type[Self]]:
+    def get_all(cls: type[Self]) -> dict[str, type[Self]]:
         # NOTE: Load default formatters
         from robusta_krr import strategies as _  # noqa: F401
 

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 
 UNITS = {
     "m": Decimal("1e-3"),
@@ -25,7 +26,7 @@ def parse(x: str) -> Decimal:
     return Decimal(x)
 
 
-def format(x: Decimal, prescision: int | None = None) -> str:
+def format(x: Decimal, prescision: Optional[int] = None) -> str:
     """Converts an integer to a string with respect of units."""
 
     if prescision is not None:

@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from cachetools import TTLCache
 from kubernetes import client
@@ -13,7 +14,7 @@ class ServiceDiscovery(Configurable):
     SERVICE_CACHE_TTL_SEC = 900
     cache: TTLCache = TTLCache(maxsize=1, ttl=SERVICE_CACHE_TTL_SEC)
 
-    def find_service_url(self, label_selector: str, *, api_client: ApiClient | None = None) -> str | None:
+    def find_service_url(self, label_selector: str, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Get the url of an in-cluster service with a specific label
         """
@@ -36,7 +37,7 @@ class ServiceDiscovery(Configurable):
 
         return None
 
-    def find_url(self, selectors: list[str], *, api_client: ApiClient | None = None) -> str | None:
+    def find_url(self, selectors: list[str], *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Try to autodiscover the url of an in-cluster service
         """

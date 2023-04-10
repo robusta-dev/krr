@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import abc
 import os
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, TypeVar
+
+from robusta_krr.utils.display_name import add_display_name
 
 if TYPE_CHECKING:
     from robusta_krr.core.models.result import Result
@@ -11,6 +13,10 @@ if TYPE_CHECKING:
 DEFAULT_FORMATTERS_PATH = os.path.join(os.path.dirname(__file__), "formatters")
 
 
+Self = TypeVar("Self", bound="BaseFormatter")
+
+
+@add_display_name(postfix="Formatter")
 class BaseFormatter(abc.ABC):
     """Base class for result formatters."""
 
@@ -31,7 +37,7 @@ class BaseFormatter(abc.ABC):
         """
 
     @classmethod
-    def get_all(cls) -> dict[str, type[Self]]:
+    def get_all(cls: type[Self]) -> dict[str, type[Self]]:
         """Get all available formatters."""
 
         # NOTE: Load default formatters

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+from typing import Optional
 
 from rich.table import Table
 
@@ -20,7 +21,7 @@ class TableFormatter(BaseFormatter):
 
     __display_name__ = "table"
 
-    def _format_united_decimal(self, value: RecommendationValue, prescision: int | None = None) -> str:
+    def _format_united_decimal(self, value: RecommendationValue, prescision: Optional[int] = None) -> str:
         if value is None:
             return NONE_LITERAL
         elif isinstance(value, str):

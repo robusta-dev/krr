@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from decimal import Decimal
-from typing import Literal, Self
+from typing import Literal, TypeVar, Union
 
 import pydantic as pd
 from kubernetes.client.models import V1Container
@@ -20,7 +20,9 @@ class ResourceType(str, enum.Enum):
     Memory = "memory"
 
 
-RecommendationValue = Decimal | Literal["?"] | None
+RecommendationValue = Union[Decimal, Literal["?"], None]
+
+Self = TypeVar("Self", bound="ResourceAllocations")
 
 
 class ResourceAllocations(pd.BaseModel):
@@ -49,7 +51,7 @@ class ResourceAllocations(pd.BaseModel):
         }
 
     @classmethod
-    def from_container(cls, container: V1Container) -> Self:
+    def from_container(cls: type[Self], container: V1Container) -> Self:
         """Get the resource allocations from a Kubernetes container.
 
         Args:

@@ -1,4 +1,5 @@
 import abc
+from inspect import getframeinfo, stack
 from typing import Literal
 
 from rich.console import Console
@@ -51,7 +52,14 @@ class Configurable(abc.ABC):
         """
 
         if self.debug_active:
-            self.console.print(self.__add_prefix(message, "[bold green][DEBUG][/bold green]", no_prefix=False))
+            caller = getframeinfo(stack()[1][0])
+            self.console.print(
+                self.__add_prefix(
+                    message + f"\t\t({caller.filename}:{caller.lineno})",
+                    "[bold green][DEBUG][/bold green]",
+                    no_prefix=False,
+                )
+            )
 
     def debug_exception(self) -> None:
         """

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import itertools
-from typing import Any
+from typing import Any, Union
 
 import pydantic as pd
 
@@ -11,7 +11,7 @@ from robusta_krr.core.models.allocations import RecommendationValue, ResourceAll
 from robusta_krr.core.models.objects import K8sObjectData
 
 
-class Severity(enum.StrEnum):
+class Severity(str, enum.Enum):
     """The severity of the scan."""
 
     UNKNOWN = "UNKNOWN"
@@ -81,7 +81,7 @@ class Result(pd.BaseModel):
         super().__init__(*args, **kwargs)
         self.score = self.__calculate_score()
 
-    def format(self, formatter: type[BaseFormatter] | str, **kwargs: Any) -> Any:
+    def format(self, formatter: Union[type[BaseFormatter], str], **kwargs: Any) -> Any:
         """Format the result.
 
         Args:
