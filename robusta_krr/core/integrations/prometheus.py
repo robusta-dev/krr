@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from decimal import Decimal
-from typing import no_type_check
+from typing import Optional, no_type_check
 
 import requests
 from kubernetes import config as k8s_config
@@ -19,7 +19,7 @@ from robusta_krr.utils.service_discovery import ServiceDiscovery
 
 
 class PrometheusDiscovery(ServiceDiscovery):
-    def find_prometheus_url(self, *, api_client: ApiClient | None = None) -> str | None:
+    def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         return super().find_url(
             selectors=[
                 "app=kube-prometheus-stack-prometheus",
@@ -58,7 +58,7 @@ class PrometheusLoader(Configurable):
         self,
         config: Config,
         *,
-        cluster: str | None = None,
+        cluster: Optional[str] = None,
     ) -> None:
         super().__init__(config=config)
 

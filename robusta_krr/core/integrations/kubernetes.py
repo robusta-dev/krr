@@ -1,7 +1,8 @@
 import asyncio
 import itertools
+from typing import Union
 
-from kubernetes import client, config
+from kubernetes import client, config  # type: ignore
 from kubernetes.client.models import (
     V1Container,
     V1DaemonSet,
@@ -69,7 +70,7 @@ class ClusterLoader(Configurable):
         return f"{expression.key} {expression.operator} ({values})"
 
     @staticmethod
-    def _build_selector_query(selector: V1LabelSelector) -> str | None:
+    def _build_selector_query(selector: V1LabelSelector) -> Union[str, None]:
         label_filters = [f"{label[0]}={label[1]}" for label in selector.match_labels.items()]
 
         if selector.match_expressions is not None:
@@ -79,7 +80,7 @@ class ClusterLoader(Configurable):
 
         return ",".join(label_filters)
 
-    async def __list_pods(self, resource: V1Deployment | V1DaemonSet | V1StatefulSet) -> list[str]:
+    async def __list_pods(self, resource: Union[V1Deployment, V1DaemonSet, V1StatefulSet]) -> list[str]:
         selector = self._build_selector_query(resource.spec.selector)
         if selector is None:
             return []
@@ -90,7 +91,7 @@ class ClusterLoader(Configurable):
         return [pod.metadata.name for pod in ret.items]
 
     async def __build_obj(
-        self, item: V1Deployment | V1DaemonSet | V1StatefulSet, container: V1Container
+        self, item: Union[V1Deployment, V1DaemonSet, V1StatefulSet], container: V1Container
     ) -> K8sObjectData:
         return K8sObjectData(
             cluster=self.cluster,
@@ -103,7 +104,9 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_deployments(self) -> list[K8sObjectData]:
+        self.debug(f"Listing deployments in {self.cluster}")
         ret: V1DeploymentList = await asyncio.to_thread(self.apps.list_deployment_for_all_namespaces, watch=False)
+        self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
 
         return await asyncio.gather(
             *[
@@ -114,7 +117,9 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_all_statefulsets(self) -> list[K8sObjectData]:
+        self.debug(f"Listing statefulsets in {self.cluster}")
         ret: V1StatefulSetList = await asyncio.to_thread(self.apps.list_stateful_set_for_all_namespaces, watch=False)
+        self.debug(f"Found {len(ret.items)} statefulsets in {self.cluster}")
 
         return await asyncio.gather(
             *[
@@ -125,7 +130,9 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_all_daemon_set(self) -> list[K8sObjectData]:
+        self.debug(f"Listing daemonsets in {self.cluster}")
         ret: V1DaemonSetList = await asyncio.to_thread(self.apps.list_daemon_set_for_all_namespaces, watch=False)
+        self.debug(f"Found {len(ret.items)} daemonsets in {self.cluster}")
 
         return await asyncio.gather(
             *[
@@ -136,7 +143,9 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
+        self.debug(f"Listing jobs in {self.cluster}")
         ret: V1JobList = await asyncio.to_thread(self.batch.list_job_for_all_namespaces, watch=False)
+        self.debug(f"Found {len(ret.items)} jobs in {self.cluster}")
 
         return await asyncio.gather(
             *[
@@ -149,7 +158,9 @@ class ClusterLoader(Configurable):
     async def _list_pods(self) -> list[K8sObjectData]:
         """For future use, not supported yet."""
 
+        self.debug(f"Listing pods in {self.cluster}")
         ret: V1PodList = await asyncio.to_thread(self.apps.list_pod_for_all_namespaces, watch=False)
+        self.debug(f"Found {len(ret.items)} pods in {self.cluster}")
 
         return await asyncio.gather(
             *[self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pydantic as pd
 
 from robusta_krr.core.models.allocations import ResourceAllocations
@@ -9,7 +11,7 @@ class K8sObjectData(pd.BaseModel):
     container: str
     pods: list[str]
     namespace: str
-    kind: str | None
+    kind: Optional[str]
     allocations: ResourceAllocations
 
     def __str__(self) -> str:
