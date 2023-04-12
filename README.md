@@ -162,7 +162,7 @@ docker pull robusta/krr
 
 #### Manual
 
-1. Make sure you have [Python 3.11](https://www.python.org/downloads/) installed
+1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
 2. Clone the repo:
 
 ```sh
