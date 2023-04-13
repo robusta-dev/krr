@@ -6,6 +6,7 @@ from kubernetes import client
 from kubernetes.client import V1ServiceList
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.models.v1_service import V1Service
+from kubernetes.config.config_exception import ConfigException
 
 from robusta_krr.utils.configurable import Configurable
 

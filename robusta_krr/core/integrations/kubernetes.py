@@ -1,6 +1,6 @@
 import asyncio
 import itertools
-from typing import Union
+from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.models import (
@@ -22,11 +22,11 @@ from robusta_krr.utils.configurable import Configurable
 
 
 class ClusterLoader(Configurable):
-    def __init__(self, cluster: str, *args, **kwargs):
+    def __init__(self, cluster: Optional[str], *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.cluster = cluster
-        self.api_client = config.new_client_from_config(context=cluster)
+        self.api_client = config.new_client_from_config(context=cluster) if cluster is not None else None
         self.apps = client.AppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
@@ -168,16 +168,16 @@ class ClusterLoader(Configurable):
 
 
 class KubernetesLoader(Configurable):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        config.load_kube_config()
-
-    async def list_clusters(self) -> list[str]:
+    async def list_clusters(self) -> Optional[list[str]]:
         """List all clusters.
 
         Returns:
             A list of clusters.
         """
+
+        if self.config.inside_cluster:
+            self.debug("Working inside the cluster")
+            return None
 
         contexts, current_context = await asyncio.to_thread(config.list_kube_config_contexts)
 
@@ -196,13 +196,17 @@ class KubernetesLoader(Configurable):
 
         return [context["name"] for context in contexts if context["name"] in self.config.clusters]
 
-    async def list_scannable_objects(self, clusters: list[str]) -> list[K8sObjectData]:
+    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> list[K8sObjectData]:
         """List all scannable objects.
 
         Returns:
             A list of scannable objects.
         """
 
-        cluster_loaders = [ClusterLoader(cluster=cluster, config=self.config) for cluster in clusters]
+        if clusters is None:
+            cluster_loaders = [ClusterLoader(cluster=None, config=self.config)]
+        else:
+            cluster_loaders = [ClusterLoader(cluster=cluster, config=self.config) for cluster in clusters]
+
         objects = await asyncio.gather(*[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders])
         return list(itertools.chain(*objects))

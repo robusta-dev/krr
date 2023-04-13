@@ -121,7 +121,7 @@ class Runner(Configurable):
 
     async def _collect_result(self) -> Result:
         clusters = await self._k8s_loader.list_clusters()
-        self.debug(f'Using clusters: {", ".join(clusters)}')
+        self.debug(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
         objects = await self._k8s_loader.list_scannable_objects(clusters)
         resource_recommendations = await self._gather_objects_recommendations(objects)
 

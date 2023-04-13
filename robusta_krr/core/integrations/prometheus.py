@@ -67,7 +67,7 @@ class PrometheusLoader(Configurable):
         self.auth_header = self.config.prometheus_auth_header
         self.ssl_enabled = self.config.prometheus_ssl_enabled
 
-        self.api_client = k8s_config.new_client_from_config(context=cluster)
+        self.api_client = k8s_config.new_client_from_config(context=cluster) if cluster is not None else None
         self.prometheus_discovery = PrometheusDiscovery(config=self.config)
 
         self.url = self.config.prometheus_url

@@ -1,9 +1,18 @@
 from typing import Literal, Optional, Union
 
 import pydantic as pd
+from kubernetes import config
+from kubernetes.config.config_exception import ConfigException
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+
+try:
+    config.load_incluster_config()
+    IN_CLUSTER = True
+except ConfigException:
+    config.load_kube_config()
+    IN_CLUSTER = False
 
 
 class Config(pd.BaseSettings):
@@ -12,9 +21,6 @@ class Config(pd.BaseSettings):
 
     clusters: Union[list[str], Literal["*"], None] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
-
-    # Make this True if you are running KRR inside the cluster
-    inside_cluster: bool = pd.Field(False)
 
     # Value settings
     cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
@@ -63,3 +69,7 @@ class Config(pd.BaseSettings):
     def validate_format(cls, v: str) -> str:
         BaseFormatter.find(v)  # NOTE: raises if strategy is not found
         return v
+
+    @property
+    def inside_cluster(self) -> bool:
+        return IN_CLUSTER

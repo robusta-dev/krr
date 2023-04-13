@@ -6,7 +6,7 @@ from robusta_krr.core.models.allocations import ResourceAllocations
 
 
 class K8sObjectData(pd.BaseModel):
-    cluster: str
+    cluster: Optional[str]
     name: str
     container: str
     pods: list[str]
