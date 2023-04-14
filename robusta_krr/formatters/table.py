@@ -7,7 +7,7 @@ from rich.table import Table
 
 from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.models.allocations import RecommendationValue
-from robusta_krr.core.models.result import ResourceScan, ResourceType, Result, Severity
+from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.utils import resource_units
 
 NONE_LITERAL = "none"
@@ -32,14 +32,13 @@ class TableFormatter(BaseFormatter):
     def _format_request_str(self, item: ResourceScan, resource: ResourceType, selector: str) -> str:
         allocated = getattr(item.object.allocations, selector)[resource]
         recommended = getattr(item.recommended, selector)[resource]
-
-        severity = Severity.calculate(allocated, recommended)
+        severity = recommended.severity
 
         return (
             f"[{severity.color}]"
             + self._format_united_decimal(allocated)
             + " -> "
-            + self._format_united_decimal(recommended, prescision=PRESCISION)
+            + self._format_united_decimal(recommended.value, prescision=PRESCISION)
             + f"[/{severity.color}]"
         )
 

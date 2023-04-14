@@ -18,10 +18,10 @@ class Runner(Configurable):
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self._k8s_loader = KubernetesLoader(self.config)
-        self._prometheus_loaders: dict[str, Union[PrometheusLoader, Exception]] = {}
+        self._prometheus_loaders: dict[Optional[str], Union[PrometheusLoader, Exception]] = {}
         self._strategy = self.config.create_strategy()
 
-    def _get_prometheus_loader(self, cluster: str) -> PrometheusLoader:
+    def _get_prometheus_loader(self, cluster: Optional[str]) -> PrometheusLoader:
         if cluster not in self._prometheus_loaders:
             try:
                 self._prometheus_loaders[cluster] = PrometheusLoader(self.config, cluster=cluster)
@@ -127,8 +127,7 @@ class Runner(Configurable):
 
         return Result(
             scans=[
-                ResourceScan(object=obj, recommended=recommended)
-                for obj, recommended in zip(objects, resource_recommendations)
+                ResourceScan.calculate(obj, recommended) for obj, recommended in zip(objects, resource_recommendations)
             ]
         )
 

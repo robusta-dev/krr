@@ -14,7 +14,7 @@ def add_display_name(*, postfix: str) -> Callable[[type[_T]], type[_T]]:
 
                 return owner.__name__
 
-        cls.__display_name__ = DisplayNameProperty()
+        cls.__display_name__ = DisplayNameProperty()  # type: ignore
         return cls
 
     return decorator

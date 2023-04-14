@@ -50,32 +50,49 @@ class Severity(str, enum.Enum):
             return cls.GOOD
 
 
+class Recommendation(pd.BaseModel):
+    value: RecommendationValue
+    severity: Severity
+
+
+class ResourceRecommendation(pd.BaseModel):
+    requests: dict[ResourceType, RecommendationValue]
+    limits: dict[ResourceType, RecommendationValue]
+
+
 class ResourceScan(pd.BaseModel):
     object: K8sObjectData
-    recommended: ResourceAllocations
-    severity: Severity = None  # type: ignore
+    recommended: ResourceRecommendation
+    severity: Severity
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-        severities = [Severity.UNKNOWN]
+    @classmethod
+    def calculate(cls, object: K8sObjectData, recommendation: ResourceAllocations) -> ResourceScan:
+        recommendation_processed = ResourceRecommendation(requests={}, limits={})
 
         for resource_type in ResourceType:
             for selector in ["requests", "limits"]:
-                current = getattr(self.object.allocations, selector).get(resource_type)
-                recommended = getattr(self.recommended, selector).get(resource_type)
+                current = getattr(object.allocations, selector).get(resource_type)
+                recommended = getattr(recommendation, selector).get(resource_type)
 
-                severities.append(Severity.calculate(current, recommended))
+                current_severity = Severity.calculate(current, recommended)
+
+                getattr(recommendation_processed, selector)[resource_type] = Recommendation(
+                    value=recommended, severity=current_severity
+                )
 
         for severity in [Severity.CRITICAL, Severity.WARNING, Severity.OK, Severity.GOOD, Severity.UNKNOWN]:
-            if severity in severities:
-                self.severity = severity
-                break
+            for selector in ["requests", "limits"]:
+                for recommendation_request in getattr(recommendation_processed, selector).values():
+                    if recommendation_request.severity == severity:
+                        return cls(object=object, recommended=recommendation_processed, severity=severity)
+
+        return cls(object=object, recommended=recommendation_processed, severity=Severity.UNKNOWN)
 
 
 class Result(pd.BaseModel):
     scans: list[ResourceScan]
-    score: float = 0.0
+    score: int = 0
+    resources: list[str] = ["cpu", "memory"]
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -109,7 +126,7 @@ class Result(pd.BaseModel):
 
         return 1
 
-    def __calculate_score(self) -> float:
+    def __calculate_score(self) -> int:
         """Get the score of the result.
 
         Returns:
@@ -126,6 +143,8 @@ class Result(pd.BaseModel):
             )
 
         if len(self.scans) == 0:
-            return 0.0
+            return 0
 
-        return max(0, round(100 - total_diff / len(self.scans) / len(ResourceType) / 50, 2))  # 50 is just a constant
+        return int(
+            max(0, round(100 - total_diff / len(self.scans) / len(ResourceType) / 50, 2))
+        )  # 50 is just a constant

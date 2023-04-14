@@ -58,7 +58,7 @@ class Config(pd.BaseSettings):
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
         StrategySettingsType = StrategyType.get_settings_type()
-        return StrategyType(StrategySettingsType(**self._parse_other_args()))
+        return StrategyType(StrategySettingsType(**self._parse_other_args()))  # type: ignore
 
     @pd.validator("strategy")
     def validate_strategy(cls, v: str) -> str:
