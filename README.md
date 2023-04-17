@@ -170,22 +170,16 @@ git clone https://github.com/robusta-dev/robusta-krr
 ```
 
 3. Navigate to the project root directory (`cd ./robusta-krr`)
-4. Install poetry (the package manager):
+4. Install requirements:
 
 ```sh
-pip install poetry
+pip install -r requirements.txt
 ```
 
-5. Install the dependencies:
+5. Run the tool:
 
 ```sh
-poetry install
-```
-
-6. Run the tool:
-
-```sh
-poetry run krr --help
+python krr.py --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -197,43 +191,43 @@ poetry run krr --help
 Straightforward usage, to run the simple strategy:
 
 ```sh
-poetry run krr simple
+python krr.py simple
 ```
 
 If you want only specific namespaces (default and ingress-nginx):
 
 ```sh
-poetry run krr simple -n default -n ingress-nginx
+python krr.py simple -n default -n ingress-nginx
 ```
 
 By default krr will run in the current context. If you want to run it in a different context:
 
 ```sh
-poetry run krr simple -c my-cluster-1 -c my-cluster-2
+python krr.py simple -c my-cluster-1 -c my-cluster-2
 ```
 
 If you want to get the output in JSON format (-q is for quiet mode):
 
 ```sh
-poetry run krr simple -q -f json > result.json
+python krr.py simple -q -f json > result.json
 ```
 
 If you want to get the output in YAML format:
 
 ```sh
-poetry run krr simple -q -f yaml > result.yaml
+python krr.py simple -q -f yaml > result.yaml
 ```
 
 If you want to see additional debug logs:
 
 ```sh
-poetry run krr simple -v
+python krr.py simple -v
 ```
 
 More specific information on Strategy Settings can be found using
 
 ```sh
-poetry run krr simple --help
+python krr.py simple --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -252,19 +246,20 @@ _We are using pyinstaller to build the binary._
 
 1. Install the project manually (see above)
 2. Navigate to the project root directory
-3. Install dev dependencies:
+3. Install poetry (https://python-poetry.org/docs/#installing-with-the-official-installer)
+4. Install requirements with dev dependencies:
 
 ```sh
 poetry install --group dev
 ```
 
-4. Build the binary:
+5. Build the binary:
 
 ```sh
 poetry run pyinstaller krr.py
 ```
 
-5. The binary will be located in the `dist` directory. Test that it works:
+6. The binary will be located in the `dist` directory. Test that it works:
 
 ```sh
 cd ./dist/krr
@@ -281,19 +276,20 @@ _We are using pytest to run the tests._
 
 1. Install the project manually (see above)
 2. Navigate to the project root directory
-3. Install dev dependencies:
+3. Install poetry (https://python-poetry.org/docs/#installing-with-the-official-installer)
+4. Install dev dependencies:
 
 ```sh
 poetry install --group dev
 ```
 
-4. Install robusta_krr as editable dependency:
+5. Install robusta_krr as editable dependency:
 
 ```sh
 pip install -e .
 ```
 
-5. Run the tests:
+6. Run the tests:
 
 ```sh
 poetry run pytest
