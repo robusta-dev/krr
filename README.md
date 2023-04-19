@@ -10,19 +10,19 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/robusta/robusta-krr">
+  <a href="https://github.com/robusta/krr">
     <img src="images/logo.png" alt="Logo" width="320" height="320">
   </a>
-  <h3 align="center">Robusta's KRR</h3>
+  <h3 align="center">Robusta KRR</h3>
   <p align="center">
     Prometheus-based Kubernetes Resource Recommendations
     <br />
     <a href="#getting-started"><strong>Usage docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/robusta/robusta-krr/issues">Report Bug</a>
+    <a href="https://github.com/robusta/krr/issues">Report Bug</a>
     ·
-    <a href="https://github.com/robusta/robusta-krr/issues">Request Feature</a>
+    <a href="https://github.com/robusta/krr/issues">Request Feature</a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
@@ -92,7 +92,7 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
     sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
     ```
 
-[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/robusta-krr/issues/new)
+[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
 
 #### Resource Recommendations
 
@@ -128,9 +128,9 @@ To get a local copy up and running follow these simple example steps.
 
 ### Installation
 
-_Depending on your operating system, select the appropriate installation method._
+<!-- _Depending on your operating system, select the appropriate installation method._
 
-<!-- #### Linux
+#### Linux
 
 ```sh
 sudo apt install robusta-krr
@@ -166,10 +166,10 @@ docker pull robusta/krr
 2. Clone the repo:
 
 ```sh
-git clone https://github.com/robusta-dev/robusta-krr
+git clone https://github.com/robusta-dev/krr
 ```
 
-3. Navigate to the project root directory (`cd ./robusta-krr`)
+3. Navigate to the project root directory (`cd ./krr`)
 4. Install requirements:
 
 ```sh
@@ -326,7 +326,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 If you have any questions, feel free to contact support@robusta.dev
 
-Project Link: [https://github.com/robusta-dev/robusta-krr](https://github.com/robusta-dev/robusta-krr)
+Project Link: [https://github.com/robusta-dev/krr](https://github.com/robusta-dev/krr)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
