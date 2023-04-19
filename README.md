@@ -10,7 +10,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/robusta/krr">
+  <a href="https://github.com/robusta-dev/krr">
     <img src="images/logo.png" alt="Logo" width="320" height="320">
   </a>
   <h3 align="center">Robusta KRR</h3>
@@ -20,9 +20,11 @@
     <a href="#getting-started"><strong>Usage docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/robusta/krr/issues">Report Bug</a>
+    <a href="https://github.com/robusta-dev/krr/issues">Report Bug</a>
     ·
-    <a href="https://github.com/robusta/krr/issues">Request Feature</a>
+    <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
+    .
+    <a href="https://robustacommunity.slack.com/archives/C054QUA4NHE">Slack Channel</a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
