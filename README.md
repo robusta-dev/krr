@@ -123,9 +123,6 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 ### Installation
 
 <!-- _Depending on your operating system, select the appropriate installation method._
@@ -158,9 +155,11 @@ sudo apt install robusta-krr
 
 `````sh
 docker pull robusta/krr
-```` -->
+```` 
 
 #### Manual
+
+-->
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
 2. Clone the repo:
