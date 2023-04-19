@@ -23,7 +23,7 @@
     <a href="https://github.com/robusta-dev/krr/issues">Report Bug</a>
     ·
     <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
-    .
+    ·
     <a href="https://robustacommunity.slack.com/archives/C054QUA4NHE">Slack Channel</a>
   </p>
 </div>
