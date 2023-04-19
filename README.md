@@ -241,7 +241,7 @@ Look into the `examples` directory for examples on how to create a custom strate
 
 ## Building
 
-_We are using pyinstaller to build the binary._
+_We are planning to use pyinstaller to build binaries for distribution. Right now you can build the binaries yourself, but we're not distributing them yet._
 
 1. Install the project manually (see above)
 2. Navigate to the project root directory
@@ -271,7 +271,7 @@ cd ./dist/krr
 
 ## Testing
 
-_We are using pytest to run the tests._
+_We use pytest to run tests._
 
 1. Install the project manually (see above)
 2. Navigate to the project root directory
