@@ -74,7 +74,7 @@ According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kub
 -   69% unused CPU
 -   18% unused memory
 
-By utilizing Robusta KRR's recommendations, you can significantly reduce these inefficiencies.
+By right-sizing your containers with KRR, you can save an average of 69% on cloud costs.
 
 ### How it works
 
