@@ -104,6 +104,12 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 -   For memory, we take the maximum value over the past week and add a 5% buffer.
 
+### Robusta UI integration
+
+You can run KRR scans using [Robusta](https://github.com/robusta-dev/robusta) (starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15)) and analyse them in [Robusta UI](https://platform.robusta.dev/).
+
+![Robusta UI Screen Shot][ui-screenshot]
+
 ### Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
@@ -347,3 +353,4 @@ Project Link: [https://github.com/robusta-dev/krr](https://github.com/robusta-de
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/othneildrew
 [product-screenshot]: images/screenshot.jpeg
+[ui-screenshot]: images/ui_screenshot.jpeg
