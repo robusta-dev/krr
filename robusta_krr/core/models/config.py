@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
 from kubernetes import config
@@ -35,7 +35,7 @@ class Config(pd.BaseSettings):
     format: str
     strategy: str
 
-    other_args: list[str] = pd.Field([])
+    other_args: dict[str, Any]
 
     @pd.validator("namespaces")
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
@@ -44,21 +44,10 @@ class Config(pd.BaseSettings):
 
         return v
 
-    def _parse_other_args(self) -> dict[str, str]:
-        args = {}
-        for arg in self.other_args:
-            if "=" not in arg and not arg.startswith("--"):
-                continue
-
-            key, value = arg.split("=")
-            args[key[2:]] = value
-
-        return args
-
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
         StrategySettingsType = StrategyType.get_settings_type()
-        return StrategyType(StrategySettingsType(**self._parse_other_args()))  # type: ignore
+        return StrategyType(StrategySettingsType(**self.other_args))  # type: ignore
 
     @pd.validator("strategy")
     def validate_strategy(cls, v: str) -> str:
