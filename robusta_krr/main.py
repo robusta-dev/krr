@@ -93,7 +93,7 @@ def run() -> None:
                     verbose=verbose,
                     quiet=quiet,
                     strategy="{func_name}",
-                    other_args=ctx.args,
+                    other_args={strategy_args},
                 )
                 runner = Runner(config)
                 asyncio.run(runner.run())
@@ -108,6 +108,11 @@ def run() -> None:
                     f'{field_name}: {__process_type(field_meta.type_)} = typer.Option({field_meta.default!r}, "--{field_name}", help="{field_meta.field_info.description}", rich_help_panel="Strategy Settings")'
                     for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
                 ),
+                strategy_args="{"
+                + ",\n".join(
+                    f"'{field_name}': {field_name}" for field_name in strategy_type.get_settings_type().__fields__
+                )
+                + "}",
                 formatters=", ".join(BaseFormatter.get_all()),
             ),
             globals()
