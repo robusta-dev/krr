@@ -239,6 +239,17 @@ More specific information on Strategy Settings can be found using
 python krr.py simple --help
 ```
 
+If you face issues with `Prometheus Connectivity`, when Prometheus is exposed as `ClusterIP`, 
+* expose the Prometheus service with Port Forwarding like below:
+```sh
+kubectl port-forward svc/<Prometheus_Service_Name> 9090:9090
+```
+* Run with `-p` flag to connect to custom Prometheus URL:
+```sh
+python krr.py simple -p http://localhost:9090
+```
+
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CUSTOM -->
