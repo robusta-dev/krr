@@ -252,11 +252,32 @@ python krr.py simple -p http://localhost:9090
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- Port-forwarding -->
+
+## Example of using port-forward for Prometheus
+
+If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
+
+For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
+```sh
+kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
+```
+
+Then, open another terminal and run krr in it, giving an explicit prometheus url:
+
+```sh
+python krr.py simple -p http://127.0.0.1:9090
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- CUSTOM -->
 
 ## Creating a Custom Strategy/Formatter
 
 Look into the `examples` directory for examples on how to create a custom strategy/formatter.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- BUILDING -->
 
@@ -314,6 +335,8 @@ pip install -e .
 ```sh
 poetry run pytest
 ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTRIBUTING -->
 
