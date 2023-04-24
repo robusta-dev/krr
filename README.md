@@ -108,14 +108,6 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
 
-### Robusta UI integration
-
-If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
-
-More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
-
-![Robusta UI Screen Shot][ui-screenshot]
-
 ### Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
