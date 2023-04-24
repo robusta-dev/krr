@@ -120,7 +120,7 @@ More features (like seeing graphs, based on which recommendations were made) com
 | Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
 | Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
 | Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
-| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                            | ❌ Not supported                                            |
+| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
@@ -165,7 +165,7 @@ sudo apt install robusta-krr
 
 `````sh
 docker pull robusta/krr
-```` 
+````
 
 #### Manual
 
@@ -215,16 +215,16 @@ By default krr will run in the current context. If you want to run it in a diffe
 python krr.py simple -c my-cluster-1 -c my-cluster-2
 ```
 
-If you want to get the output in JSON format (-q is for quiet mode):
+If you want to get the output in JSON format (--logtostderr is required so no logs go to the result file):
 
 ```sh
-python krr.py simple -q -f json > result.json
+python krr.py simple --logtostderr -f json > result.json
 ```
 
 If you want to get the output in YAML format:
 
 ```sh
-python krr.py simple -q -f yaml > result.yaml
+python krr.py simple --logtostderr -f yaml > result.yaml
 ```
 
 If you want to see additional debug logs:
@@ -248,6 +248,7 @@ python krr.py simple --help
 If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
 
 For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
+
 ```sh
 kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
 ```
