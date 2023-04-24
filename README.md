@@ -104,14 +104,6 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 -   For memory, we take the maximum value over the past week and add a 5% buffer.
 
-### Robusta UI integration
-
-If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
-
-More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
-
-![Robusta UI Screen Shot][ui-screenshot]
-
 ### Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
@@ -126,6 +118,14 @@ More features (like seeing graphs, based on which recommendations were made) com
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
+
+### Robusta UI integration
+
+If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
+
+More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
+
+![Robusta UI Screen Shot][ui-screenshot]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
