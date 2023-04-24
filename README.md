@@ -104,6 +104,10 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 -   For memory, we take the maximum value over the past week and add a 5% buffer.
 
+#### Prometheus connection
+
+Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
+
 ### Robusta UI integration
 
 If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
