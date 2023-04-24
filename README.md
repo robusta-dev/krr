@@ -243,6 +243,23 @@ python krr.py simple --help
 
 <!-- Port-forwarding -->
 
+## Prometheus auto-discovery
+
+By default, KRR will try to auto-discover the running Prometheus by scanning those labels:
+```python
+"app=kube-prometheus-stack-prometheus"
+"app=prometheus,component=server"
+"app=prometheus-server"
+"app=prometheus-operator-prometheus"
+"app=prometheus-msteams"
+"app=rancher-monitoring-prometheus"
+"app=prometheus-prometheus"
+```
+
+If none of those labels result in finding Prometheus, you will get an error and will have to pass the working url explicitly (using the `-p` flag).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Example of using port-forward for Prometheus
 
 If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
