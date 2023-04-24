@@ -104,6 +104,10 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 -   For memory, we take the maximum value over the past week and add a 5% buffer.
 
+#### Prometheus connection
+
+Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
+
 ### Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
@@ -242,6 +246,23 @@ python krr.py simple --help
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- Port-forwarding -->
+
+## Prometheus auto-discovery
+
+By default, KRR will try to auto-discover the running Prometheus by scanning those labels:
+```python
+"app=kube-prometheus-stack-prometheus"
+"app=prometheus,component=server"
+"app=prometheus-server"
+"app=prometheus-operator-prometheus"
+"app=prometheus-msteams"
+"app=rancher-monitoring-prometheus"
+"app=prometheus-prometheus"
+```
+
+If none of those labels result in finding Prometheus, you will get an error and will have to pass the working url explicitly (using the `-p` flag).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Example of using port-forward for Prometheus
 
