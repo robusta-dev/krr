@@ -34,6 +34,7 @@ class Config(pd.BaseSettings):
     # Logging Settings
     format: str
     strategy: str
+    log_to_stderr: bool
 
     other_args: dict[str, Any]
 

@@ -6,8 +6,6 @@ from rich.console import Console
 
 from robusta_krr.core.models.config import Config
 
-console = Console()
-
 
 class Configurable(abc.ABC):
     """
@@ -17,7 +15,7 @@ class Configurable(abc.ABC):
 
     def __init__(self, config: Config) -> None:
         self.config = config
-        self.console = console
+        self.console = Console(stderr=self.config.log_to_stderr)
 
     @property
     def debug_active(self) -> bool:
@@ -30,6 +28,13 @@ class Configurable(abc.ABC):
     @staticmethod
     def __add_prefix(text: str, prefix: str, /, no_prefix: bool) -> str:
         return f"{prefix} {text}" if not no_prefix else text
+
+    def print_result(self, content: str) -> None:
+        """
+        Prints the result in a console. The result is always put in stdout.
+        """
+        result_console = Console()
+        result_console.print(content)
 
     def echo(
         self, message: str = "", *, no_prefix: bool = False, type: Literal["INFO", "WARNING", "ERROR"] = "INFO"
