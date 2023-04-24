@@ -79,6 +79,7 @@ def run() -> None:
                 format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
                 verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
                 quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
+                log_to_stderr: bool = typer.Option(False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"),
                 {strategy_settings},
             ) -> None:
                 '''Run KRR using the `{func_name}` strategy'''
@@ -92,6 +93,7 @@ def run() -> None:
                     format=format,
                     verbose=verbose,
                     quiet=quiet,
+                    log_to_stderr=log_to_stderr,
                     strategy="{func_name}",
                     other_args={strategy_args},
                 )
