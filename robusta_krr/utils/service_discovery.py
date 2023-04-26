@@ -66,14 +66,16 @@ class ServiceDiscovery(Configurable):
 
         for label_selector in selectors:
             logging.debug(f"Trying to find service with label selector {label_selector}")
-            self.find_ingress_host(label_selector, api_client=api_client)
-            ingress_url = self.find_ingress_host(label_selector, api_client=api_client)
-            if ingress_url:
-                return ingress_url
             service_url = self.find_service_url(label_selector, api_client=api_client)
             if service_url:
                 logging.debug(f"Found service with label selector {label_selector}")
                 self.cache[cache_key] = service_url
                 return service_url
+
+            logging.debug(f"Trying to find ingress with label selector {label_selector}")
+            self.find_ingress_host(label_selector, api_client=api_client)
+            ingress_url = self.find_ingress_host(label_selector, api_client=api_client)
+            if ingress_url:
+                return ingress_url 
 
         return None
