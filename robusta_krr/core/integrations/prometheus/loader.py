@@ -1,6 +1,4 @@
-import asyncio
 import datetime
-from decimal import Decimal
 from typing import Optional, no_type_check
 
 import requests
@@ -16,6 +14,8 @@ from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.service_discovery import ServiceDiscovery
+
+from .metrics import BaseMetricLoader
 
 
 class PrometheusDiscovery(ServiceDiscovery):
@@ -116,41 +116,6 @@ class PrometheusLoader(Configurable):
         self.debug(f"Gathering data for {object} and {resource}")
 
         step = f"{int(timeframe.total_seconds()) // 60}m"
-        if resource == ResourceType.CPU:
-            result = await asyncio.gather(
-                *[
-                    asyncio.to_thread(
-                        self.prometheus.custom_query_range,
-                        query=f'sum(irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}}[{step}]))',
-                        start_time=datetime.datetime.now() - period,
-                        end_time=datetime.datetime.now(),
-                        step=step,
-                    )
-                    for pod in object.pods
-                ]
-            )
-        elif resource == ResourceType.Memory:
-            result = await asyncio.gather(
-                *[
-                    asyncio.to_thread(
-                        self.prometheus.custom_query_range,
-                        query=f'sum(container_memory_working_set_bytes{{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"}})',
-                        start_time=datetime.datetime.now() - period,
-                        end_time=datetime.datetime.now(),
-                        step=step,
-                    )
-                    for pod in object.pods
-                ]
-            )
-        else:
-            raise ValueError(f"Unknown resource type: {resource}")
-
-        if result == []:
-            return {pod: [] for pod in object.pods}
-
-        pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}
-        return {
-            pod: [Decimal(value) for _, value in pod_result[0]["values"]]
-            for pod, pod_result in pod_results.items()
-            if pod_result != []
-        }
+        MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
+        metric_loader = MetricLoaderType(self.prometheus)
+        return await metric_loader.load_data(object, period, step)
