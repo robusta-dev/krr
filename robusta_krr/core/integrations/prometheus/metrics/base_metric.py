@@ -6,17 +6,20 @@ import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Callable, TypeVar
 
-if TYPE_CHECKING:
-    from robusta_krr.core.abstract.strategies import ResourceHistoryData
-    from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.abstract.strategies import ResourceHistoryData
+from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.utils.configurable import Configurable
 
+if TYPE_CHECKING:
     from ..loader import CustomPrometheusConnect
 
 REGISTERED_METRICS: dict[str, type[BaseMetricLoader]] = {}
 
 
-class BaseMetricLoader(abc.ABC):
-    def __init__(self, prometheus: CustomPrometheusConnect) -> None:
+class BaseMetricLoader(Configurable, abc.ABC):
+    def __init__(self, config: Config, prometheus: CustomPrometheusConnect) -> None:
+        super().__init__(config)
         self.prometheus = prometheus
 
     @abc.abstractmethod
@@ -38,6 +41,7 @@ class BaseMetricLoader(abc.ABC):
         )
 
         if result == []:
+            self.warning(f"Prometheus returned no {self.__class__.__name__} metrics for {object}")
             return {pod: [] for pod in object.pods}
 
         pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}

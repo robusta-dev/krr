@@ -117,5 +117,5 @@ class PrometheusLoader(Configurable):
 
         step = f"{int(timeframe.total_seconds()) // 60}m"
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
-        metric_loader = MetricLoaderType(self.prometheus)
+        metric_loader = MetricLoaderType(self.config, self.prometheus)
         return await metric_loader.load_data(object, period, step)
