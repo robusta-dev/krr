@@ -104,13 +104,9 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 -   For memory, we take the maximum value over the past week and add a 5% buffer.
 
-### Robusta UI integration
+#### Prometheus connection
 
-If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
-
-More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
-
-![Robusta UI Screen Shot][ui-screenshot]
+Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
 
 ### Difference with Kubernetes VPA
 
@@ -120,12 +116,20 @@ More features (like seeing graphs, based on which recommendations were made) com
 | Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
 | Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
 | Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
-| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                            | ❌ Not supported                                            |
+| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
+
+### Robusta UI integration
+
+If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
+
+More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
+
+![Robusta UI Screen Shot][ui-screenshot]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -165,7 +169,7 @@ sudo apt install robusta-krr
 
 `````sh
 docker pull robusta/krr
-```` 
+````
 
 #### Manual
 
@@ -215,16 +219,16 @@ By default krr will run in the current context. If you want to run it in a diffe
 python krr.py simple -c my-cluster-1 -c my-cluster-2
 ```
 
-If you want to get the output in JSON format (-q is for quiet mode):
+If you want to get the output in JSON format (--logtostderr is required so no logs go to the result file):
 
 ```sh
-python krr.py simple -q -f json > result.json
+python krr.py simple --logtostderr -f json > result.json
 ```
 
 If you want to get the output in YAML format:
 
 ```sh
-python krr.py simple -q -f yaml > result.yaml
+python krr.py simple --logtostderr -f yaml > result.yaml
 ```
 
 If you want to see additional debug logs:
@@ -241,11 +245,50 @@ python krr.py simple --help
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- Port-forwarding -->
+
+## Prometheus auto-discovery
+
+By default, KRR will try to auto-discover the running Prometheus by scanning those labels:
+```python
+"app=kube-prometheus-stack-prometheus"
+"app=prometheus,component=server"
+"app=prometheus-server"
+"app=prometheus-operator-prometheus"
+"app=prometheus-msteams"
+"app=rancher-monitoring-prometheus"
+"app=prometheus-prometheus"
+```
+
+If none of those labels result in finding Prometheus, you will get an error and will have to pass the working url explicitly (using the `-p` flag).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Example of using port-forward for Prometheus
+
+If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
+
+For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
+
+```sh
+kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
+```
+
+Then, open another terminal and run krr in it, giving an explicit prometheus url:
+
+```sh
+python krr.py simple -p http://127.0.0.1:9090
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- CUSTOM -->
 
 ## Creating a Custom Strategy/Formatter
 
 Look into the `examples` directory for examples on how to create a custom strategy/formatter.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- BUILDING -->
 
@@ -303,6 +346,8 @@ pip install -e .
 ```sh
 poetry run pytest
 ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTRIBUTING -->
 

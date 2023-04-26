@@ -44,7 +44,7 @@ class Runner(Configurable):
     def _process_result(self, result: Result) -> None:
         formatted = result.format(self.config.format)
         self.echo("\n", no_prefix=True)
-        self.console.print(formatted)
+        self.print_result(formatted)
 
     def __get_resource_minimal(self, resource: ResourceType) -> Decimal:
         if resource == ResourceType.CPU:
