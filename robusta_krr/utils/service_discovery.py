@@ -3,9 +3,10 @@ from typing import Optional
 
 from cachetools import TTLCache
 from kubernetes import client
-from kubernetes.client import V1ServiceList
+from kubernetes.client import V1ServiceList, V1IngressList
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.models.v1_service import V1Service
+from kubernetes.client.models.v1_ingress import V1Ingress
 from kubernetes.config.config_exception import ConfigException
 
 from robusta_krr.utils.configurable import Configurable
@@ -38,6 +39,22 @@ class ServiceDiscovery(Configurable):
 
         return None
 
+    def find_ingress_host(self, label_selector: str, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+        """
+        Discover the ingress host of the Prometheus if krr is not running in cluster
+        """
+        if self.config.inside_cluster:
+            return None
+
+        v1 = client.NetworkingV1Api(api_client=api_client)
+        ingress_list: V1IngressList = v1.list_ingress_for_all_namespaces(label_selector=label_selector)
+        if not ingress_list.items:
+            return None
+
+        ingress: V1Ingress = ingress_list.items[0]
+        prometheus_host = ingress.spec.rules[0].host
+        return prometheus_host
+
     def find_url(self, selectors: list[str], *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Try to autodiscover the url of an in-cluster service
@@ -54,5 +71,11 @@ class ServiceDiscovery(Configurable):
                 logging.debug(f"Found service with label selector {label_selector}")
                 self.cache[cache_key] = service_url
                 return service_url
+
+            logging.debug(f"Trying to find ingress with label selector {label_selector}")
+            self.find_ingress_host(label_selector, api_client=api_client)
+            ingress_url = self.find_ingress_host(label_selector, api_client=api_client)
+            if ingress_url:
+                return ingress_url 
 
         return None
