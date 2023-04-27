@@ -36,7 +36,7 @@ def __process_type(_T: type) -> str:
         return "str"  # It the type is unknown, just use str and let pydantic handle it
 
 
-def run() -> None:
+def load_commands() -> None:
     for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ignore
         FUNC_TEMPLATE = textwrap.dedent(
             """
@@ -133,6 +133,9 @@ def run() -> None:
             locals(),
         )
 
+
+def run() -> None:
+    load_commands()
     app()
 
 
