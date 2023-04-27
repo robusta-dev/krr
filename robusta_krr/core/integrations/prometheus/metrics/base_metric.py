@@ -26,11 +26,23 @@ class BaseMetricLoader(Configurable, abc.ABC):
     def get_query(self, namespace: str, pod: str, container: str) -> str:
         ...
 
-    async def load_data(self, object: K8sObjectData, period: datetime.timedelta, step: str) -> ResourceHistoryData:
+    async def query_prometheus(
+        self, query: str, start_time: datetime.datetime, end_time: datetime.datetime, step: datetime.timedelta
+    ) -> list[dict]:
+        return await asyncio.to_thread(
+            self.prometheus.custom_query_range,
+            query=query,
+            start_time=start_time,
+            end_time=end_time,
+            step=f"{int(step.total_seconds()) // 60}m",
+        )
+
+    async def load_data(
+        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
+    ) -> ResourceHistoryData:
         result = await asyncio.gather(
             *[
-                asyncio.to_thread(
-                    self.prometheus.custom_query_range,
+                self.query_prometheus(
                     query=self.get_query(object.namespace, pod, object.container),
                     start_time=datetime.datetime.now() - period,
                     end_time=datetime.datetime.now(),

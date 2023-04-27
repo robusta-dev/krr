@@ -111,11 +111,10 @@ class PrometheusLoader(Configurable):
         resource: ResourceType,
         period: datetime.timedelta,
         *,
-        timeframe: datetime.timedelta = datetime.timedelta(minutes=30),
+        step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> ResourceHistoryData:
         self.debug(f"Gathering data for {object} and {resource}")
 
-        step = f"{int(timeframe.total_seconds()) // 60}m"
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
         metric_loader = MetricLoaderType(self.config, self.prometheus)
         return await metric_loader.load_data(object, period, step)
