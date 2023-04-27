@@ -53,7 +53,7 @@ class ServiceDiscovery(Configurable):
 
         ingress: V1Ingress = ingress_list.items[0]
         prometheus_host = ingress.spec.rules[0].host
-        return prometheus_host
+        return f"http://{prometheus_host}"
 
     def find_url(self, selectors: list[str], *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
