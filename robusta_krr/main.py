@@ -36,7 +36,7 @@ def __process_type(_T: type) -> str:
         return "str"  # It the type is unknown, just use str and let pydantic handle it
 
 
-def run() -> None:
+def load_commands() -> None:
     for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ignore
         FUNC_TEMPLATE = textwrap.dedent(
             """
@@ -79,6 +79,7 @@ def run() -> None:
                 format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
                 verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
                 quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
+                log_to_stderr: bool = typer.Option(False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"),
                 {strategy_settings},
             ) -> None:
                 '''Run KRR using the `{func_name}` strategy'''
@@ -92,8 +93,9 @@ def run() -> None:
                     format=format,
                     verbose=verbose,
                     quiet=quiet,
+                    log_to_stderr=log_to_stderr,
                     strategy="{func_name}",
-                    other_args=ctx.args,
+                    other_args={strategy_args},
                 )
                 runner = Runner(config)
                 asyncio.run(runner.run())
@@ -108,6 +110,11 @@ def run() -> None:
                     f'{field_name}: {__process_type(field_meta.type_)} = typer.Option({field_meta.default!r}, "--{field_name}", help="{field_meta.field_info.description}", rich_help_panel="Strategy Settings")'
                     for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
                 ),
+                strategy_args="{"
+                + ",\n".join(
+                    f"'{field_name}': {field_name}" for field_name in strategy_type.get_settings_type().__fields__
+                )
+                + "}",
                 formatters=", ".join(BaseFormatter.get_all()),
             ),
             globals()
@@ -126,6 +133,9 @@ def run() -> None:
             locals(),
         )
 
+
+def run() -> None:
+    load_commands()
     app()
 
 

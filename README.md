@@ -10,19 +10,21 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/robusta/robusta-krr">
+  <a href="https://github.com/robusta-dev/krr">
     <img src="images/logo.png" alt="Logo" width="320" height="320">
   </a>
-  <h3 align="center">Robusta's KRR</h3>
+  <h3 align="center">Robusta KRR</h3>
   <p align="center">
     Prometheus-based Kubernetes Resource Recommendations
     <br />
     <a href="#getting-started"><strong>Usage docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/robusta/robusta-krr/issues">Report Bug</a>
+    <a href="https://github.com/robusta-dev/krr/issues">Report Bug</a>
     ·
-    <a href="https://github.com/robusta/robusta-krr/issues">Request Feature</a>
+    <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
+    ·
+    <a href="https://robustacommunity.slack.com/archives/C054QUA4NHE">Slack Channel</a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
@@ -72,7 +74,7 @@ According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kub
 -   69% unused CPU
 -   18% unused memory
 
-By utilizing Robusta KRR's recommendations, you can significantly reduce these inefficiencies.
+By right-sizing your containers with KRR, you can save an average of 69% on cloud costs.
 
 ### How it works
 
@@ -92,15 +94,19 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
     sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
     ```
 
-[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/robusta-krr/issues/new)
+[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
 
-#### Resource Recommendations
+#### Algorithm
 
 By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
 
 -   For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
 
 -   For memory, we take the maximum value over the past week and add a 5% buffer.
+
+#### Prometheus connection
+
+Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
 
 ### Difference with Kubernetes VPA
 
@@ -110,12 +116,20 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 | Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
 | Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
 | Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
+| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
-| Reporting 📊                | 🔄 Support in future versions (Robusta can send you report in Slack, UI, etc.)                             | ❌ Not supported                                            |
 | Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
+
+### Robusta UI integration
+
+If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
+
+More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
+
+![Robusta UI Screen Shot][ui-screenshot]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -123,14 +137,11 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 ### Installation
 
-_Depending on your operating system, select the appropriate installation method._
+<!-- _Depending on your operating system, select the appropriate installation method._
 
-<!-- #### Linux
+#### Linux
 
 ```sh
 sudo apt install robusta-krr
@@ -158,18 +169,20 @@ sudo apt install robusta-krr
 
 `````sh
 docker pull robusta/krr
-```` -->
+````
 
 #### Manual
+
+-->
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
 2. Clone the repo:
 
 ```sh
-git clone https://github.com/robusta-dev/robusta-krr
+git clone https://github.com/robusta-dev/krr
 ```
 
-3. Navigate to the project root directory (`cd ./robusta-krr`)
+3. Navigate to the project root directory (`cd ./krr`)
 4. Install requirements:
 
 ```sh
@@ -206,16 +219,16 @@ By default krr will run in the current context. If you want to run it in a diffe
 python krr.py simple -c my-cluster-1 -c my-cluster-2
 ```
 
-If you want to get the output in JSON format (-q is for quiet mode):
+If you want to get the output in JSON format (--logtostderr is required so no logs go to the result file):
 
 ```sh
-python krr.py simple -q -f json > result.json
+python krr.py simple --logtostderr -f json > result.json
 ```
 
 If you want to get the output in YAML format:
 
 ```sh
-python krr.py simple -q -f yaml > result.yaml
+python krr.py simple --logtostderr -f yaml > result.yaml
 ```
 
 If you want to see additional debug logs:
@@ -232,17 +245,56 @@ python krr.py simple --help
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- Port-forwarding -->
+
+## Prometheus auto-discovery
+
+By default, KRR will try to auto-discover the running Prometheus by scanning those labels:
+```python
+"app=kube-prometheus-stack-prometheus"
+"app=prometheus,component=server"
+"app=prometheus-server"
+"app=prometheus-operator-prometheus"
+"app=prometheus-msteams"
+"app=rancher-monitoring-prometheus"
+"app=prometheus-prometheus"
+```
+
+If none of those labels result in finding Prometheus, you will get an error and will have to pass the working url explicitly (using the `-p` flag).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Example of using port-forward for Prometheus
+
+If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
+
+For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
+
+```sh
+kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
+```
+
+Then, open another terminal and run krr in it, giving an explicit prometheus url:
+
+```sh
+python krr.py simple -p http://127.0.0.1:9090
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- CUSTOM -->
 
 ## Creating a Custom Strategy/Formatter
 
 Look into the `examples` directory for examples on how to create a custom strategy/formatter.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- BUILDING -->
 
 ## Building
 
-_We are using pyinstaller to build the binary._
+_We are planning to use pyinstaller to build binaries for distribution. Right now you can build the binaries yourself, but we're not distributing them yet._
 
 1. Install the project manually (see above)
 2. Navigate to the project root directory
@@ -272,7 +324,7 @@ cd ./dist/krr
 
 ## Testing
 
-_We are using pytest to run the tests._
+_We use pytest to run tests._
 
 1. Install the project manually (see above)
 2. Navigate to the project root directory
@@ -294,6 +346,8 @@ pip install -e .
 ```sh
 poetry run pytest
 ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTRIBUTING -->
 
@@ -326,7 +380,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 If you have any questions, feel free to contact support@robusta.dev
 
-Project Link: [https://github.com/robusta-dev/robusta-krr](https://github.com/robusta-dev/robusta-krr)
+Project Link: [https://github.com/robusta-dev/krr](https://github.com/robusta-dev/krr)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -346,3 +400,4 @@ Project Link: [https://github.com/robusta-dev/robusta-krr](https://github.com/ro
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/othneildrew
 [product-screenshot]: images/screenshot.jpeg
+[ui-screenshot]: images/ui_screenshot.jpeg
