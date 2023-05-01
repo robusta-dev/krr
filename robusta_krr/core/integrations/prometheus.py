@@ -75,7 +75,8 @@ class PrometheusLoader(Configurable):
 
         if not self.url:
             raise PrometheusNotFound(
-                f"Prometheus url could not be found while scanning in {cluster or 'default'} cluster"
+                f"Prometheus instance could not be found while scanning in {cluster or 'default'} cluster.\n"
+                "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
             )
 
         headers = {}

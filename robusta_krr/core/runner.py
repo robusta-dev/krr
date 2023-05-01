@@ -5,7 +5,7 @@ from typing import Optional, Union
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
-from robusta_krr.core.integrations.prometheus import PrometheusLoader
+from robusta_krr.core.integrations.prometheus import PrometheusLoader, PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result
@@ -15,13 +15,16 @@ from robusta_krr.utils.version import get_version
 
 
 class Runner(Configurable):
+    EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
+
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self._k8s_loader = KubernetesLoader(self.config)
         self._prometheus_loaders: dict[Optional[str], Union[PrometheusLoader, Exception]] = {}
+        self._prometheus_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
 
-    def _get_prometheus_loader(self, cluster: Optional[str]) -> PrometheusLoader:
+    def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[PrometheusLoader]:
         if cluster not in self._prometheus_loaders:
             try:
                 self._prometheus_loaders[cluster] = PrometheusLoader(self.config, cluster=cluster)
@@ -29,7 +32,12 @@ class Runner(Configurable):
                 self._prometheus_loaders[cluster] = e
 
         result = self._prometheus_loaders[cluster]
-        if isinstance(result, Exception):
+        if isinstance(result, self.EXPECTED_EXCEPTIONS):
+            if result not in self._prometheus_loaders_error_logged:
+                self._prometheus_loaders_error_logged.add(result)
+                self.error(result)
+            return None
+        elif isinstance(result, Exception):
             raise result
 
         return result
@@ -87,6 +95,9 @@ class Runner(Configurable):
 
     async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
+
+        if prometheus_loader is None:
+            return {resource: ResourceRecommendation(request=Decimal('NaN'), limit=Decimal('NaN')) for resource in ResourceType}
 
         data_tuple = await asyncio.gather(
             *[
