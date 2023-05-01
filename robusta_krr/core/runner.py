@@ -123,6 +123,14 @@ class Runner(Configurable):
         clusters = await self._k8s_loader.list_clusters()
         self.debug(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
         objects = await self._k8s_loader.list_scannable_objects(clusters)
+
+        if len(objects) == 0:
+            self.warning("Current filters resulted in no objects available to scan.")
+            self.warning("Try to change the filters or check if there is anything available.")
+            if self.config.namespaces == "*":
+                self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
+            return Result(scans=[])
+
         resource_recommendations = await self._gather_objects_recommendations(objects)
 
         return Result(
