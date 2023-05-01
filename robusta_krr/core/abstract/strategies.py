@@ -11,9 +11,16 @@ from robusta_krr.core.models.result import K8sObjectData, ResourceType
 from robusta_krr.utils.display_name import add_display_name
 
 
+Self = TypeVar("Self", bound="ResourceRecommendation")
+
+
 class ResourceRecommendation(pd.BaseModel):
     request: Optional[Decimal]
     limit: Optional[Decimal]
+
+    @classmethod
+    def undefined(cls: type[Self]) -> Self:
+        return cls(request=Decimal('NaN'), limit=Decimal('NaN'))
 
 
 class StrategySettings(pd.BaseModel):

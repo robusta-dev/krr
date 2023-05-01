@@ -97,7 +97,7 @@ class Runner(Configurable):
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
-            return {resource: ResourceRecommendation(request=Decimal('NaN'), limit=Decimal('NaN')) for resource in ResourceType}
+            return {resource: ResourceRecommendation.undefined() for resource in ResourceType}
 
         data_tuple = await asyncio.gather(
             *[
