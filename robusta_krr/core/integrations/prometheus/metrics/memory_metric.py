@@ -13,8 +13,8 @@ class MemoryMetricLoader(BaseMetricLoader):
     @staticmethod
     def get_target_name(series: PrometheusSeries) -> Optional[str]:
         for label in ["container", "pod", "node"]:
-            if label in series.metric:
-                return series.metric[label]
+            if label in series["metric"]:
+                return series["metric"][label]
         return None
 
     @staticmethod
@@ -42,11 +42,11 @@ class MemoryMetricLoader(BaseMetricLoader):
             relevant_series = [
                 series for series in series_list_result if MemoryMetricLoader.get_target_name(series) == target_name
             ]
-            relevant_kubelet_metric = [series for series in relevant_series if series.metric.get("job") == "kubelet"]
+            relevant_kubelet_metric = [series for series in relevant_series if series["metric"].get("job") == "kubelet"]
             if len(relevant_kubelet_metric) == 1:
                 return_list.append(relevant_kubelet_metric[0])
                 continue
-            sorted_relevant_series = sorted(relevant_series, key=lambda series: series.metric.get("job"), reverse=False)
+            sorted_relevant_series = sorted(relevant_series, key=lambda s: s["metric"].get("job"), reverse=False)
             return_list.append(sorted_relevant_series[0])
         return return_list
 
@@ -57,4 +57,4 @@ class MemoryMetricLoader(BaseMetricLoader):
         return self.filter_prom_jobs_results(result)
 
     def get_query(self, namespace: str, pod: str, container: str) -> str:
-        return f'sum(container_memory_working_set_bytes{{image!="", namespace="{namespace}", pod="{pod}", container="{container}"}})'
+        return f'sum(container_memory_working_set_bytes{{image!="", namespace="{namespace}", pod="{pod}", container="{container}"}}) by (container, pod, job)'
