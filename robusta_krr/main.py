@@ -77,7 +77,7 @@ def load_commands() -> None:
                     rich_help_panel="Prometheus Settings",
                 ),
                 format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
-                verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
+                verbose: bool = typer.Option(True, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
                 quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
                 log_to_stderr: bool = typer.Option(False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"),
                 {strategy_settings},
