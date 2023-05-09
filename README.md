@@ -85,7 +85,7 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
 -   CPU Usage:
 
     ```
-    sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
+    sum(irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}}[{step}]))
     ```
 
 -   Memory Usage:
