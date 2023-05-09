@@ -43,7 +43,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         result = await asyncio.gather(
             *[
                 self.query_prometheus(
-                    query=self.get_query(object.namespace, pod, object.container),
+                    query=self.get_query(object.namespace, pod.name, object.container),
                     start_time=datetime.datetime.now() - period,
                     end_time=datetime.datetime.now(),
                     step=step,
@@ -54,11 +54,11 @@ class BaseMetricLoader(Configurable, abc.ABC):
 
         if result == []:
             self.warning(f"Prometheus returned no {self.__class__.__name__} metrics for {object}")
-            return {pod: [] for pod in object.pods}
+            return {pod.name: [] for pod in object.pods}
 
         pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}
         return {
-            pod: [Decimal(value) for _, value in pod_result[0]["values"]]
+            pod.name: [Decimal(value) for _, value in pod_result[0]["values"]]
             for pod, pod_result in pod_results.items()
             if pod_result != []
         }

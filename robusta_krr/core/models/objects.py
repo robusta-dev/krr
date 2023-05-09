@@ -5,11 +5,19 @@ import pydantic as pd
 from robusta_krr.core.models.allocations import ResourceAllocations
 
 
+class PodData(pd.BaseModel):
+    name: str
+    deleted: bool
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+
 class K8sObjectData(pd.BaseModel):
     cluster: Optional[str]
     name: str
     container: str
-    pods: list[str]
+    pods: list[PodData]
     namespace: str
     kind: Optional[str]
     allocations: ResourceAllocations
@@ -19,3 +27,15 @@ class K8sObjectData(pd.BaseModel):
 
     def __hash__(self) -> int:
         return hash(str(self))
+
+    @property
+    def current_pods_count(self) -> int:
+        return len([pod for pod in self.pods if not pod.deleted])
+
+    @property
+    def deleted_pods_count(self) -> int:
+        return len([pod for pod in self.pods if pod.deleted])
+
+    @property
+    def pods_count(self) -> int:
+        return len(self.pods)
