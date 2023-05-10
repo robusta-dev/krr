@@ -195,6 +195,8 @@ pip install -r requirements.txt
 python krr.py --help
 ```
 
+To use krr with [Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus) some [additional configuration](./docs/google-cloud-managed-service-for-prometheus.md) is necessary.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
