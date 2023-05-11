@@ -32,8 +32,12 @@ class SimpleStrategySettings(StrategySettings):
         if len(data) == 0:
             return float("NaN")
 
-        data_ = np.concatenate([values[:, 1] for values in data.values()]) if len(data) > 1 else list(data.values())[0]
-        return float(np.percentile(data_, self.cpu_percentile / 100))
+        if len(data) > 1:
+            data_ = np.concatenate([values[:, 1] for values in data.values()])
+        else:
+            data_ = list(data.values())[0][:, 1]
+
+        return float(np.percentile(data_, self.cpu_percentile))
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
