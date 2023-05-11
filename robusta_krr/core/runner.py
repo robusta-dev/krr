@@ -57,6 +57,7 @@ class Runner(Configurable):
         if value is None or math.isnan(value):
             return value
 
+        prec_power: Union[float, int]
         if resource == ResourceType.CPU:
             # NOTE: We use 10**3 as the minimal value for CPU is 1m
             prec_power = 10**3

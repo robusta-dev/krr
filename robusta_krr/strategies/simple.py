@@ -26,7 +26,7 @@ class SimpleStrategySettings(StrategySettings):
         if len(data_) == 0:
             return float("NaN")
 
-        return float(max(data_) * (1 + self.memory_buffer_percentage / 100))
+        return max(data_) * (1 + self.memory_buffer_percentage / 100)
 
     def calculate_cpu_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:
         if len(data) == 0:
@@ -37,7 +37,7 @@ class SimpleStrategySettings(StrategySettings):
         else:
             data_ = list(data.values())[0][:, 1]
 
-        return float(np.percentile(data_, self.cpu_percentile))
+        return np.percentile(data_, self.cpu_percentile)
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):

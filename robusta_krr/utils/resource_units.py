@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Union
 
 UNITS = {
     "m": 0.001,
@@ -17,7 +17,7 @@ UNITS = {
 }
 
 
-def parse(x: str, /) -> float | int:
+def parse(x: str, /) -> Union[float, int]:
     """Converts a string to an integer with respect of units."""
 
     for unit, multiplier in UNITS.items():
@@ -37,7 +37,7 @@ def get_base(x: str, /) -> Literal[1024, 1000]:
     return 1000 if "." in x else 1024
 
 
-def format(x: float | int, /, *, base: Literal[1024, 1000] = 1024) -> str:
+def format(x: Union[float, int], /, *, base: Literal[1024, 1000] = 1024) -> str:
     """Converts an integer to a string with respect of units."""
 
     if x < 1:

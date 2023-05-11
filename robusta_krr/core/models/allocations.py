@@ -21,6 +21,7 @@ class ResourceType(str, enum.Enum):
 
 
 RecommendationValue = Union[float, Literal["?"], None]
+RecommendationValueRaw = Union[float, str, None]
 
 Self = TypeVar("Self", bound="ResourceAllocations")
 
@@ -30,7 +31,7 @@ class ResourceAllocations(pd.BaseModel):
     limits: dict[ResourceType, RecommendationValue]
 
     @staticmethod
-    def __parse_resource_value(value: float | str | None) -> RecommendationValue:
+    def __parse_resource_value(value: RecommendationValueRaw) -> RecommendationValue:
         if value is None:
             return None
 
@@ -44,7 +45,7 @@ class ResourceAllocations(pd.BaseModel):
 
     @pd.validator("requests", "limits", pre=True)
     def validate_requests(
-        cls, value: dict[ResourceType, float | str | None]
+        cls, value: dict[ResourceType, RecommendationValueRaw]
     ) -> dict[ResourceType, RecommendationValue]:
         return {
             resource_type: cls.__parse_resource_value(resource_value) for resource_type, resource_value in value.items()
