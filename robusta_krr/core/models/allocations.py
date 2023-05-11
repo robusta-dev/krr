@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-from decimal import Decimal
+import math
 from typing import Literal, TypeVar, Union
 
 import pydantic as pd
@@ -20,7 +20,7 @@ class ResourceType(str, enum.Enum):
     Memory = "memory"
 
 
-RecommendationValue = Union[Decimal, Literal["?"], None]
+RecommendationValue = Union[float, Literal["?"], None]
 
 Self = TypeVar("Self", bound="ResourceAllocations")
 
@@ -30,21 +30,21 @@ class ResourceAllocations(pd.BaseModel):
     limits: dict[ResourceType, RecommendationValue]
 
     @staticmethod
-    def __parse_resource_value(value: Decimal | str | None) -> RecommendationValue:
+    def __parse_resource_value(value: float | str | None) -> RecommendationValue:
         if value is None:
             return None
 
         if isinstance(value, str):
-            return resource_units.parse(value)
+            return float(resource_units.parse(value))
 
-        if value.is_nan():
+        if math.isnan(value):
             return "?"
 
-        return value
+        return float(value)
 
     @pd.validator("requests", "limits", pre=True)
     def validate_requests(
-        cls, value: dict[ResourceType, Decimal | str | None]
+        cls, value: dict[ResourceType, float | str | None]
     ) -> dict[ResourceType, RecommendationValue]:
         return {
             resource_type: cls.__parse_resource_value(resource_value) for resource_type, resource_value in value.items()
