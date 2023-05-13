@@ -156,6 +156,11 @@ brew install krr
 krr --help
 ```
 
+#### Installing on Windows:
+
+We will use chocolatey for easier installing on Windows, but currently it is not yet supported.
+If you want to still run on Windows, you can do that by installing using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or installing manually:
+
 #### Manual
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
