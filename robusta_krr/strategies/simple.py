@@ -1,7 +1,6 @@
 import pydantic as pd
 import numpy as np
 from numpy.typing import NDArray
-from textwrap import dedent
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
@@ -45,26 +44,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     """
     A simple strategy that uses the {cpu_percentile} percentile for CPU and
     the peak memory usage plus {memory_buffer_percentage}% buffer for memory.
-    (Exact numbers can be setup in the settings)
 
     For CPU, we set a request at the {cpu_percentile} percentile with no limit.
     Meaning, in {cpu_percentile}% of the cases, your CPU request will be sufficient.
-    For the remaining - we set no limit.
-
-    This means your pod can burst and use any CPU available on the node - e.g.
-    CPU that other pods requested but aren't using right now.
 
     For memory, we take the maximum value over the past week and add a {memory_buffer_percentage}% buffer.
+    We set both request and limit to this value.
     """
 
     __display_name__ = "simple"
-
-    @property
-    def description(self) -> str | None:
-        if self.__doc__ is None:
-            return None
-
-        return dedent(self.__doc__.format_map(self.settings.dict())).strip()
 
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU])
