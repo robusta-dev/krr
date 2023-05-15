@@ -58,6 +58,7 @@ class TableFormatter(BaseFormatter):
         table.add_column("Namespace", style="cyan")
         table.add_column("Name", style="cyan")
         table.add_column("Pods", style="cyan")
+        table.add_column("Old Pods", style="cyan")
         table.add_column("Type", style="cyan")
         table.add_column("Container", style="cyan")
         for resource in ResourceType:
@@ -78,7 +79,8 @@ class TableFormatter(BaseFormatter):
                     item.object.cluster if full_info_row else "",
                     item.object.namespace if full_info_row else "",
                     item.object.name if full_info_row else "",
-                    str(len(item.object.pods)) if full_info_row else "",
+                    f"{item.object.current_pods_count}" if full_info_row else "",
+                    f"{item.object.deleted_pods_count}" if full_info_row else "",
                     item.object.kind if full_info_row else "",
                     item.object.container,
                     *[
