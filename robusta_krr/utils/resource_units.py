@@ -1,48 +1,53 @@
-from decimal import Decimal
-from typing import Optional
+from typing import Literal, Union
 
 UNITS = {
-    "m": Decimal("1e-3"),
-    "Ki": Decimal(1024),
-    "Mi": Decimal(1024**2),
-    "Gi": Decimal(1024**3),
-    "Ti": Decimal(1024**4),
-    "Pi": Decimal(1024**5),
-    "Ei": Decimal(1024**6),
-    "k": Decimal(1e3),
-    "M": Decimal(1e6),
-    "G": Decimal(1e9),
-    "T": Decimal(1e12),
-    "P": Decimal(1e15),
-    "E": Decimal(1e18),
+    "m": 0.001,
+    "Ki": 1024,
+    "Mi": 1024**2,
+    "Gi": 1024**3,
+    "Ti": 1024**4,
+    "Pi": 1024**5,
+    "Ei": 1024**6,
+    "k": 1e3,
+    "M": 1e6,
+    "G": 1e9,
+    "T": 1e12,
+    "P": 1e15,
+    "E": 1e18,
 }
 
 
-def parse(x: str) -> Decimal:
+def parse(x: str, /) -> Union[float, int]:
     """Converts a string to an integer with respect of units."""
+
     for unit, multiplier in UNITS.items():
         if x.endswith(unit):
-            return Decimal(x[: -len(unit)]) * multiplier
-    return Decimal(x)
+            return int(x[: -len(unit)]) * multiplier
+    if "." in x:
+        return float(x)
+    return int(x)
 
 
-def format(x: Decimal, prescision: Optional[int] = None) -> str:
+def get_base(x: str, /) -> Literal[1024, 1000]:
+    """Returns the base of the unit."""
+
+    for unit, multiplier in UNITS.items():
+        if x.endswith(unit):
+            return 1024 if unit in ["Ki", "Mi", "Gi", "Ti", "Pi", "Ei"] else 1000
+    return 1000 if "." in x else 1024
+
+
+def format(x: Union[float, int], /, *, base: Literal[1024, 1000] = 1024) -> str:
     """Converts an integer to a string with respect of units."""
 
-    if prescision is not None:
-        # Use inly the first prescision digits, starting from the biggest one
-        # Example? 123456 -> 123000
-        assert prescision >= 0
+    if x < 1:
+        return f"{int(x*1000)}m"
 
-        exponent: int
-        sign, digits, exponent = x.as_tuple()  # type: ignore
-        x = Decimal((sign, list(digits[:prescision]) + [0] * (len(digits) - prescision), exponent))
+    units = ['', 'K', 'M', 'G', 'T', 'P', 'E']
+    binary_units = ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei']
 
-    if x == 0:
-        return "0"
-
-    for unit, multiplier in reversed(UNITS.items()):
-        if x % multiplier == 0:
-            v = int(x / multiplier)
-            return f"{v}{unit}"
-    return str(x)
+    x = int(x)
+    for i, unit in enumerate(binary_units if base == 1024 else units):
+        if x < base**(i + 1) or i == len(units) - 1 or x / base**(i + 1) < 10:
+            return f"{x/base**i:.0f}{unit}"
+    return f"{x/6**i:.0f}{unit}"

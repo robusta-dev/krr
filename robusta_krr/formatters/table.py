@@ -12,7 +12,6 @@ from robusta_krr.utils import resource_units
 
 NONE_LITERAL = "none"
 NAN_LITERAL = "?"
-PRESCISION = 4
 ALLOWED_DIFFERENCE = 0.05
 
 
@@ -21,13 +20,13 @@ class TableFormatter(BaseFormatter):
 
     __display_name__ = "table"
 
-    def _format_united_decimal(self, value: RecommendationValue, prescision: Optional[int] = None) -> str:
+    def _format(self, value: RecommendationValue) -> str:
         if value is None:
             return NONE_LITERAL
         elif isinstance(value, str):
             return NAN_LITERAL
         else:
-            return resource_units.format(value, prescision=prescision)
+            return resource_units.format(value)
 
     def _format_request_str(self, item: ResourceScan, resource: ResourceType, selector: str) -> str:
         allocated = getattr(item.object.allocations, selector)[resource]
@@ -36,9 +35,9 @@ class TableFormatter(BaseFormatter):
 
         return (
             f"[{severity.color}]"
-            + self._format_united_decimal(allocated)
+            + self._format(allocated)
             + " -> "
-            + self._format_united_decimal(recommended.value, prescision=PRESCISION)
+            + self._format(recommended.value)
             + f"[/{severity.color}]"
         )
 
@@ -58,6 +57,7 @@ class TableFormatter(BaseFormatter):
         table.add_column("Namespace", style="cyan")
         table.add_column("Name", style="cyan")
         table.add_column("Pods", style="cyan")
+        table.add_column("Old Pods", style="cyan")
         table.add_column("Type", style="cyan")
         table.add_column("Container", style="cyan")
         for resource in ResourceType:
@@ -78,7 +78,8 @@ class TableFormatter(BaseFormatter):
                     item.object.cluster if full_info_row else "",
                     item.object.namespace if full_info_row else "",
                     item.object.name if full_info_row else "",
-                    str(len(item.object.pods)) if full_info_row else "",
+                    f"{item.object.current_pods_count}" if full_info_row else "",
+                    f"{item.object.deleted_pods_count}" if full_info_row else "",
                     item.object.kind if full_info_row else "",
                     item.object.container,
                     *[

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import abc
 import datetime
-from decimal import Decimal
-from typing import Generic, Optional, TypeVar, get_args
+import numpy as np
+from numpy.typing import NDArray
+from typing import Generic, Optional, TypeVar, get_args, Annotated, Literal
 
 import pydantic as pd
 
@@ -15,8 +16,8 @@ Self = TypeVar("Self", bound="ResourceRecommendation")
 
 
 class ResourceRecommendation(pd.BaseModel):
-    request: Optional[Decimal]
-    limit: Optional[Decimal]
+    request: Optional[float]
+    limit: Optional[float]
 
     @classmethod
     def undefined(cls: type[Self]) -> Self:
@@ -39,7 +40,9 @@ class StrategySettings(pd.BaseModel):
 
 
 _StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
-ResourceHistoryData = dict[str, list[Decimal]]
+
+ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
+ResourceHistoryData = dict[str, ArrayNx2]
 HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 

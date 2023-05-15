@@ -1,6 +1,5 @@
 import asyncio
 import math
-from decimal import Decimal
 from typing import Optional, Union
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
@@ -54,32 +53,30 @@ class Runner(Configurable):
         self.echo("\n", no_prefix=True)
         self.print_result(formatted)
 
-    def __get_resource_minimal(self, resource: ResourceType) -> Decimal:
+    def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
-            return Decimal(1 / 1000) * self.config.cpu_min_value
+            return 1 / 1000 * self.config.cpu_min_value
         elif resource == ResourceType.Memory:
-            return Decimal(1_000_000) * self.config.memory_min_value
+            return 1_000_000 * self.config.memory_min_value
         else:
-            return Decimal(0)
+            return 0
 
-    def _round_value(self, value: Optional[Decimal], resource: ResourceType) -> Optional[Decimal]:
-        if value is None:
+    def _round_value(self, value: Optional[float], resource: ResourceType) -> Optional[float]:
+        if value is None or math.isnan(value):
             return value
 
-        if value.is_nan():
-            return Decimal("nan")
-
+        prec_power: Union[float, int]
         if resource == ResourceType.CPU:
             # NOTE: We use 10**3 as the minimal value for CPU is 1m
-            prec_power = Decimal(10**3)
+            prec_power = 10**3
         elif resource == ResourceType.Memory:
             # NOTE: We use 10**6 as the minimal value for memory is 1M
-            prec_power = 1 / Decimal(10**6)
+            prec_power = 1 / 10**6
         else:
             # NOTE: We use 1 as the minimal value for other resources
-            prec_power = Decimal(1)
+            prec_power = 1
 
-        rounded = Decimal(math.ceil(value * prec_power)) / prec_power
+        rounded = math.ceil(value * prec_power) / prec_power
 
         minimal = self.__get_resource_minimal(resource)
         return max(rounded, minimal)
@@ -105,7 +102,7 @@ class Runner(Configurable):
                     object,
                     resource,
                     self._strategy.settings.history_timedelta,
-                    timeframe=self._strategy.settings.timeframe_timedelta,
+                    step=self._strategy.settings.timeframe_timedelta,
                 )
                 for resource in ResourceType
             ]

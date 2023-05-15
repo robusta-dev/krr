@@ -1,7 +1,5 @@
 # This is an example on how to create your own custom strategy
 
-from decimal import Decimal
-
 import pydantic as pd
 
 import robusta_krr
@@ -11,8 +9,8 @@ from robusta_krr.api.strategies import BaseStrategy, StrategySettings
 
 # Providing description to the settings will make it available in the CLI help
 class CustomStrategySettings(StrategySettings):
-    param_1: Decimal = pd.Field(99, gt=0, description="First example parameter")
-    param_2: Decimal = pd.Field(105_000, gt=0, description="Second example parameter")
+    param_1: float = pd.Field(99, gt=0, description="First example parameter")
+    param_2: float = pd.Field(105_000, gt=0, description="Second example parameter")
 
 
 class CustomStrategy(BaseStrategy[CustomStrategySettings]):

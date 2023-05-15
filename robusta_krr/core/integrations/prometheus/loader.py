@@ -1,8 +1,7 @@
-import asyncio
 import datetime
-from decimal import Decimal
 from typing import Optional, no_type_check
 
+import asyncio
 import requests
 from kubernetes import config as k8s_config
 from kubernetes.client import ApiClient
@@ -12,10 +11,15 @@ from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.service_discovery import ServiceDiscovery
+
+from .metrics import BaseMetricLoader
+
+import numpy as np
+from numpy.typing import NDArray
 
 
 class PrometheusDiscovery(ServiceDiscovery):
@@ -112,45 +116,49 @@ class PrometheusLoader(Configurable):
         resource: ResourceType,
         period: datetime.timedelta,
         *,
-        timeframe: datetime.timedelta = datetime.timedelta(minutes=30),
+        step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> ResourceHistoryData:
         self.debug(f"Gathering data for {object} and {resource}")
 
-        if resource == ResourceType.CPU:
-            result = await asyncio.gather(
-                *[
-                    asyncio.to_thread(
-                        self.prometheus.custom_query_range,
-                        query=f'sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}})',
-                        start_time=datetime.datetime.now() - period,
-                        end_time=datetime.datetime.now(),
-                        step=f"{int(timeframe.total_seconds()) // 60}m",
-                    )
-                    for pod in object.pods
-                ]
-            )
-        elif resource == ResourceType.Memory:
-            result = await asyncio.gather(
-                *[
-                    asyncio.to_thread(
-                        self.prometheus.custom_query_range,
-                        query=f'sum(container_memory_working_set_bytes{{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"}})',
-                        start_time=datetime.datetime.now() - period,
-                        end_time=datetime.datetime.now(),
-                        step=f"{int(timeframe.total_seconds()) // 60}m",
-                    )
-                    for pod in object.pods
-                ]
-            )
-        else:
-            raise ValueError(f"Unknown resource type: {resource}")
+        await self.add_historic_pods(object, period)
 
-        if result == []:
-            return {pod: [] for pod in object.pods}
+        MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
+        metric_loader = MetricLoaderType(self.config, self.prometheus)
+        return await metric_loader.load_data(object, period, step)
 
-        pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}
-        return {
-            pod: [Decimal(value) for _, value in pod_result[0]["values"]]
-            for pod, pod_result in pod_results.items()
-            if pod_result != []
-        }
+    async def add_historic_pods(
+        self,
+        object: K8sObjectData,
+        period: datetime.timedelta
+    ) -> None:
+        """Find pods that were already deleted, but still have some metrics in Prometheus"""
+
+        if len(object.pods) == 0:
+            return
+
+        period_literal = f"{int(period.total_seconds()) // 60 // 24}d"
+        owner = await asyncio.to_thread(
+            self.prometheus.custom_query,
+            query=f'kube_pod_owner{{pod="{next(iter(object.pods)).name}"}}[{period_literal}]'
+        )
+
+        if owner == []:
+            return
+
+        owner = owner[0]["metric"]["owner_name"]
+
+        related_pods = await asyncio.to_thread(
+            self.prometheus.custom_query,
+            query=f'kube_pod_owner{{owner_name="{owner}"}}[{period_literal}]'
+        )
+
+        current_pods = {p.name for p in object.pods}
+
+        object.pods += [
+            PodData(
+                name=pod["metric"]["pod"],
+                deleted=True,
+            )
+            for pod in related_pods
+            if pod["metric"]["pod"] not in current_pods
+        ]
