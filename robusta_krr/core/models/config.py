@@ -1,5 +1,6 @@
 from typing import Any, Literal, Optional, Union
 
+import sys
 import pydantic as pd
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
@@ -9,10 +10,16 @@ from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 
 try:
     config.load_incluster_config()
-    IN_CLUSTER = True
 except ConfigException:
-    config.load_kube_config()
+    try:
+        config.load_kube_config()
+    except ConfigException:
+        print("[CRITICAL] Could not load kubernetes configuration. Do you have kubeconfig set up?")
+        sys.exit(1)
+
     IN_CLUSTER = False
+else:
+    IN_CLUSTER = True
 
 
 class Config(pd.BaseSettings):

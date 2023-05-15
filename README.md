@@ -139,41 +139,29 @@ More features (like seeing graphs, based on which recommendations were made) com
 
 ### Installation
 
-<!-- _Depending on your operating system, select the appropriate installation method._
+#### Installing with brew (MacOS/Linux):
 
-#### Linux
-
+1. Add our tap:
 ```sh
-sudo apt install robusta-krr
-````
-
-#### MacOS
-
-```sh
-brew install robusta-krr
+brew tap robusta-dev/homebrew-krr
 ```
 
-#### Windows
-
+2. Install KRR:
 ```sh
-choco install robusta-krr
+brew install krr
 ```
 
-#### Debian
-
+3. Check that installation was successfull (First launch might take a little longer):
 ```sh
-sudo apt install robusta-krr
+krr --help
 ```
 
-#### Docker
+#### Installing on Windows:
 
-`````sh
-docker pull robusta/krr
-````
+We will use chocolatey for easier installing on Windows, but currently it is not yet supported.
+If you want to still run on Windows, you can do that by installing using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or installing manually:
 
 #### Manual
-
--->
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
 2. Clone the repo:
@@ -195,6 +183,9 @@ pip install -r requirements.txt
 python krr.py --help
 ```
 
+Notice that using source code requires you to run as a python script, when installing with brew allows to run `krr`.
+All above examples show running command as `krr ...`, replace it with `python krr.py ...` if you are using a manual installation.
+
 To use krr with [Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus) some [additional configuration](./docs/google-cloud-managed-service-for-prometheus.md) is necessary.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -206,43 +197,43 @@ To use krr with [Google Cloud Managed Service for Prometheus](https://cloud.goog
 Straightforward usage, to run the simple strategy:
 
 ```sh
-python krr.py simple
+krr simple
 ```
 
 If you want only specific namespaces (default and ingress-nginx):
 
 ```sh
-python krr.py simple -n default -n ingress-nginx
+krr simple -n default -n ingress-nginx
 ```
 
 By default krr will run in the current context. If you want to run it in a different context:
 
 ```sh
-python krr.py simple -c my-cluster-1 -c my-cluster-2
+krr simple -c my-cluster-1 -c my-cluster-2
 ```
 
 If you want to get the output in JSON format (--logtostderr is required so no logs go to the result file):
 
 ```sh
-python krr.py simple --logtostderr -f json > result.json
+krr simple --logtostderr -f json > result.json
 ```
 
 If you want to get the output in YAML format:
 
 ```sh
-python krr.py simple --logtostderr -f yaml > result.yaml
+krr simple --logtostderr -f yaml > result.yaml
 ```
 
 If you want to see additional debug logs:
 
 ```sh
-python krr.py simple -v
+krr simple -v
 ```
 
 More specific information on Strategy Settings can be found using
 
 ```sh
-python krr.py simple --help
+krr simple --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -279,7 +270,7 @@ kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
 Then, open another terminal and run krr in it, giving an explicit prometheus url:
 
 ```sh
-python krr.py simple -p http://127.0.0.1:9090
+krr simple -p http://127.0.0.1:9090
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
