@@ -144,7 +144,8 @@ class Runner(Configurable):
         return Result(
             scans=[
                 ResourceScan.calculate(obj, recommended) for obj, recommended in zip(objects, resource_recommendations)
-            ]
+            ],
+            description=self._strategy.description,
         )
 
     async def run(self) -> None:

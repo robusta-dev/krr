@@ -21,7 +21,7 @@ class ResourceRecommendation(pd.BaseModel):
 
     @classmethod
     def undefined(cls: type[Self]) -> Self:
-        return cls(request=Decimal('NaN'), limit=Decimal('NaN'))
+        return cls(request=float('NaN'), limit=float('NaN'))
 
 
 class StrategySettings(pd.BaseModel):
@@ -60,6 +60,10 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
 
     def __str__(self) -> str:
         return self.__display_name__.title()
+
+    @property
+    def description(self) -> str | None:
+        return None
 
     @abc.abstractmethod
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:

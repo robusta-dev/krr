@@ -50,7 +50,7 @@ class TableFormatter(BaseFormatter):
         :rtype: str
         """
 
-        table = Table(show_header=True, header_style="bold magenta", title=f"Scan result ({result.score} points)")
+        table = Table(show_header=True, header_style="bold magenta", title=f"Scan result ({result.score} points)", caption=result.description)
 
         table.add_column("Number", justify="right", no_wrap=True)
         table.add_column("Cluster", style="cyan")
