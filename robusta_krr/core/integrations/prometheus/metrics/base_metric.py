@@ -3,13 +3,14 @@ from __future__ import annotations
 import abc
 import asyncio
 import datetime
-from decimal import Decimal
 from typing import TYPE_CHECKING, Callable, TypeVar
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
+
+import numpy as np
 
 if TYPE_CHECKING:
     from ..loader import CustomPrometheusConnect
@@ -54,11 +55,11 @@ class BaseMetricLoader(Configurable, abc.ABC):
 
         if result == []:
             self.warning(f"Prometheus returned no {self.__class__.__name__} metrics for {object}")
-            return {pod.name: [] for pod in object.pods}
+            return {pod.name: np.array([]) for pod in object.pods}
 
         pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}
         return {
-            pod.name: [Decimal(value) for _, value in pod_result[0]["values"]]
+            pod.name: np.array([(timestamp, value) for timestamp, value in pod_result[0]["values"]], dtype=np.float64)
             for pod, pod_result in pod_results.items()
             if pod_result != []
         }

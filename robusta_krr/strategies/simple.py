@@ -1,6 +1,6 @@
-from decimal import Decimal
-
 import pydantic as pd
+import numpy as np
+from numpy.typing import NDArray
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
@@ -14,26 +14,30 @@ from robusta_krr.core.abstract.strategies import (
 
 
 class SimpleStrategySettings(StrategySettings):
-    cpu_percentile: Decimal = pd.Field(
+    cpu_percentile: float = pd.Field(
         99, gt=0, le=100, description="The percentile to use for the CPU recommendation."
     )
-    memory_buffer_percentage: Decimal = pd.Field(
+    memory_buffer_percentage: float = pd.Field(
         5, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
 
-    def calculate_memory_proposal(self, data: dict[str, list[Decimal]]) -> Decimal:
-        data_ = [value for values in data.values() for value in values]
+    def calculate_memory_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:
+        data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
-            return Decimal("NaN")
+            return float("NaN")
 
-        return max(data_) * Decimal(1 + self.memory_buffer_percentage / 100)
+        return max(data_) * (1 + self.memory_buffer_percentage / 100)
 
-    def calculate_cpu_proposal(self, data: dict[str, list[Decimal]]) -> Decimal:
-        data_ = [value for values in data.values() for value in values]
-        if len(data_) == 0:
-            return Decimal("NaN")
+    def calculate_cpu_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:
+        if len(data) == 0:
+            return float("NaN")
 
-        return data_[int((len(data_) - 1) * self.cpu_percentile / 100)]
+        if len(data) > 1:
+            data_ = np.concatenate([values[:, 1] for values in data.values()])
+        else:
+            data_ = list(data.values())[0][:, 1]
+
+        return np.percentile(data_, self.cpu_percentile)
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
