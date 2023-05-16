@@ -66,7 +66,7 @@ class PrometheusLoader(Configurable):
     ) -> None:
         super().__init__(config=config)
 
-        self.debug(f"Initializing PrometheusLoader for {cluster or 'default'} cluster")
+        self.info(f"Connecting to Prometheus for {cluster or 'default'} cluster")
 
         self.auth_header = self.config.prometheus_auth_header
         self.ssl_enabled = self.config.prometheus_ssl_enabled
@@ -93,7 +93,7 @@ class PrometheusLoader(Configurable):
         self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
         self._check_prometheus_connection()
 
-        self.debug(f"PrometheusLoader initialized for {cluster or 'default'} cluster")
+        self.info(f"Prometheus connected successfully for {cluster or 'default'} cluster")
 
     def _check_prometheus_connection(self):
         try:

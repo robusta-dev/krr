@@ -38,7 +38,7 @@ class ClusterLoader(Configurable):
             A list of scannable objects.
         """
 
-        self.debug(f"Listing scannable objects in {self.cluster}")
+        self.info(f"Listing scannable objects in {self.cluster}")
         self.debug(f"Namespaces: {self.config.namespaces}")
 
         try:
@@ -56,9 +56,14 @@ class ClusterLoader(Configurable):
         objects = itertools.chain(*objects_tuple)
         if self.config.namespaces == "*":
             # NOTE: We are not scanning kube-system namespace by default
-            return [obj for obj in objects if obj.namespace != "kube-system"]
+            result = [obj for obj in itertools.chain(*objects_tuple) if obj.namespace != "kube-system"]
         else:
-            return [obj for obj in objects if obj.namespace in self.config.namespaces]
+            result = [obj for obj in itertools.chain(*objects_tuple) if obj.namespace in self.config.namespaces]
+
+        namespaces = {obj.namespace for obj in result}
+        self.info(f"Found {len(result)} objects across {len(namespaces)} namespaces in {self.cluster}")
+
+        return result
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
