@@ -129,7 +129,7 @@ class Runner(Configurable):
 
     async def _collect_result(self) -> Result:
         clusters = await self._k8s_loader.list_clusters()
-        self.debug(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
+        self.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
         objects = await self._k8s_loader.list_scannable_objects(clusters)
 
         if len(objects) == 0:
@@ -149,5 +149,8 @@ class Runner(Configurable):
 
     async def run(self) -> None:
         self._greet()
-        result = await self._collect_result()
-        self._process_result(result)
+        try:
+            result = await self._collect_result()
+            self._process_result(result)
+        except Exception:
+            self.console.print_exception(extra_lines=1, max_frames=10)
