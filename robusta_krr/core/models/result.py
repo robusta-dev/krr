@@ -31,23 +31,36 @@ class Severity(str, enum.Enum):
         }[self]
 
     @classmethod
-    def calculate(cls, current: RecommendationValue, recommended: RecommendationValue) -> Severity:
+    def calculate(cls, current: RecommendationValue, recommended: RecommendationValue, resource_type: ResourceType) -> Severity:
         if isinstance(recommended, str) or isinstance(current, str):
             return cls.UNKNOWN
 
         if current is None and recommended is None:
-            return cls.OK
+            return cls.GOOD
         if current is None or recommended is None:
             return cls.WARNING
 
-        diff = (current - recommended) / recommended
+        diff = abs(current - recommended)
 
-        if diff > 1.0 or diff < -0.5:
-            return cls.CRITICAL
-        elif diff > 0.5 or diff < -0.25:
-            return cls.WARNING
+        if resource_type == ResourceType.CPU:
+            if diff >= 0.5:
+                return cls.CRITICAL
+            elif diff >= 0.25:
+                return cls.WARNING
+            elif diff >= 0.1:
+                return cls.OK
+            else:
+                return cls.GOOD
         else:
-            return cls.GOOD
+            diff_megabytes = diff / 1024 / 1024
+            if diff_megabytes >= 500:
+                return cls.CRITICAL
+            elif diff_megabytes >= 250:
+                return cls.WARNING
+            elif diff_megabytes >= 100:
+                return cls.OK
+            else:
+                return cls.GOOD
 
 
 class Recommendation(pd.BaseModel):
@@ -74,7 +87,7 @@ class ResourceScan(pd.BaseModel):
                 current = getattr(object.allocations, selector).get(resource_type)
                 recommended = getattr(recommendation, selector).get(resource_type)
 
-                current_severity = Severity.calculate(current, recommended)
+                current_severity = Severity.calculate(current, recommended, resource_type)
 
                 getattr(recommendation_processed, selector)[resource_type] = Recommendation(
                     value=recommended, severity=current_severity
