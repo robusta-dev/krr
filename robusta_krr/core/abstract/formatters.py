@@ -21,6 +21,7 @@ class BaseFormatter(abc.ABC):
     """Base class for result formatters."""
 
     __display_name__: str
+    __rich_console__: bool = False
 
     def __str__(self) -> str:
         return self.__display_name__.title()

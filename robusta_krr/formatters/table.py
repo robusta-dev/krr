@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-from typing import Optional
 
 from rich.table import Table
 
@@ -18,6 +17,7 @@ class TableFormatter(BaseFormatter):
     """Formatter for text output."""
 
     __display_name__ = "table"
+    __rich_console__ = True
 
     def _format(self, value: RecommendationValue) -> str:
         if value is None:
@@ -52,7 +52,7 @@ class TableFormatter(BaseFormatter):
         table = Table(
             show_header=True,
             header_style="bold magenta",
-            title=result.description,
+            title=f"\n{result.description}\n" if result.description else None,
             title_justify="left",
             title_style="",
             # TODO: Fix points calculation at [MAIN-270]

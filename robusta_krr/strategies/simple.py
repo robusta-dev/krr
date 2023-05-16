@@ -48,6 +48,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     """
 
     __display_name__ = "simple"
+    __rich_console__ = True
 
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU])

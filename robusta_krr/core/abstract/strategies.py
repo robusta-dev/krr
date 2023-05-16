@@ -73,7 +73,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         if self.__doc__ is None:
             return None
 
-        return f"\n[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip() + "\n"
+        return f"[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip()
 
     @abc.abstractmethod
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
