@@ -49,9 +49,10 @@ class Runner(Configurable):
         self.echo(no_prefix=True)
 
     def _process_result(self, result: Result) -> None:
-        formatted = result.format(self.config.format)
+        Formatter = self.config.Formatter
+        formatted = result.format(Formatter)
         self.echo("\n", no_prefix=True)
-        self.print_result(formatted)
+        self.print_result(formatted, rich=Formatter.__rich_console__)
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
@@ -144,7 +145,8 @@ class Runner(Configurable):
         return Result(
             scans=[
                 ResourceScan.calculate(obj, recommended) for obj, recommended in zip(objects, resource_recommendations)
-            ]
+            ],
+            description=self._strategy.description,
         )
 
     async def run(self) -> None:

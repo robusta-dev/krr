@@ -41,7 +41,14 @@ class SimpleStrategySettings(StrategySettings):
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
+    """
+    CPU request: {cpu_percentile}% percentile, limit: unset
+    Memory request: max + {memory_buffer_percentage}%, limit: max + {memory_buffer_percentage}%
+    Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
+    """
+
     __display_name__ = "simple"
+    __rich_console__ = True
 
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU])

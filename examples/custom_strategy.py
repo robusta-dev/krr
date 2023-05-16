@@ -14,6 +14,11 @@ class CustomStrategySettings(StrategySettings):
 
 
 class CustomStrategy(BaseStrategy[CustomStrategySettings]):
+    """
+    A custom strategy that uses the provided parameters for CPU and memory.
+    Made only in order to demonstrate how to create a custom strategy.
+    """
+
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         return {
             ResourceType.CPU: ResourceRecommendation(request=self.settings.param_1, limit=None),

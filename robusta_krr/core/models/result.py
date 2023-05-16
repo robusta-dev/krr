@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import itertools
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 import pydantic as pd
 
@@ -93,6 +93,7 @@ class Result(pd.BaseModel):
     scans: list[ResourceScan]
     score: int = 0
     resources: list[str] = ["cpu", "memory"]
+    description: Optional[str] = None
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

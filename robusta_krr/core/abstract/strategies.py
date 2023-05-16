@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 from numpy.typing import NDArray
 from typing import Generic, Optional, TypeVar, get_args, Annotated, Literal
+from textwrap import dedent
 
 import pydantic as pd
 
@@ -60,6 +61,19 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
 
     def __str__(self) -> str:
         return self.__display_name__.title()
+
+    @property
+    def description(self) -> Optional[str]:
+        """
+            Generate a description for the strategy.
+            You can use the settings in the description by using the format syntax.
+            Also you can use Rich's markdown syntax to format the description.
+        """
+
+        if self.__doc__ is None:
+            return None
+
+        return f"[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip()
 
     @abc.abstractmethod
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:

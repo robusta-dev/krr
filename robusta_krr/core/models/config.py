@@ -45,6 +45,10 @@ class Config(pd.BaseSettings):
 
     other_args: dict[str, Any]
 
+    @property
+    def Formatter(self) -> type[BaseFormatter]:
+        return BaseFormatter.find(self.format)
+
     @pd.validator("namespaces")
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:

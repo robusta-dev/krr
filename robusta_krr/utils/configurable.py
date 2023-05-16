@@ -29,12 +29,15 @@ class Configurable(abc.ABC):
     def __add_prefix(text: str, prefix: str, /, no_prefix: bool) -> str:
         return f"{prefix} {text}" if not no_prefix else text
 
-    def print_result(self, content: str) -> None:
+    def print_result(self, content: str, rich: bool = True) -> None:
         """
         Prints the result in a console. The result is always put in stdout.
         """
-        result_console = Console()
-        result_console.print(content)
+        if rich:
+            result_console = Console()
+            result_console.print(content, overflow="ignore")
+        else:
+            print(content)
 
     def echo(
         self, message: str = "", *, no_prefix: bool = False, type: Literal["INFO", "WARNING", "ERROR"] = "INFO"
