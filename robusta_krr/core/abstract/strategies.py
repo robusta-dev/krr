@@ -63,7 +63,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         return self.__display_name__.title()
 
     @property
-    def description(self) -> str | None:
+    def description(self) -> Optional[str]:
         """
             Generate a description for the strategy.
             You can use the settings in the description by using the format syntax.
