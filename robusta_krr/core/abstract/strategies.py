@@ -43,7 +43,16 @@ class StrategySettings(pd.BaseModel):
 _StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
 
 ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
-ResourceHistoryData = dict[str, ArrayNx2]
+
+
+class ResourceHistoryData(pd.BaseModel):
+    query: str  # The query used to get the data
+    data: dict[str, ArrayNx2]  # Mapping: pod -> (time, value)
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 
