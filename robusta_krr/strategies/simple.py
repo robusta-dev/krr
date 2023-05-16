@@ -42,14 +42,9 @@ class SimpleStrategySettings(StrategySettings):
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     """
-    A simple strategy that uses the {cpu_percentile} percentile for CPU and
-    the peak memory usage plus {memory_buffer_percentage}% buffer for memory.
-
-    For CPU, we set a request at the {cpu_percentile} percentile with no limit.
-    Meaning, in {cpu_percentile}% of the cases, your CPU request will be sufficient.
-
-    For memory, we take the maximum value over the past week and add a {memory_buffer_percentage}% buffer.
-    We set both request and limit to this value.
+    CPU request: {cpu_percentile}% percentile, limit: unset
+    Memory request: max + {memory_buffer_percentage}%, limit: max + {memory_buffer_percentage}%
+    Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
     """
 
     __display_name__ = "simple"

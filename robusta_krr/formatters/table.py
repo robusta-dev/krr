@@ -10,9 +10,8 @@ from robusta_krr.core.models.allocations import RecommendationValue
 from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.utils import resource_units
 
-NONE_LITERAL = "none"
+NONE_LITERAL = "unset"
 NAN_LITERAL = "?"
-ALLOWED_DIFFERENCE = 0.05
 
 
 class TableFormatter(BaseFormatter):
@@ -50,7 +49,15 @@ class TableFormatter(BaseFormatter):
         :rtype: str
         """
 
-        table = Table(show_header=True, header_style="bold magenta", title=f"Scan result ({result.score} points)", caption=result.description)
+        table = Table(
+            show_header=True,
+            header_style="bold magenta",
+            title=result.description,
+            title_justify="left",
+            title_style="",
+            # TODO: Fix points calculation at [MAIN-270]
+            # caption=f"Scan result ({result.score} points)",
+        )
 
         table.add_column("Number", justify="right", no_wrap=True)
         table.add_column("Cluster", style="cyan")

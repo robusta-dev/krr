@@ -64,10 +64,16 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
 
     @property
     def description(self) -> str | None:
+        """
+            Generate a description for the strategy.
+            You can use the settings in the description by using the format syntax.
+            Also you can use Rich's markdown syntax to format the description.
+        """
+
         if self.__doc__ is None:
             return None
 
-        return dedent(self.__doc__.format_map(self.settings.dict())).strip()
+        return f"\n[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip() + "\n"
 
     @abc.abstractmethod
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
