@@ -13,7 +13,7 @@ from robusta_krr.core.models.result import K8sObjectData, ResourceType
 from robusta_krr.utils.display_name import add_display_name
 
 
-Self = TypeVar("Self", bound="ResourceRecommendation")
+SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
 
 
 class ResourceRecommendation(pd.BaseModel):
@@ -21,7 +21,7 @@ class ResourceRecommendation(pd.BaseModel):
     limit: Optional[float]
 
     @classmethod
-    def undefined(cls: type[Self]) -> Self:
+    def undefined(cls: type[SelfRR]) -> SelfRR:
         return cls(request=float('NaN'), limit=float('NaN'))
 
 
@@ -47,7 +47,7 @@ ResourceHistoryData = dict[str, ArrayNx2]
 HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 
-Self = TypeVar("Self", bound="BaseStrategy")
+SelfBS = TypeVar("SelfBS", bound="BaseStrategy")
 
 
 @add_display_name(postfix="Strategy")
@@ -80,7 +80,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         """Run the strategy to calculate the recommendation"""
 
     @classmethod
-    def find(cls: type[Self], name: str) -> type[Self]:
+    def find(cls: type[SelfBS], name: str) -> type[SelfBS]:
         """Get a strategy from its name."""
 
         strategies = cls.get_all()
@@ -90,7 +90,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         raise ValueError(f"Unknown strategy name: {name}. Available strategies: {', '.join(strategies)}")
 
     @classmethod
-    def get_all(cls: type[Self]) -> dict[str, type[Self]]:
+    def get_all(cls: type[SelfBS]) -> dict[str, type[SelfBS]]:
         # NOTE: Load default formatters
         from robusta_krr import strategies as _  # noqa: F401
 
