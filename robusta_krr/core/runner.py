@@ -149,5 +149,8 @@ class Runner(Configurable):
 
     async def run(self) -> None:
         self._greet()
-        result = await self._collect_result()
-        self._process_result(result)
+        try:
+            result = await self._collect_result()
+            self._process_result(result)
+        except Exception:
+            self.console.print_exception(extra_lines=1, max_frames=10)
