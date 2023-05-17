@@ -11,7 +11,7 @@ from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, Re
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.version import get_version
-
+from robusta_krr.utils.progress_bar import ProgressBar
 
 class Runner(Configurable):
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
@@ -91,12 +91,11 @@ class Runner(Configurable):
             for resource, recommendation in result.items()
         }
 
-    async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
+    async def _calculate_object_recommendations(self, object: K8sObjectData, progress_bar: ProgressBar) -> RunResult:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
             return {resource: ResourceRecommendation.undefined() for resource in ResourceType}
-
         data_tuple = await asyncio.gather(
             *[
                 prometheus_loader.gather_data(
@@ -109,15 +108,15 @@ class Runner(Configurable):
             ]
         )
         data = dict(zip(ResourceType, data_tuple))
-
+        progress_bar.progress()
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
         result = await asyncio.to_thread(self._strategy.run, data, object)
         return self._format_result(result)
 
-    async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
+    async def _gather_objects_recommendations(self, objects: list[K8sObjectData], progress_bar: ProgressBar) -> list[ResourceAllocations]:
         recommendations: list[RunResult] = await asyncio.gather(
-            *[self._calculate_object_recommendations(object) for object in objects]
+            *[self._calculate_object_recommendations(object, progress_bar) for object in objects]
         )
 
         return [
@@ -140,7 +139,8 @@ class Runner(Configurable):
                 self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
             return Result(scans=[])
 
-        resource_recommendations = await self._gather_objects_recommendations(objects)
+        with ProgressBar(self.config, total=len(objects), title="Calculating strategy") as progress_bar:
+            resource_recommendations = await self._gather_objects_recommendations(objects, progress_bar)
 
         return Result(
             scans=[
