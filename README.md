@@ -133,6 +133,40 @@ More features (like seeing graphs, based on which recommendations were made) com
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- ADVANCED USAGE EXAMPLES -->
+
+### Slack integration
+
+Put cost savings on autopilot. Get notified in Slack about recommendations above X%. Send a weekly global report, or one report per team.
+
+![Slack Screen Shot][slack-screenshot]
+
+#### Prerequisites
+* A Slack workspace
+
+#### Setup
+1. [Install Robusta with Helm to your cluster and configure slack](https://docs.robusta.dev/master/installation.html)
+2. Create your KRR slack playbook by adding the following to `generated_values.yaml`:
+```
+customPlaybooks:
+# Runs a weekly krr scan on the namespace devs-namespace and sends it to the configured slack channel
+customPlaybooks:
+- triggers:
+  - on_schedule:
+      fixed_delay_repeat:
+        repeat: 1 # number of times to run or -1 to run forever
+        seconds_delay: 604800 # 1 week
+  actions:
+  - krr_scan:
+      args: "--namespace devs-namespace" ## KRR args here
+  sinks:
+      - "main_slack_sink" # slack sink you want to send the report to here
+```
+
+3. Do a Helm upgrade to apply the new values: `helm upgrade robusta robusta/robusta --values=generated_values.yaml --set clusterName=<YOUR_CLUSTER_NAME>`
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- GETTING STARTED -->
 
 ## Getting Started
@@ -393,4 +427,5 @@ Project Link: [https://github.com/robusta-dev/krr](https://github.com/robusta-de
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/othneildrew
 [product-screenshot]: images/screenshot.jpeg
+[slack-screenshot]: images/krr_slack_example.png
 [ui-screenshot]: images/ui_screenshot.jpeg
