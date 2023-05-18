@@ -33,6 +33,7 @@ class PrometheusDiscovery(ServiceDiscovery):
                 "app=prometheus-msteams",
                 "app=rancher-monitoring-prometheus",
                 "app=prometheus-prometheus",
+                "app.kubernetes.io/name=vmsingle",
             ],
             api_client=api_client,
         )
