@@ -91,7 +91,7 @@ class Runner(Configurable):
             for resource, recommendation in result.items()
         }
 
-    async def _calculate_object_recommendations(self, object: K8sObjectData, progress_bar: ProgressBar) -> RunResult:
+    async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
@@ -108,15 +108,15 @@ class Runner(Configurable):
             ]
         )
         data = dict(zip(ResourceType, data_tuple))
-        progress_bar.progress()
+        self.__progressbar.progress()
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
         result = await asyncio.to_thread(self._strategy.run, data, object)
         return self._format_result(result)
 
-    async def _gather_objects_recommendations(self, objects: list[K8sObjectData], progress_bar: ProgressBar) -> list[ResourceAllocations]:
+    async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
         recommendations: list[RunResult] = await asyncio.gather(
-            *[self._calculate_object_recommendations(object, progress_bar) for object in objects]
+            *[self._calculate_object_recommendations(object) for object in objects]
         )
 
         return [
@@ -139,9 +139,10 @@ class Runner(Configurable):
                 self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
             return Result(scans=[])
 
-        with ProgressBar(self.config, total=len(objects), title="Calculating strategy") as progress_bar:
-            resource_recommendations = await self._gather_objects_recommendations(objects, progress_bar)
-
+        self.__progressbar = ProgressBar(self.config, total=len(objects), title="Calculating Recommendation")
+        resource_recommendations = await self._gather_objects_recommendations(objects)
+        self.__progressbar.close_bar()
+        
         return Result(
             scans=[
                 ResourceScan.calculate(obj, recommended) for obj, recommended in zip(objects, resource_recommendations)
