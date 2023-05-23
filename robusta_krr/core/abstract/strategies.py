@@ -9,7 +9,7 @@ from textwrap import dedent
 
 import pydantic as pd
 
-from robusta_krr.core.models.result import K8sObjectData, ResourceType
+from robusta_krr.core.models.result import K8sObjectData, ResourceType, Metric
 from robusta_krr.utils.display_name import add_display_name
 
 
@@ -46,7 +46,7 @@ ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
 
 
 class ResourceHistoryData(pd.BaseModel):
-    query: str  # The query used to get the data
+    metric: Metric
     data: dict[str, ArrayNx2]  # Mapping: pod -> (time, value)
 
     class Config:

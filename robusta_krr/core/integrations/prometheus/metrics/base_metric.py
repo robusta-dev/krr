@@ -5,7 +5,7 @@ import asyncio
 import datetime
 from typing import TYPE_CHECKING, Callable, TypeVar
 
-from robusta_krr.core.abstract.strategies import ResourceHistoryData
+from robusta_krr.core.abstract.strategies import ResourceHistoryData, Metric
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
@@ -27,6 +27,9 @@ class BaseMetricLoader(Configurable, abc.ABC):
     def get_query(self, object: K8sObjectData) -> str:
         ...
 
+    def _step_to_string(self, step: datetime.timedelta) -> str:
+        return f"{int(step.total_seconds()) // 60}m"
+
     async def query_prometheus(
         self, query: str, start_time: datetime.datetime, end_time: datetime.datetime, step: datetime.timedelta
     ) -> list[dict]:
@@ -35,17 +38,18 @@ class BaseMetricLoader(Configurable, abc.ABC):
             query=query,
             start_time=start_time,
             end_time=end_time,
-            step=f"{int(step.total_seconds()) // 60}m",
+            step=self._step_to_string(step),
         )
 
     async def load_data(
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
     ) -> ResourceHistoryData:
         query = self.get_query(object)
+        end_time = datetime.datetime.now()
         result = await self.query_prometheus(
             query=query,
-            start_time=datetime.datetime.now() - period,
-            end_time=datetime.datetime.now(),
+            start_time=end_time - period,
+            end_time=end_time,
             step=step,
         )
 
@@ -54,7 +58,12 @@ class BaseMetricLoader(Configurable, abc.ABC):
             return ResourceHistoryData(query=query, data={})
 
         return ResourceHistoryData(
-            query=query,
+            metric=Metric(
+                query=query,
+                start_time=end_time - period,
+                end_time=end_time,
+                step=self._step_to_string(step),
+            ),
             data={
                 pod_result['metric']['pod']: np.array(pod_result["values"], dtype=np.float64)
                 for pod_result in result
