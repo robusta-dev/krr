@@ -145,10 +145,9 @@ class Runner(Configurable):
                 self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
             return Result(scans=[])
 
-        self.__progressbar = ProgressBar(self.config, total=len(objects), title="Calculating Recommendation")
-        resource_recommendations = await self._gather_objects_recommendations(objects)
-        self.__progressbar.close_bar()
-        
+        with ProgressBar(self.config, total=len(objects), title="Calculating Recommendation") as self.__progressbar:
+            resource_recommendations = await self._gather_objects_recommendations(objects)
+
         return Result(
             scans=[
                 ResourceScan.calculate(obj, recommended, metrics) for obj, (recommended, metrics) in zip(objects, resource_recommendations)
