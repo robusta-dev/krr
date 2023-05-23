@@ -11,7 +11,7 @@ from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, Re
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.version import get_version
-
+from robusta_krr.utils.progress_bar import ProgressBar
 
 class Runner(Configurable):
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
@@ -111,6 +111,8 @@ class Runner(Configurable):
         data = dict(zip(ResourceType, data_tuple))
         metrics = {resource: data[resource].metric for resource in ResourceType}
 
+        self.__progressbar.progress()
+
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
         result = await asyncio.to_thread(self._strategy.run, data, object)
@@ -143,7 +145,8 @@ class Runner(Configurable):
                 self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
             return Result(scans=[])
 
-        resource_recommendations = await self._gather_objects_recommendations(objects)
+        with ProgressBar(self.config, total=len(objects), title="Calculating Recommendation") as self.__progressbar:
+            resource_recommendations = await self._gather_objects_recommendations(objects)
 
         return Result(
             scans=[
