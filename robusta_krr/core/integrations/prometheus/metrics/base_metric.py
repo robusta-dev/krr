@@ -30,15 +30,13 @@ class BaseMetricLoader(Configurable, abc.ABC):
     def _step_to_string(self, step: datetime.timedelta) -> str:
         return f"{int(step.total_seconds()) // 60}m"
 
-    async def query_prometheus(
-        self, query: str, start_time: datetime.datetime, end_time: datetime.datetime, step: datetime.timedelta
-    ) -> list[dict]:
+    async def query_prometheus(self, metric: Metric) -> list[dict]:
         return await asyncio.to_thread(
             self.prometheus.custom_query_range,
-            query=query,
-            start_time=start_time,
-            end_time=end_time,
-            step=self._step_to_string(step),
+            query=metric.query,
+            start_time=metric.start_time,
+            end_time=metric.end_time,
+            step=metric.step,
         )
 
     async def load_data(
@@ -46,27 +44,22 @@ class BaseMetricLoader(Configurable, abc.ABC):
     ) -> ResourceHistoryData:
         query = self.get_query(object)
         end_time = datetime.datetime.now()
-        result = await self.query_prometheus(
+        metric = Metric(
             query=query,
             start_time=end_time - period,
             end_time=end_time,
-            step=step,
+            step=self._step_to_string(step),
         )
+        result = await self.query_prometheus(metric)
 
         if result == []:
             self.warning(f"Prometheus returned no {self.__class__.__name__} metrics for {object}")
-            return ResourceHistoryData(query=query, data={})
+            return ResourceHistoryData(metric=metric, data={})
 
         return ResourceHistoryData(
-            metric=Metric(
-                query=query,
-                start_time=end_time - period,
-                end_time=end_time,
-                step=self._step_to_string(step),
-            ),
+            metric=metric,
             data={
-                pod_result['metric']['pod']: np.array(pod_result["values"], dtype=np.float64)
-                for pod_result in result
+                pod_result["metric"]["pod"]: np.array(pod_result["values"], dtype=np.float64) for pod_result in result
             },
         )
 
