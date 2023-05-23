@@ -24,7 +24,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         self.prometheus = prometheus
 
     @abc.abstractmethod
-    def get_query(self, namespace: str, pod: str, container: str) -> str:
+    def get_query(self, object: K8sObjectData) -> str:
         ...
 
     async def query_prometheus(
@@ -41,28 +41,25 @@ class BaseMetricLoader(Configurable, abc.ABC):
     async def load_data(
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
     ) -> ResourceHistoryData:
-        result = await asyncio.gather(
-            *[
-                self.query_prometheus(
-                    query=self.get_query(object.namespace, pod.name, object.container),
-                    start_time=datetime.datetime.now() - period,
-                    end_time=datetime.datetime.now(),
-                    step=step,
-                )
-                for pod in object.pods
-            ]
+        query = self.get_query(object)
+        result = await self.query_prometheus(
+            query=query,
+            start_time=datetime.datetime.now() - period,
+            end_time=datetime.datetime.now(),
+            step=step,
         )
 
         if result == []:
             self.warning(f"Prometheus returned no {self.__class__.__name__} metrics for {object}")
-            return {pod.name: np.array([]) for pod in object.pods}
+            return ResourceHistoryData(query=query, data={})
 
-        pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}
-        return {
-            pod.name: np.array([(timestamp, value) for timestamp, value in pod_result[0]["values"]], dtype=np.float64)
-            for pod, pod_result in pod_results.items()
-            if pod_result != []
-        }
+        return ResourceHistoryData(
+            query=query,
+            data={
+                pod_result['metric']['pod']: np.array(pod_result["values"], dtype=np.float64)
+                for pod_result in result
+            },
+        )
 
     @staticmethod
     def get_by_resource(resource: str) -> type[BaseMetricLoader]:

@@ -7,7 +7,7 @@ from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import PrometheusLoader, PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result
+from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, MetricsData
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.version import get_version
@@ -91,11 +91,12 @@ class Runner(Configurable):
             for resource, recommendation in result.items()
         }
 
-    async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
+    async def _calculate_object_recommendations(self, object: K8sObjectData) -> tuple[RunResult, MetricsData]:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
-            return {resource: ResourceRecommendation.undefined() for resource in ResourceType}
+            return {resource: ResourceRecommendation.undefined() for resource in ResourceType}, {}
+
         data_tuple = await asyncio.gather(
             *[
                 prometheus_loader.gather_data(
@@ -108,23 +109,28 @@ class Runner(Configurable):
             ]
         )
         data = dict(zip(ResourceType, data_tuple))
+        queries = {resource: data[resource].query for resource in ResourceType}
+
         self.__progressbar.progress()
+
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
         result = await asyncio.to_thread(self._strategy.run, data, object)
-        return self._format_result(result)
+        return self._format_result(result), queries
 
-    async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
-        recommendations: list[RunResult] = await asyncio.gather(
+    async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[tuple[ResourceAllocations, MetricsData]]:
+        recommendations: list[tuple[RunResult, MetricsData]] = await asyncio.gather(
             *[self._calculate_object_recommendations(object) for object in objects]
         )
 
         return [
-            ResourceAllocations(
-                requests={resource: recommendation[resource].request for resource in ResourceType},
-                limits={resource: recommendation[resource].limit for resource in ResourceType},
+            (
+                ResourceAllocations(
+                    requests={resource: recommendation[resource].request for resource in ResourceType},
+                    limits={resource: recommendation[resource].limit for resource in ResourceType},
+                ), metric
             )
-            for recommendation in recommendations
+            for recommendation, metric in recommendations
         ]
 
     async def _collect_result(self) -> Result:
@@ -145,7 +151,7 @@ class Runner(Configurable):
         
         return Result(
             scans=[
-                ResourceScan.calculate(obj, recommended) for obj, recommended in zip(objects, resource_recommendations)
+                ResourceScan.calculate(obj, recommended, metrics) for obj, (recommended, metrics) in zip(objects, resource_recommendations)
             ],
             description=self._strategy.description,
         )

@@ -51,8 +51,8 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     __rich_console__ = True
 
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
-        cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU])
-        memory_usage = self.settings.calculate_memory_proposal(history_data[ResourceType.Memory])
+        cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU].data)
+        memory_usage = self.settings.calculate_memory_proposal(history_data[ResourceType.Memory].data)
 
         return {
             ResourceType.CPU: ResourceRecommendation(request=cpu_usage, limit=None),

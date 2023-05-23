@@ -18,9 +18,6 @@ from robusta_krr.utils.service_discovery import ServiceDiscovery
 
 from .metrics import BaseMetricLoader
 
-import numpy as np
-from numpy.typing import NDArray
-
 
 class PrometheusDiscovery(ServiceDiscovery):
     def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
