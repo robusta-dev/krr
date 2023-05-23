@@ -109,14 +109,14 @@ class Runner(Configurable):
             ]
         )
         data = dict(zip(ResourceType, data_tuple))
-        queries = {resource: data[resource].query for resource in ResourceType}
+        metrics = {resource: data[resource].metric for resource in ResourceType}
 
         self.__progressbar.progress()
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
         result = await asyncio.to_thread(self._strategy.run, data, object)
-        return self._format_result(result), queries
+        return self._format_result(result), metrics
 
     async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[tuple[ResourceAllocations, MetricsData]]:
         recommendations: list[tuple[RunResult, MetricsData]] = await asyncio.gather(

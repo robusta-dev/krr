@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import itertools
 from typing import Any, Union, Optional
+from datetime import datetime
 
 import pydantic as pd
 
@@ -60,7 +61,14 @@ class ResourceRecommendation(pd.BaseModel):
     limits: dict[ResourceType, RecommendationValue]
 
 
-MetricsData = dict[ResourceType, str]
+class Metric(pd.BaseModel):
+    query: str
+    start_time: datetime
+    end_time: datetime
+    step: str
+
+
+MetricsData = dict[ResourceType, Metric]
 
 
 class ResourceScan(pd.BaseModel):
