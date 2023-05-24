@@ -19,7 +19,7 @@ class K8sObjectData(pd.BaseModel):
     container: str
     pods: list[PodData]
     namespace: str
-    kind: Optional[str]
+    kind: str
     allocations: ResourceAllocations
 
     def __str__(self) -> str:
