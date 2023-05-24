@@ -161,6 +161,10 @@ class Runner(Configurable):
         )
 
     async def run(self) -> None:
+        if not self.config.config_loaded:
+            self.console.print("[CRITICAL] Could not load kubernetes configuration. Do you have kubeconfig set up?")
+            return
+
         self._greet()
         try:
             result = await self._collect_result()
