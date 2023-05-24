@@ -5,12 +5,12 @@ import asyncio
 import datetime
 from typing import TYPE_CHECKING, Callable, TypeVar
 
-from robusta_krr.core.abstract.strategies import ResourceHistoryData, Metric
+import numpy as np
+
+from robusta_krr.core.abstract.strategies import Metric, ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
-
-import numpy as np
 
 if TYPE_CHECKING:
     from ..loader import CustomPrometheusConnect

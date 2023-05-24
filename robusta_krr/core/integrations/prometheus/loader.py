@@ -1,7 +1,7 @@
+import asyncio
 import datetime
 from typing import Optional, no_type_check
 
-import asyncio
 import requests
 from kubernetes import config as k8s_config
 from kubernetes.client import ApiClient
@@ -123,11 +123,7 @@ class PrometheusLoader(Configurable):
         metric_loader = MetricLoaderType(self.config, self.prometheus)
         return await metric_loader.load_data(object, period, step)
 
-    async def add_historic_pods(
-        self,
-        object: K8sObjectData,
-        period: datetime.timedelta
-    ) -> None:
+    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """Find pods that were already deleted, but still have some metrics in Prometheus"""
 
         if len(object.pods) == 0:
@@ -136,7 +132,7 @@ class PrometheusLoader(Configurable):
         period_literal = f"{int(period.total_seconds()) // 60 // 24}d"
         owner = await asyncio.to_thread(
             self.prometheus.custom_query,
-            query=f'kube_pod_owner{{pod="{next(iter(object.pods)).name}"}}[{period_literal}]'
+            query=f'kube_pod_owner{{pod="{next(iter(object.pods)).name}"}}[{period_literal}]',
         )
 
         if owner == []:
@@ -145,8 +141,7 @@ class PrometheusLoader(Configurable):
         owner = owner[0]["metric"]["owner_name"]
 
         related_pods = await asyncio.to_thread(
-            self.prometheus.custom_query,
-            query=f'kube_pod_owner{{owner_name="{owner}"}}[{period_literal}]'
+            self.prometheus.custom_query, query=f'kube_pod_owner{{owner_name="{owner}"}}[{period_literal}]'
         )
 
         current_pods = {p.name for p in object.pods}

@@ -1,6 +1,6 @@
+import sys
 from typing import Any, Literal, Optional, Union
 
-import sys
 import pydantic as pd
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException

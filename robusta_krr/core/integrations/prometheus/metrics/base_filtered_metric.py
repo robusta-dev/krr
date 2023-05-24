@@ -1,7 +1,8 @@
 from typing import Any, Optional
 
-from .base_metric import BaseMetricLoader
 from robusta_krr.core.abstract.strategies import Metric
+
+from .base_metric import BaseMetricLoader
 
 PrometheusSeries = Any
 

@@ -1,6 +1,8 @@
-from robusta_krr.utils.configurable import Configurable
 from alive_progress import alive_bar
+
 from robusta_krr.core.models.config import Config
+from robusta_krr.utils.configurable import Configurable
+
 
 class ProgressBar(Configurable):
     def __init__(self, config: Config, **kwargs) -> None:

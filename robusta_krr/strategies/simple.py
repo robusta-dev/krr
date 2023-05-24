@@ -1,5 +1,5 @@
-import pydantic as pd
 import numpy as np
+import pydantic as pd
 from numpy.typing import NDArray
 
 from robusta_krr.core.abstract.strategies import (
@@ -14,9 +14,7 @@ from robusta_krr.core.abstract.strategies import (
 
 
 class SimpleStrategySettings(StrategySettings):
-    cpu_percentile: float = pd.Field(
-        99, gt=0, le=100, description="The percentile to use for the CPU recommendation."
-    )
+    cpu_percentile: float = pd.Field(99, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
     memory_buffer_percentage: float = pd.Field(
         5, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )

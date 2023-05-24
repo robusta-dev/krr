@@ -43,11 +43,11 @@ def format(x: Union[float, int], /, *, base: Literal[1024, 1000] = 1024) -> str:
     if x < 1:
         return f"{int(x*1000)}m"
 
-    units = ['', 'K', 'M', 'G', 'T', 'P', 'E']
-    binary_units = ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei']
+    units = ["", "K", "M", "G", "T", "P", "E"]
+    binary_units = ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei"]
 
     x = int(x)
     for i, unit in enumerate(binary_units if base == 1024 else units):
-        if x < base**(i + 1) or i == len(units) - 1 or x / base**(i + 1) < 10:
+        if x < base ** (i + 1) or i == len(units) - 1 or x / base ** (i + 1) < 10:
             return f"{x/base**i:.0f}{unit}"
     return f"{x/6**i:.0f}{unit}"

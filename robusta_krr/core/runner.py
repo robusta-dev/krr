@@ -7,11 +7,12 @@ from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import PrometheusLoader, PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, MetricsData
+from robusta_krr.core.models.result import MetricsData, ResourceAllocations, ResourceScan, ResourceType, Result
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
-from robusta_krr.utils.version import get_version
 from robusta_krr.utils.progress_bar import ProgressBar
+from robusta_krr.utils.version import get_version
+
 
 class Runner(Configurable):
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
@@ -118,7 +119,9 @@ class Runner(Configurable):
         result = await asyncio.to_thread(self._strategy.run, data, object)
         return self._format_result(result), metrics
 
-    async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[tuple[ResourceAllocations, MetricsData]]:
+    async def _gather_objects_recommendations(
+        self, objects: list[K8sObjectData]
+    ) -> list[tuple[ResourceAllocations, MetricsData]]:
         recommendations: list[tuple[RunResult, MetricsData]] = await asyncio.gather(
             *[self._calculate_object_recommendations(object) for object in objects]
         )
@@ -128,7 +131,8 @@ class Runner(Configurable):
                 ResourceAllocations(
                     requests={resource: recommendation[resource].request for resource in ResourceType},
                     limits={resource: recommendation[resource].limit for resource in ResourceType},
-                ), metric
+                ),
+                metric,
             )
             for recommendation, metric in recommendations
         ]
@@ -150,7 +154,8 @@ class Runner(Configurable):
 
         return Result(
             scans=[
-                ResourceScan.calculate(obj, recommended, metrics) for obj, (recommended, metrics) in zip(objects, resource_recommendations)
+                ResourceScan.calculate(obj, recommended, metrics)
+                for obj, (recommended, metrics) in zip(objects, resource_recommendations)
             ],
             description=self._strategy.description,
         )
