@@ -1,4 +1,3 @@
-import sys
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
@@ -14,10 +13,9 @@ except ConfigException:
     try:
         config.load_kube_config()
     except ConfigException:
-        print("[CRITICAL] Could not load kubernetes configuration. Do you have kubeconfig set up?")
-        sys.exit(1)
-
-    IN_CLUSTER = False
+        IN_CLUSTER = None
+    else:
+        IN_CLUSTER = False
 else:
     IN_CLUSTER = True
 
@@ -72,5 +70,9 @@ class Config(pd.BaseSettings):
         return v
 
     @property
+    def config_loaded(self) -> bool:
+        return IN_CLUSTER is not None
+
+    @property
     def inside_cluster(self) -> bool:
-        return IN_CLUSTER
+        return bool(IN_CLUSTER)
