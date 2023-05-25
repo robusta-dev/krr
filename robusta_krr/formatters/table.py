@@ -55,8 +55,7 @@ class TableFormatter(BaseFormatter):
             title=f"\n{result.description}\n" if result.description else None,
             title_justify="left",
             title_style="",
-            # TODO: Fix points calculation at [MAIN-270]
-            # caption=f"Scan result ({result.score} points)",
+            caption=f"{result.score} points - {result.score_letter}",
         )
 
         table.add_column("Number", justify="right", no_wrap=True)
