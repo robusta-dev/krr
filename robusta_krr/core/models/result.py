@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import enum
 from datetime import datetime
 from typing import Any, Optional, Union
 
@@ -9,60 +8,7 @@ import pydantic as pd
 from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
-
-
-class Severity(str, enum.Enum):
-    """The severity of the scan."""
-
-    UNKNOWN = "UNKNOWN"
-    GOOD = "GOOD"
-    OK = "OK"
-    WARNING = "WARNING"
-    CRITICAL = "CRITICAL"
-
-    @property
-    def color(self) -> str:
-        return {
-            self.UNKNOWN: "dim",
-            self.GOOD: "green",
-            self.OK: "gray",
-            self.WARNING: "yellow",
-            self.CRITICAL: "red",
-        }[self]
-
-    @classmethod
-    def calculate(
-        cls, current: RecommendationValue, recommended: RecommendationValue, resource_type: ResourceType
-    ) -> Severity:
-        if isinstance(recommended, str) or isinstance(current, str):
-            return cls.UNKNOWN
-
-        if current is None and recommended is None:
-            return cls.GOOD
-        if current is None or recommended is None:
-            return cls.WARNING
-
-        diff = abs(current - recommended)
-
-        if resource_type == ResourceType.CPU:
-            if diff >= 0.5:
-                return cls.CRITICAL
-            elif diff >= 0.25:
-                return cls.WARNING
-            elif diff >= 0.1:
-                return cls.OK
-            else:
-                return cls.GOOD
-        else:
-            diff_megabytes = diff / 1024 / 1024
-            if diff_megabytes >= 500:
-                return cls.CRITICAL
-            elif diff_megabytes >= 250:
-                return cls.WARNING
-            elif diff_megabytes >= 100:
-                return cls.OK
-            else:
-                return cls.GOOD
+from robusta_krr.core.models.severity import Severity
 
 
 class Recommendation(pd.BaseModel):
