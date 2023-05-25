@@ -43,7 +43,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
     ) -> ResourceHistoryData:
         query = self.get_query(object)
-        end_time = datetime.datetime.now()
+        end_time = datetime.datetime.now().astimezone()
         metric = Metric(
             query=query,
             start_time=end_time - period,
