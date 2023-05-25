@@ -57,6 +57,13 @@ def load_commands() -> None:
                     help="List of namespaces to run on. By default, will run on all namespaces.",
                     rich_help_panel="Kubernetes Settings"
                 ),
+                resources: List[str] = typer.Option(
+                    None,
+                    "--resource",
+                    "-n",
+                    help="List of resources to run on. By default, will run on all resources.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
                 prometheus_url: Optional[str] = typer.Option(
                     None,
                     "--prometheus-url",
@@ -87,6 +94,7 @@ def load_commands() -> None:
                 config = Config(
                     clusters="*" if "*" in clusters else clusters,
                     namespaces="*" if "*" in namespaces else namespaces,
+                    resources="*" if "*" in resources else resources,
                     prometheus_url=prometheus_url,
                     prometheus_auth_header=prometheus_auth_header,
                     prometheus_ssl_enabled=prometheus_ssl_enabled,

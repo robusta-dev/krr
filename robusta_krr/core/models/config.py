@@ -26,6 +26,7 @@ class Config(pd.BaseSettings):
 
     clusters: Union[list[str], Literal["*"], None] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
+    resources: Union[list[str], Literal["*"]] = pd.Field("*")
 
     # Value settings
     cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
@@ -49,6 +50,13 @@ class Config(pd.BaseSettings):
 
     @pd.validator("namespaces")
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
+        if v == []:
+            return "*"
+
+        return v
+
+    @pd.validator("resources")
+    def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
             return "*"
 

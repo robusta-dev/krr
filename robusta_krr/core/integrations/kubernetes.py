@@ -9,6 +9,7 @@ from kubernetes.client.models import (
     V1DaemonSetList,
     V1Deployment,
     V1DeploymentList,
+    V1Job,
     V1JobList,
     V1LabelSelector,
     V1PodList,
@@ -40,30 +41,35 @@ class ClusterLoader(Configurable):
 
         self.info(f"Listing scannable objects in {self.cluster}")
         self.debug(f"Namespaces: {self.config.namespaces}")
+        self.debug(f"Resources: {self.config.resources}")
 
         try:
-            objects_tuple = await asyncio.gather(
-                self._list_deployments(),
-                self._list_all_statefulsets(),
-                self._list_all_daemon_set(),
-                self._list_all_jobs(),
-            )
+            list_fns = []
+            if self._should_list_resource("deployments"):
+                list_fns.append(self._list_deployments)
+            if self._should_list_resource("statefulsets"):
+                list_fns.append(self._list_all_statefulsets)
+            if self._should_list_resource("daemon_set"):
+                list_fns.append(self._list_all_daemon_set)
+            if self._should_list_resource("jobs"):
+                list_fns.append(self._list_all_jobs)
+
+            objects_tuple = await asyncio.gather(*(fn() for fn in list_fns))
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
             self.debug_exception()
             return []
 
-        objects = itertools.chain(*objects_tuple)
-        if self.config.namespaces == "*":
-            # NOTE: We are not scanning kube-system namespace by default
-            result = [obj for obj in objects if obj.namespace != "kube-system"]
-        else:
-            result = [obj for obj in objects if obj.namespace in self.config.namespaces]
+        objects = list(itertools.chain(*objects_tuple))
+        namespaces = {obj.namespace for obj in objects}
+        self.info(f"Found {len(objects)} objects across {len(namespaces)} namespaces in {self.cluster}")
 
-        namespaces = {obj.namespace for obj in result}
-        self.info(f"Found {len(result)} objects across {len(namespaces)} namespaces in {self.cluster}")
+        return objects
 
-        return result
+    def _should_list_resource(self, resource: str):
+        if self.config.resources == "*":
+            return True
+        return resource in self.config.resources
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
@@ -109,28 +115,47 @@ class ClusterLoader(Configurable):
             pods=await self.__list_pods(item),
         )
 
+    async def _list_resources(self, all_namespaces_fn, namespaced_fn):
+        resources = []
+        if self.config.namespaces == "*":
+            ret: V1DeploymentList = await asyncio.to_thread(all_namespaces_fn, watch=False)
+            for item in ret.items:
+                resources.append(item)
+        else:
+            for namespace in self.config.namespaces:
+                ret: V1DeploymentList = await asyncio.to_thread(namespaced_fn, namespace, watch=False)
+                for item in ret.items:
+                    resources.append(item)
+        return resources
+
     async def _list_deployments(self) -> list[K8sObjectData]:
         self.debug(f"Listing deployments in {self.cluster}")
-        ret: V1DeploymentList = await asyncio.to_thread(self.apps.list_deployment_for_all_namespaces, watch=False)
-        self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
+        deployments: list[V1Deployment] = await self._list_resources(
+            self.apps.list_deployment_for_all_namespaces,
+            self.apps.list_namespaced_deployment
+        )
+        self.debug(f"Found {len(deployments)} deployments in {self.cluster}")
 
         return await asyncio.gather(
             *[
                 self.__build_obj(item, container)
-                for item in ret.items
+                for item in deployments
                 for container in item.spec.template.spec.containers
             ]
         )
 
     async def _list_all_statefulsets(self) -> list[K8sObjectData]:
         self.debug(f"Listing statefulsets in {self.cluster}")
-        ret: V1StatefulSetList = await asyncio.to_thread(self.apps.list_stateful_set_for_all_namespaces, watch=False)
-        self.debug(f"Found {len(ret.items)} statefulsets in {self.cluster}")
+        statefulsets: list[V1StatefulSet] = await self._list_resources(
+            self.apps.list_stateful_set_for_all_namespaces,
+            self.apps.list_namespaced_stateful_set
+        )
+        self.debug(f"Found {len(statefulsets)} statefulsets in {self.cluster}")
 
         return await asyncio.gather(
             *[
                 self.__build_obj(item, container)
-                for item in ret.items
+                for item in statefulsets
                 for container in item.spec.template.spec.containers
             ]
         )
@@ -150,13 +175,16 @@ class ClusterLoader(Configurable):
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
         self.debug(f"Listing jobs in {self.cluster}")
-        ret: V1JobList = await asyncio.to_thread(self.batch.list_job_for_all_namespaces, watch=False)
-        self.debug(f"Found {len(ret.items)} jobs in {self.cluster}")
+        jobs: list[V1Job] = await self._list_resources(
+            self.batch.list_job_for_all_namespaces,
+            self.batch.list_namespaced_job
+        )
+        self.debug(f"Found {len(jobs)} jobs in {self.cluster}")
 
         return await asyncio.gather(
             *[
                 self.__build_obj(item, container)
-                for item in ret.items
+                for item in jobs
                 for container in item.spec.template.spec.containers
             ]
         )
