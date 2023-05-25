@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import abc
 import datetime
+from textwrap import dedent
+from typing import Annotated, Generic, Literal, Optional, TypeVar, get_args
+
 import numpy as np
-from numpy.typing import NDArray
-from typing import Generic, Optional, TypeVar, get_args, Annotated, Literal
-
 import pydantic as pd
+from numpy.typing import NDArray
 
-from robusta_krr.core.models.result import K8sObjectData, ResourceType
+from robusta_krr.core.models.result import K8sObjectData, Metric, ResourceType
 from robusta_krr.utils.display_name import add_display_name
-
 
 SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
 
@@ -21,14 +21,14 @@ class ResourceRecommendation(pd.BaseModel):
 
     @classmethod
     def undefined(cls: type[SelfRR]) -> SelfRR:
-        return cls(request=float('NaN'), limit=float('NaN'))
+        return cls(request=float("NaN"), limit=float("NaN"))
 
 
 class StrategySettings(pd.BaseModel):
     history_duration: float = pd.Field(
         24 * 7 * 2, ge=1, description="The duration of the history data to use (in hours)."
     )
-    timeframe_duration: float = pd.Field(15, ge=1, description="The step for the history data (in minutes).")
+    timeframe_duration: float = pd.Field(2, ge=1, description="The step for the history data (in minutes).")
 
     @property
     def history_timedelta(self) -> datetime.timedelta:
@@ -42,7 +42,16 @@ class StrategySettings(pd.BaseModel):
 _StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
 
 ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
-ResourceHistoryData = dict[str, ArrayNx2]
+
+
+class ResourceHistoryData(pd.BaseModel):
+    metric: Metric
+    data: dict[str, ArrayNx2]  # Mapping: pod -> (time, value)
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 
@@ -60,6 +69,19 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
 
     def __str__(self) -> str:
         return self.__display_name__.title()
+
+    @property
+    def description(self) -> Optional[str]:
+        """
+        Generate a description for the strategy.
+        You can use the settings in the description by using the format syntax.
+        Also you can use Rich's markdown syntax to format the description.
+        """
+
+        if self.__doc__ is None:
+            return None
+
+        return f"[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip()
 
     @abc.abstractmethod
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:

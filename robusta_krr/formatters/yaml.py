@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
+
+import yaml
+
 from robusta_krr.core.abstract.formatters import BaseFormatter
 from robusta_krr.core.models.result import Result
-import yaml
-import json
 
 
 class YAMLFormatter(BaseFormatter):

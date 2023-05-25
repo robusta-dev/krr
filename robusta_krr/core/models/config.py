@@ -1,6 +1,5 @@
 from typing import Any, Literal, Optional, Union
 
-import sys
 import pydantic as pd
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
@@ -14,10 +13,9 @@ except ConfigException:
     try:
         config.load_kube_config()
     except ConfigException:
-        print("[CRITICAL] Could not load kubernetes configuration. Do you have kubeconfig set up?")
-        sys.exit(1)
-
-    IN_CLUSTER = False
+        IN_CLUSTER = None
+    else:
+        IN_CLUSTER = False
 else:
     IN_CLUSTER = True
 
@@ -45,6 +43,10 @@ class Config(pd.BaseSettings):
 
     other_args: dict[str, Any]
 
+    @property
+    def Formatter(self) -> type[BaseFormatter]:
+        return BaseFormatter.find(self.format)
+
     @pd.validator("namespaces")
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
@@ -68,5 +70,9 @@ class Config(pd.BaseSettings):
         return v
 
     @property
+    def config_loaded(self) -> bool:
+        return IN_CLUSTER is not None
+
+    @property
     def inside_cluster(self) -> bool:
-        return IN_CLUSTER
+        return bool(IN_CLUSTER)
