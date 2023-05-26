@@ -1,10 +1,11 @@
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
-import pytest
-import numpy as np
-from datetime import datetime, timedelta
 import random
-from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, ResourceHistoryData
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, PropertyMock, patch
 
+import numpy as np
+import pytest
+
+from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, ResourceHistoryData
 
 TEST_OBJECT = K8sObjectData(
     cluster="mock-cluster",
