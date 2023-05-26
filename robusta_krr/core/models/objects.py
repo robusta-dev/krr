@@ -14,12 +14,12 @@ class PodData(pd.BaseModel):
 
 
 class K8sObjectData(pd.BaseModel):
-    cluster: Optional[str]
+    cluster: str
     name: str
     container: str
     pods: list[PodData]
     namespace: str
-    kind: Optional[str]
+    kind: str
     allocations: ResourceAllocations
 
     def __str__(self) -> str:
