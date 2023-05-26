@@ -13,13 +13,21 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Authenticate with Google Cloud
-      uses: google-github-actions/auth@v0.4.0
+    - name: Set up gcloud CLI
+      uses: google-github-actions/setup-gcloud@v0.2.0
       with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: genuine-flight-317411
+        export_default_credentials: true
 
-    - name: Docker login
-      run: echo "${{ secrets.GCP_SA_KEY }}" | docker login -u _json_key --password-stdin https://us-central1-docker.pkg.dev/genuine-flight-317411
+    # Configure Docker to use the gcloud command-line tool as a credential helper for authentication
+    - name: Configure Docker
+      run: |-
+        gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Verify gcloud configuration
+      run: |-
+        gcloud config get-value project
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
