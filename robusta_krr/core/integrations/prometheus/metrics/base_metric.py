@@ -15,22 +15,59 @@ from robusta_krr.utils.configurable import Configurable
 if TYPE_CHECKING:
     from ..loader import CustomPrometheusConnect
 
+# A registry of metrics that can be used to fetch a corresponding metric loader.
 REGISTERED_METRICS: dict[str, type[BaseMetricLoader]] = {}
 
 
 class BaseMetricLoader(Configurable, abc.ABC):
+    """
+    Base class for all metric loaders.
+
+    Metric loaders are used to load metrics from a specified source (like Prometheus in this case).
+    """
+
     def __init__(self, config: Config, prometheus: CustomPrometheusConnect) -> None:
         super().__init__(config)
         self.prometheus = prometheus
 
     @abc.abstractmethod
     def get_query(self, object: K8sObjectData) -> str:
-        ...
+        """
+        This method should be implemented by all subclasses to provide a query string to fetch metrics.
+
+        Args:
+        object (K8sObjectData): The object for which metrics need to be fetched.
+
+        Returns:
+        str: The query string.
+        """
+
+        pass
 
     def _step_to_string(self, step: datetime.timedelta) -> str:
+        """
+        Converts step in datetime.timedelta format to a string format used by Prometheus.
+
+        Args:
+        step (datetime.timedelta): Step size in datetime.timedelta format.
+
+        Returns:
+        str: Step size in string format used by Prometheus.
+        """
+
         return f"{int(step.total_seconds()) // 60}m"
 
     async def query_prometheus(self, metric: Metric) -> list[dict]:
+        """
+        Asynchronous method that queries Prometheus to fetch metrics.
+
+        Args:
+        metric (Metric): An instance of the Metric class specifying what metrics to fetch.
+
+        Returns:
+        list[dict]: A list of dictionary where each dictionary represents metrics for a pod.
+        """
+
         return await asyncio.to_thread(
             self.prometheus.custom_query_range,
             query=metric.query,
@@ -42,6 +79,18 @@ class BaseMetricLoader(Configurable, abc.ABC):
     async def load_data(
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
     ) -> ResourceHistoryData:
+        """
+        Asynchronous method that loads metric data for a specific object.
+
+        Args:
+        object (K8sObjectData): The object for which metrics need to be loaded.
+        period (datetime.timedelta): The time period for which metrics need to be loaded.
+        step (datetime.timedelta): The time interval between successive metric values.
+
+        Returns:
+        ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
+        """
+
         query = self.get_query(object)
         end_time = datetime.datetime.now().astimezone()
         metric = Metric(
@@ -65,6 +114,19 @@ class BaseMetricLoader(Configurable, abc.ABC):
 
     @staticmethod
     def get_by_resource(resource: str) -> type[BaseMetricLoader]:
+        """
+        Fetches the metric loader corresponding to the specified resource.
+
+        Args:
+        resource (str): The name of the resource.
+
+        Returns:
+        type[BaseMetricLoader]: The class of the metric loader corresponding to the resource.
+
+        Raises:
+        KeyError: If the specified resource is not registered.
+        """
+
         try:
             return REGISTERED_METRICS[resource]
         except KeyError as e:
@@ -75,6 +137,16 @@ Self = TypeVar("Self", bound=BaseMetricLoader)
 
 
 def bind_metric(resource: str) -> Callable[[type[Self]], type[Self]]:
+    """
+    A decorator that binds a metric loader to a resource.
+
+    Args:
+    resource (str): The name of the resource.
+
+    Returns:
+    Callable[[type[Self]], type[Self]]: The decorator that does the binding.
+    """
+
     def decorator(cls: type[Self]) -> type[Self]:
         REGISTERED_METRICS[resource] = cls
         return cls
