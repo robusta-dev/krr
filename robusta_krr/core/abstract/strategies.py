@@ -10,7 +10,7 @@ import pydantic as pd
 from numpy.typing import NDArray
 
 from robusta_krr.core.models.result import K8sObjectData, Metric, ResourceType
-from robusta_krr.utils.display_name import add_display_name
+from robusta_krr.utils.display_name import display_name_property
 
 SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
 
@@ -82,7 +82,7 @@ _StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
 # An abstract base class for strategy implementation.
 # This class requires implementation of a 'run' method for calculating recommendation.
 # Make a subclass if you want to create a concrete strategy.
-@add_display_name(postfix="Strategy")
+@display_name_property(suffix="Strategy")
 class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     """An abstract base class for strategy implementation.
 
