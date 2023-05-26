@@ -4,7 +4,7 @@ import pydantic as pd
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
 
-from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 
 try:
@@ -44,8 +44,8 @@ class Config(pd.BaseSettings):
     other_args: dict[str, Any]
 
     @property
-    def Formatter(self) -> type[BaseFormatter]:
-        return BaseFormatter.find(self.format)
+    def Formatter(self) -> formatters.FormatterFunc:
+        return formatters.find(self.format)
 
     @pd.validator("namespaces")
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
@@ -66,7 +66,7 @@ class Config(pd.BaseSettings):
 
     @pd.validator("format")
     def validate_format(cls, v: str) -> str:
-        BaseFormatter.find(v)  # NOTE: raises if strategy is not found
+        formatters.find(v)  # NOTE: raises if strategy is not found
         return v
 
     @property
