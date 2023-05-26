@@ -27,7 +27,7 @@ jobs:
     - name: Build with PyInstaller
       run: |
         pyinstaller krr.py
-        zip -r  ./dist/krr
+        zip -r "krr-linux-${{ github.ref#refs/tags/ }}.zip" ./dist/krr
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1.0.2
@@ -36,5 +36,5 @@ jobs:
       with:
         upload_url: ${{ github.event.release.upload_url }} 
         asset_path: .
-        asset_name: "krr-linux-${{ github.ref }}.zip"
+        asset_name: "krr-linux-${{ github.ref#refs/tags/ }}.zip"
         asset_content_type: application/octet-stream

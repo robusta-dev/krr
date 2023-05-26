@@ -22,6 +22,6 @@ jobs:
         context: .
         platforms: linux/arm64,linux/amd64
         push: true
-        tags: us-central1-docker.pkg.dev/genuine-flight-317411/devel/krr:${{ github.ref }}
+        tags: us-central1-docker.pkg.dev/genuine-flight-317411/devel/krr:${{ github.ref#refs/tags/ }}
         build-args: |
           BUILDKIT_INLINE_CACHE=1
