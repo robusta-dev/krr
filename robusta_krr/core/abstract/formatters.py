@@ -22,7 +22,16 @@ FORMATTERS_REGISTRY: dict[str, FormatterFunc] = {}
 #               return "My formatter"
 
 def register(display_name: Optional[str] = None, *, rich_console: bool = False) -> Callable[[FormatterFunc], FormatterFunc]:
-    """Decorator to register a formatter."""
+    """
+    A decorator to register a formatter function.
+
+    Args:
+        display_name (str, optional): The name to use for the formatter in the registry.
+        rich_console (bool): Whether or not the formatter is for a rich console. Defaults to False.
+
+    Returns:
+        Callable[[FormatterFunc], FormatterFunc]: The decorator function.
+    """
 
     def decorator(func: FormatterFunc) -> FormatterFunc:
         name = display_name or func.__name__
@@ -38,7 +47,18 @@ def register(display_name: Optional[str] = None, *, rich_console: bool = False) 
 
 
 def find(name: str) -> FormatterFunc:
-    """Find a formatter by name."""
+    """
+    Find a formatter by name in the registry.
+
+    Args:
+        name (str): The name of the formatter.
+
+    Returns:
+        FormatterFunc: The formatter function.
+
+    Raises:
+        ValueError: If a formatter with the given name does not exist.
+    """
 
     try:
         return FORMATTERS_REGISTRY[name]
@@ -47,7 +67,12 @@ def find(name: str) -> FormatterFunc:
 
 
 def list_available() -> list[str]:
-    """List available formatters."""
+    """
+    List available formatters in the registry.
+
+    Returns:
+    list[str]: A list of the names of the available formatters.
+    """
 
     return list(FORMATTERS_REGISTRY)
 

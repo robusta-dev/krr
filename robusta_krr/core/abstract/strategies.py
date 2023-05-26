@@ -16,6 +16,12 @@ SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
 
 
 class ResourceRecommendation(pd.BaseModel):
+    """A class to represent resource recommendation with optional request and limit values.
+
+    The NaN values are used to represent undefined values: the strategy did not provide a recommendation for the resource.
+    None values are used to represent the strategy says that value should not be set.
+    """
+
     request: Optional[float]
     limit: Optional[float]
 
@@ -25,6 +31,15 @@ class ResourceRecommendation(pd.BaseModel):
 
 
 class StrategySettings(pd.BaseModel):
+    """A class to represent strategy settings with configurable history and timeframe duration.
+
+    It is used in CLI to generate the help, parameters and validate values.
+    Description is used to generate the help.
+    Other pydantic features can be used to validate the values.
+
+    Nested classes are not supported here.
+    """
+
     history_duration: float = pd.Field(
         24 * 7 * 2, ge=1, description="The duration of the history data to use (in hours)."
     )
@@ -39,14 +54,19 @@ class StrategySettings(pd.BaseModel):
         return datetime.timedelta(minutes=self.timeframe_duration)
 
 
-_StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
-
+# A type alias for a numpy array of shape (N, 2).
 ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
 
 
 class ResourceHistoryData(pd.BaseModel):
+    """A class to represent resource history data.
+
+    metric is the metric information used to gather the history data.
+    data is a mapping from pod to a numpy array of time and value.
+    """
+
     metric: Metric
-    data: dict[str, ArrayNx2]  # Mapping: pod -> (time, value)
+    data: dict[str, ArrayNx2]  # Mapping: pod -> [(time, value)]
 
     class Config:
         arbitrary_types_allowed = True
@@ -56,10 +76,30 @@ HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 
 SelfBS = TypeVar("SelfBS", bound="BaseStrategy")
+_StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
 
 
+# An abstract base class for strategy implementation.
+# This class requires implementation of a 'run' method for calculating recommendation.
+# Make a subclass if you want to create a concrete strategy.
 @add_display_name(postfix="Strategy")
 class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
+    """An abstract base class for strategy implementation.
+
+    This class is generic, and requires a type for the settings.
+    This settings type will be used for the settings property of the strategy.
+    It will be used to generate CLI parameters for this strategy, validated by pydantic.
+
+    This class requires implementation of a 'run' method for calculating recommendation.
+    Additionally, it provides a 'description' property for generating a description for the strategy.
+    Description property uses the docstring of the strategy class and the settings of the strategy.
+
+    The name of the strategy is the name of the class in lowercase, without the 'Strategy' suffix, if exists.
+    If you want to change the name of the strategy, you can change the __display_name__ attribute.
+
+    The strategy will automatically be registered in the strategy registry using __subclasses__ mechanism.
+    """
+
     __display_name__: str
 
     settings: _StrategySettings
@@ -83,33 +123,36 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
 
         return f"[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip()
 
+    # Abstract method that needs to be implemented by subclass.
+    # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
     @abc.abstractmethod
     def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
-        """Run the strategy to calculate the recommendation"""
+        pass
 
+    # This method is intended to return a strategy by its name.
     @classmethod
     def find(cls: type[SelfBS], name: str) -> type[SelfBS]:
-        """Get a strategy from its name."""
-
         strategies = cls.get_all()
         if name.lower() in strategies:
             return strategies[name.lower()]
 
         raise ValueError(f"Unknown strategy name: {name}. Available strategies: {', '.join(strategies)}")
 
+    # This method is intended to return all the available strategies.
     @classmethod
     def get_all(cls: type[SelfBS]) -> dict[str, type[SelfBS]]:
-        # NOTE: Load default formatters
         from robusta_krr import strategies as _  # noqa: F401
 
         return {sub_cls.__display_name__.lower(): sub_cls for sub_cls in cls.__subclasses__()}
 
+    # This method is intended to return the type of settings used in strategy.
     @classmethod
     def get_settings_type(cls) -> type[StrategySettings]:
         return get_args(cls.__orig_bases__[0])[0]  # type: ignore
 
 
 AnyStrategy = BaseStrategy[StrategySettings]
+
 
 __all__ = [
     "AnyStrategy",
