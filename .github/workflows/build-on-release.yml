@@ -93,3 +93,57 @@ jobs:
       run: |
         security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
         rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
+
+  # Define MacOS hash job
+  mac-hash:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Download MacOS artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: krr-macos-latest-${{ github.ref_name }}.zip
+      - name: Calculate hash
+        run: echo "MAC_BUILD_HASH=$(sha256sum krr-macos-latest-${{ github.ref_name }}.zip | awk '{print $1}')" >> $GITHUB_ENV
+
+  # Define Linux hash job
+  linux-hash:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: krr-ubuntu-latest-${{ github.ref_name }}.zip
+      - name: Calculate hash
+        run: echo "LINUX_BUILD_HASH=$(sha256sum krr-ubuntu-latest-${{ github.ref_name }}.zip | awk '{print $1}')" >> $GITHUB_ENV
+
+  # Define job to update homebrew formula
+  update-formula:
+    needs: [mac-hash, linux-hash]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout homebrew-krr repository
+        uses: actions/checkout@v2
+        with:
+          repository: robusta-dev/homebrew-krr-test
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update krr.rb formula
+        run: |
+          MAC_BUILD_HASH=${{ needs.mac-hash.outputs.MAC_BUILD_HASH }}
+          LINUX_BUILD_HASH=${{ needs.linux-hash.outputs.LINUX_BUILD_HASH }}
+          RELEASE_VERSION=${{ github.ref_name }}
+          sed -i "s|url .*/krr-macos.*|url \"https://github.com/robusta-dev/krr/releases/download/${RELEASE_VERSION}/krr-macos-latest-${RELEASE_VERSION}.zip\"|" Formula/krr.rb
+          sed -i "s|sha256 .* # macOS|sha256 \"${MAC_BUILD_HASH}\" # macOS|" Formula/krr.rb
+          sed -i "s|url .*/krr-linux.*|url \"https://github.com/robusta-dev/krr/releases/download/${RELEASE_VERSION}/krr-linux-latest-${RELEASE_VERSION}.zip\"|" Formula/krr.rb
+          sed -i "s|sha256 .* # Linux|sha256 \"${LINUX_BUILD_HASH}\" # Linux|" Formula/krr.rb
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "Update formula for release ${RELEASE_VERSION}"
+          git push
