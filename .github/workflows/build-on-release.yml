@@ -110,7 +110,6 @@ jobs:
   mac-hash:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event.release.id == github.event.repository.latest_release.id
     outputs:
       MAC_BUILD_HASH: ${{ steps.calc-hash.outputs.MAC_BUILD_HASH }}
     steps:
@@ -148,6 +147,22 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.release.id == github.event.repository.latest_release.id
     steps:
+      - name: Check if latest release
+        id: check
+        run: |
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/robusta-dev/krr/releases/latest | jq -r .tag_name)
+          CURRENT_RELEASE=${{ github.ref_name }}
+          if [ "$LATEST_RELEASE" != "$CURRENT_RELEASE" ]; then
+            echo "::set-output name=is_latest::false"
+          else
+            echo "::set-output name=is_latest::true"
+          fi
+      - name: Fail if not latest release
+        if: steps.check.outputs.is_latest != 'true'
+        continue-on-error: true
+        run: |
+          echo "Not the latest release, cancelling job"
+          exit 1
       - name: Checkout homebrew-krr repository
         uses: actions/checkout@v2
         with:
