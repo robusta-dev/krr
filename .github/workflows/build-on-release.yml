@@ -88,6 +88,12 @@ jobs:
         asset_name: krr-${{ matrix.os }}-${{ github.ref_name }}.zip
         asset_content_type: application/octet-stream
 
+    - name: Upload build as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: krr-${{ matrix.os }}-${{ github.ref_name }}
+        path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+
     - name: Clean up keychain and provisioning profile
       if: (matrix.os == 'macos-latest') && always()
       run: |
