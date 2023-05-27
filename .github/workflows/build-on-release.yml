@@ -37,9 +37,10 @@ jobs:
 
     - name: Sign the application
       if: matrix.os == 'macos-latest'
+      env:
+        APPLE_DEV_PASSWORD: ${{ secrets.APPLE_DEV_PASSWORD }}
       run: |
-        echo "${{ secrets.APPLE_DEV_PASSWORD }}" | xcrun altool --store-password-in-keychain-item "AC_PASSWORD"
-        codesign --force --options runtime --sign "Developer ID Application: pavel@robusta.dev" dist/krr/krr
+        codesign --force --options runtime --sign "Developer ID Application: pavel@robusta.dev" --keychain-password "$APPLE_DEV_PASSWORD" dist/krr/krr
 
     - name: Zip the application
       run: |
@@ -51,6 +52,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }} 
-        asset_path: .
+        asset_path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
         asset_name: krr-${{ matrix.os }}-${{ github.ref_name }}.zip
         asset_content_type: application/octet-stream
