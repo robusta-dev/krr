@@ -143,10 +143,10 @@ jobs:
           MAC_BUILD_HASH=${{ needs.mac-hash.outputs.MAC_BUILD_HASH }}
           LINUX_BUILD_HASH=${{ needs.linux-hash.outputs.LINUX_BUILD_HASH }}
           RELEASE_VERSION=${{ github.ref_name }}
-          sed -i "s|url .*/krr-macos.*|url \"https://github.com/robusta-dev/krr/releases/download/${RELEASE_VERSION}/krr-macos-latest-${RELEASE_VERSION}.zip\"|" Formula/krr.rb
-          sed -i "s|sha256 .* # macOS|sha256 \"${MAC_BUILD_HASH}\" # macOS|" Formula/krr.rb
-          sed -i "s|url .*/krr-linux.*|url \"https://github.com/robusta-dev/krr/releases/download/${RELEASE_VERSION}/krr-linux-latest-${RELEASE_VERSION}.zip\"|" Formula/krr.rb
-          sed -i "s|sha256 .* # Linux|sha256 \"${LINUX_BUILD_HASH}\" # Linux|" Formula/krr.rb
+          awk 'NR==6{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-macos-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==7{$0="        sha256 \"'$MAC_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==9{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-linux-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==10{$0="        sha256 \"'$LINUX_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
