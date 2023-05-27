@@ -137,7 +137,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: robusta-dev/homebrew-krr-test
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.MULTIREPO_GITHUB_TOKEN }}
       - name: Update krr.rb formula
         run: |
           MAC_BUILD_HASH=${{ needs.mac-hash.outputs.MAC_BUILD_HASH }}
