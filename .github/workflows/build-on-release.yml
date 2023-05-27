@@ -68,10 +68,15 @@ jobs:
         mkdir -p ./dist/krr/grapheme/data
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
 
-    - name: Zip the application
-      shell: bash
+    - name: Zip the application (Unix)
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
       run: |
         zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip dist/krr
+
+    - name: Zip the application (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        Compress-Archive dist/krr krr-${{ matrix.os }}-${{ github.ref_name }}.zip
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1.0.2
