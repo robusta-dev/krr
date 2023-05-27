@@ -29,7 +29,7 @@ jobs:
     - name: Install dependancies (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        apt-get install -y binutils
+        sudo apt-get install -y binutils
 
     - name: Build with PyInstaller
       run: |
