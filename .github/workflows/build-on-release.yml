@@ -110,7 +110,7 @@ jobs:
       - name: Download MacOS artifact
         uses: actions/download-artifact@v2
         with:
-          name: krr-macos-latest-${{ github.ref_name }}.zip
+          name: krr-macos-latest-${{ github.ref_name }}
       - name: Calculate hash
         run: echo "MAC_BUILD_HASH=$(sha256sum krr-macos-latest-${{ github.ref_name }}.zip | awk '{print $1}')" >> $GITHUB_ENV
 
@@ -124,7 +124,7 @@ jobs:
       - name: Download Linux artifact
         uses: actions/download-artifact@v2
         with:
-          name: krr-ubuntu-latest-${{ github.ref_name }}.zip
+          name: krr-ubuntu-latest-${{ github.ref_name }}
       - name: Calculate hash
         run: echo "LINUX_BUILD_HASH=$(sha256sum krr-ubuntu-latest-${{ github.ref_name }}.zip | awk '{print $1}')" >> $GITHUB_ENV
 
