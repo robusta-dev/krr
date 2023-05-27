@@ -38,7 +38,7 @@ jobs:
     - name: Sign the application
       run: |
         echo "${{ secrets.APPLE_DEV_PASSWORD }}" | xcrun altool --store-password-in-keychain-item "AC_PASSWORD"
-        codesign --force --options runtime --sign "Developer ID Application: pavel@robusta.dev" dist/your_script
+        codesign --force --options runtime --sign "Developer ID Application: pavel@robusta.dev" dist/krr/krr
 
     # - name: Sign the application (macOS)
     #   if: matrix.os == 'macos-latest'
