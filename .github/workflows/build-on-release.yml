@@ -71,12 +71,18 @@ jobs:
     - name: Zip the application (Unix)
       if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
       run: |
-        zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip dist/krr
+        cd dist
+        zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip krr
+        mv krr-${{ matrix.os }}-${{ github.ref_name }}.zip ../
+        cd ..
 
     - name: Zip the application (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        Compress-Archive dist/krr krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+        Set-Location -Path dist
+        Compress-Archive -Path krr -DestinationPath krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Force
+        Move-Item -Path krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Destination ..\
+        Set-Location -Path ..
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1.0.2
