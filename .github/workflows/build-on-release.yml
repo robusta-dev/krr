@@ -62,11 +62,14 @@ jobs:
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
     - name: Build with PyInstaller
+      shell: bash
       run: |
         pyinstaller krr.py
-        ${{ fromJSON('{"ubuntu-latest":"cp","macos-latest":"cp","windows-latest":"copy"}')[matrix.os] || matrix.os }} $(python3.9 -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
+        mkdir -p ./dist/krr/grapheme/data
+        cp $(python3.9 -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
 
     - name: Zip the application
+      shell: bash
       run: |
         zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip dist/krr
 
