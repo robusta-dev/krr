@@ -18,7 +18,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
+        python-version: '3.9'
     
     - name: Install dependencies
       run: |
@@ -66,7 +66,7 @@ jobs:
       run: |
         pyinstaller krr.py
         mkdir -p ./dist/krr/grapheme/data
-        cp $(python3.9 -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
+        cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
 
     - name: Zip the application
       shell: bash
