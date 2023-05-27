@@ -104,6 +104,7 @@ jobs:
   mac-hash:
     needs: build
     runs-on: ubuntu-latest
+    if: github.event.release.id == github.event.repository.latest_release.id
     outputs:
       MAC_BUILD_HASH: ${{ steps.calc-hash.outputs.MAC_BUILD_HASH }}
     steps:
@@ -121,6 +122,7 @@ jobs:
   linux-hash:
     needs: build
     runs-on: ubuntu-latest
+    if: github.event.release.id == github.event.repository.latest_release.id
     outputs:
       LINUX_BUILD_HASH: ${{ steps.calc-hash.outputs.LINUX_BUILD_HASH }}
     steps:
@@ -138,6 +140,7 @@ jobs:
   update-formula:
     needs: [mac-hash, linux-hash]
     runs-on: ubuntu-latest
+    if: github.event.release.id == github.event.repository.latest_release.id
     steps:
       - name: Checkout homebrew-krr repository
         uses: actions/checkout@v2
