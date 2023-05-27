@@ -36,19 +36,6 @@ jobs:
         pyinstaller krr.py
 
     - name: Sign the application
-      run: |
-        echo "${{ secrets.APPLE_DEV_PASSWORD }}" | xcrun altool --store-password-in-keychain-item "AC_PASSWORD"
-        codesign --force --options runtime --sign "Developer ID Application: pavel@robusta.dev" dist/krr/krr
-
-    # - name: Sign the application (macOS)
-    #   if: matrix.os == 'macos-latest'
-    #   run: |
-    #     security create-keychain -p "" build
-    #     security import ./cert.p12 -k build -P ${{ secrets.CERT_PASSWORD }} -T /usr/bin/codesign
-    #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k build build
-    #     codesign -s "Developer ID Application: Your Name (XXXXXX)" --timestamp --options runtime ./dist/krr/krr
-
-    - name: Sign the application
       if: matrix.os == 'macos-latest'
       run: |
         echo "${{ secrets.APPLE_DEV_PASSWORD }}" | xcrun altool --store-password-in-keychain-item "AC_PASSWORD"
