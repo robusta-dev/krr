@@ -61,6 +61,10 @@ jobs:
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
+    - name: Set version in code
+      run: |
+        awk 'NR==3{$0="__version__\"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
+
     - name: Build with PyInstaller
       shell: bash
       run: |
@@ -115,6 +119,7 @@ jobs:
       - id: check-latest
         uses: pozetroninc/github-action-get-latest-release@v0.7.0
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           excludes: prerelease, draft
 
