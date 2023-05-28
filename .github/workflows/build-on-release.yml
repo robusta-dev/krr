@@ -61,9 +61,21 @@ jobs:
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
-    - name: Set version in code
+    - name: Set version in code (Unix)
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
       run: |
         awk 'NR==3{$0="__version__\"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
+
+    - name: Set version in code (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        $content = Get-Content -Path .\robusta_krr\__init__.py
+        $content[2] = "__version__=`"$($env:GITHUB_REF_NAME)`""
+        $content | Out-File -FilePath .\robusta_krr\__init__.py -Encoding ascii
+      shell: pwsh
+      env:
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+
 
     - name: Build with PyInstaller
       shell: bash
