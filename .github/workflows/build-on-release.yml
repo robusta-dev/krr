@@ -158,7 +158,6 @@ jobs:
   update-formula:
     needs: [mac-hash, linux-hash]
     runs-on: ubuntu-latest
-    if: steps.check-latest.outputs.IS_LATEST
     steps:
       - name: Checkout homebrew-krr repository
         uses: actions/checkout@v2
