@@ -106,10 +106,23 @@ jobs:
         security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
         rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
 
-  # Define MacOS hash job
-  mac-hash:
+  check-latest:
     needs: build
     runs-on: ubuntu-latest
+    outputs: 
+      IS_LATEST: ${{ steps.check-latest.outputs.release == github.ref_name }}
+    steps:
+      - id: check-latest
+        uses: pozetroninc/github-action-get-latest-release@v0.7.0
+        with:
+          repository: ${{ github.repository }}
+          excludes: prerelease, draft
+
+  # Define MacOS hash job
+  mac-hash:
+    needs: check-latest
+    runs-on: ubuntu-latest
+    if: steps.check-latest.outputs.IS_LATEST
     outputs:
       MAC_BUILD_HASH: ${{ steps.calc-hash.outputs.MAC_BUILD_HASH }}
     steps:
@@ -125,8 +138,9 @@ jobs:
 
   # Define Linux hash job
   linux-hash:
-    needs: build
+    needs: check-latest
     runs-on: ubuntu-latest
+    if: steps.check-latest.outputs.IS_LATEST
     outputs:
       LINUX_BUILD_HASH: ${{ steps.calc-hash.outputs.LINUX_BUILD_HASH }}
     steps:
@@ -144,23 +158,8 @@ jobs:
   update-formula:
     needs: [mac-hash, linux-hash]
     runs-on: ubuntu-latest
+    if: steps.check-latest.outputs.IS_LATEST
     steps:
-      - name: Check if latest release
-        id: check
-        run: |
-          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/robusta-dev/krr/releases/latest | jq -r .tag_name)
-          CURRENT_RELEASE=${{ github.ref_name }}
-          if [ "$LATEST_RELEASE" != "$CURRENT_RELEASE" ]; then
-            echo "::set-output name=is_latest::false"
-          else
-            echo "::set-output name=is_latest::true"
-          fi
-      - name: Fail if not latest release
-        if: steps.check.outputs.is_latest != 'true'
-        continue-on-error: true
-        run: |
-          echo "Not the latest release, cancelling job"
-          exit 1
       - name: Checkout homebrew-krr repository
         uses: actions/checkout@v2
         with:
