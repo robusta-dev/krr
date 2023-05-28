@@ -122,7 +122,7 @@ jobs:
   mac-hash:
     needs: check-latest
     runs-on: ubuntu-latest
-    if: steps.check-latest.outputs.IS_LATEST
+    if: needs.check-latest.outputs.IS_LATEST
     outputs:
       MAC_BUILD_HASH: ${{ steps.calc-hash.outputs.MAC_BUILD_HASH }}
     steps:
@@ -140,7 +140,7 @@ jobs:
   linux-hash:
     needs: check-latest
     runs-on: ubuntu-latest
-    if: steps.check-latest.outputs.IS_LATEST
+    if: needs.check-latest.outputs.IS_LATEST
     outputs:
       LINUX_BUILD_HASH: ${{ steps.calc-hash.outputs.LINUX_BUILD_HASH }}
     steps:
