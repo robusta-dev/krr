@@ -64,7 +64,7 @@ jobs:
     - name: Set version in code (Unix)
       if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
       run: |
-        awk 'NR==3{$0="__version__\"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
+        awk 'NR==3{$0="__version__ = \"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
         cat ./robusta_krr/__init__.py
 
     - name: Set version in code (Windows)
