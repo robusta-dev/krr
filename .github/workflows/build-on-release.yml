@@ -181,7 +181,7 @@ jobs:
       - name: Checkout homebrew-krr repository
         uses: actions/checkout@v2
         with:
-          repository: robusta-dev/homebrew-krr-test
+          repository: robusta-dev/homebrew-krr
           token: ${{ secrets.MULTIREPO_GITHUB_TOKEN }}
       - name: Update krr.rb formula
         run: |
