@@ -130,7 +130,8 @@ class PrometheusLoader(Configurable):
         if len(object.pods) == 0:
             return
         
-        days_literal = min(int(period.total_seconds()) // 60 // 24, 32) # the max can be 32 days
+        # Prometheus limit, the max can be 32 days
+        days_literal = min(int(period.total_seconds()) // 60 // 24, 32) 
         period_literal = f"{days_literal}d"
         owner = await asyncio.to_thread(
             self.prometheus.custom_query,
