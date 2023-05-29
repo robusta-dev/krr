@@ -2,7 +2,7 @@
 name = "robusta-krr"
 version = "1.1.1"
 description = "Robusta's Resource Recommendation engine for Kubernetes"
-authors = ["Павел Жуков <33721692+LeaveMyYard@users.noreply.github.com>"]
+authors = ["Pavel Zhukov <33721692+LeaveMyYard@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "robusta_krr"}]
