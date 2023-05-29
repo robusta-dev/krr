@@ -18,4 +18,4 @@ class JSONFormatter(BaseFormatter):
         :rtype: str
         """
 
-        return result.json(indent=2, models_as_dict=False)
+        return result.json(indent=2)
