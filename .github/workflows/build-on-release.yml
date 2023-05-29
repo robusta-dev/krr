@@ -1,0 +1,200 @@
+name: Build and Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Install dependancies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get install -y binutils
+
+    - name: Install the Apple certificate and provisioning profile
+      if: matrix.os == 'macos-latest'
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        # create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        # import certificate and provisioning profile from secrets
+        echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+        echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+        # create temporary keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+        # import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+
+        # apply provisioning profile
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+    - name: Set version in code (Unix)
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
+      run: |
+        awk 'NR==3{$0="__version__ = \"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
+        cat ./robusta_krr/__init__.py
+
+    - name: Set version in code (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        $content = Get-Content -Path .\robusta_krr\__init__.py
+        $content[2] = "__version__=`"$($env:GITHUB_REF_NAME)`""
+        $content | Out-File -FilePath .\robusta_krr\__init__.py -Encoding ascii
+        Get-Content .\robusta_krr\__init__.py
+      shell: pwsh
+      env:
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+
+
+    - name: Build with PyInstaller
+      shell: bash
+      run: |
+        pyinstaller krr.py
+        mkdir -p ./dist/krr/grapheme/data
+        cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
+
+    - name: Zip the application (Unix)
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
+      run: |
+        cd dist
+        zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip krr
+        mv krr-${{ matrix.os }}-${{ github.ref_name }}.zip ../
+        cd ..
+
+    - name: Zip the application (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        Set-Location -Path dist
+        Compress-Archive -Path krr -DestinationPath krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Force
+        Move-Item -Path krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Destination ..\
+        Set-Location -Path ..
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }} 
+        asset_path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+        asset_name: krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+        asset_content_type: application/octet-stream
+
+    - name: Upload build as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: krr-${{ matrix.os }}-${{ github.ref_name }}
+        path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+
+    - name: Clean up keychain and provisioning profile
+      if: (matrix.os == 'macos-latest') && always()
+      run: |
+        security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+        rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
+
+  check-latest:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs: 
+      IS_LATEST: ${{ steps.check-latest.outputs.release == github.ref_name }}
+    steps:
+      - id: check-latest
+        uses: pozetroninc/github-action-get-latest-release@v0.7.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          excludes: prerelease, draft
+
+  # Define MacOS hash job
+  mac-hash:
+    needs: check-latest
+    runs-on: ubuntu-latest
+    if: needs.check-latest.outputs.IS_LATEST
+    outputs:
+      MAC_BUILD_HASH: ${{ steps.calc-hash.outputs.MAC_BUILD_HASH }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Download MacOS artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: krr-macos-latest-${{ github.ref_name }}
+      - name: Calculate hash
+        id: calc-hash
+        run: echo "::set-output name=MAC_BUILD_HASH::$(sha256sum krr-macos-latest-${{ github.ref_name }}.zip | awk '{print $1}')"
+
+  # Define Linux hash job
+  linux-hash:
+    needs: check-latest
+    runs-on: ubuntu-latest
+    if: needs.check-latest.outputs.IS_LATEST
+    outputs:
+      LINUX_BUILD_HASH: ${{ steps.calc-hash.outputs.LINUX_BUILD_HASH }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: krr-ubuntu-latest-${{ github.ref_name }}
+      - name: Calculate hash
+        id: calc-hash
+        run: echo "::set-output name=LINUX_BUILD_HASH::$(sha256sum krr-ubuntu-latest-${{ github.ref_name }}.zip | awk '{print $1}')"
+
+  # Define job to update homebrew formula
+  update-formula:
+    needs: [mac-hash, linux-hash]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout homebrew-krr repository
+        uses: actions/checkout@v2
+        with:
+          repository: robusta-dev/homebrew-krr
+          token: ${{ secrets.MULTIREPO_GITHUB_TOKEN }}
+      - name: Update krr.rb formula
+        run: |
+          MAC_BUILD_HASH=${{ needs.mac-hash.outputs.MAC_BUILD_HASH }}
+          LINUX_BUILD_HASH=${{ needs.linux-hash.outputs.LINUX_BUILD_HASH }}
+          TAG_NAME=${{ github.ref_name }}
+          awk 'NR==6{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-macos-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==7{$0="        sha256 \"'$MAC_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==9{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-linux-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==10{$0="        sha256 \"'$LINUX_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "Update formula for release ${TAG_NAME}"
+          git push

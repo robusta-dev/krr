@@ -3,21 +3,17 @@
 from __future__ import annotations
 
 import robusta_krr
-from robusta_krr.api.formatters import BaseFormatter
+from robusta_krr.api import formatters
 from robusta_krr.api.models import Result
 
 
-class CustomFormatter(BaseFormatter):
-    # This is the name that will be used to reference the formatter in the CLI
-    __display_name__ = "my_formatter"
-
-    # This will pass the result to Rich Console for formatting.
-    # By default, the result is passed to `print` function.
-    # See https://rich.readthedocs.io/en/latest/ for more info
-    __rich_console__ = True
-
-    def format(self, result: Result) -> str:
-        return "Custom formatter"
+# This is a custom formatter
+# It will be available to the CLI as `my_formatter`
+# Rich console will be enabled in this case, so the output will be colored and formatted
+@formatters.register(rich_console=True)
+def my_formatter(result: Result) -> str:
+    # Return custom formatter
+    return "Custom formatter"
 
 
 # Running this file will register the formatter and make it available to the CLI

@@ -9,8 +9,9 @@ from uuid import UUID
 import typer
 import urllib3
 
-from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
@@ -130,7 +131,7 @@ def load_commands() -> None:
                     f"'{field_name}': {field_name}" for field_name in strategy_type.get_settings_type().__fields__
                 )
                 + "}",
-                formatters=", ".join(BaseFormatter.get_all()),
+                formatters=", ".join(formatters.list_available()),
             ),
             globals()
             | {strategy.__name__: strategy for strategy in AnyStrategy.get_all().values()}  # Defined strategies

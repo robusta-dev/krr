@@ -1,62 +1,80 @@
 from __future__ import annotations
 
-import abc
-import os
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, Optional, Callable
 
-from robusta_krr.utils.display_name import add_display_name
-
-if TYPE_CHECKING:
-    from robusta_krr.core.models.result import Result
+from robusta_krr.core.models.result import Result
 
 
-DEFAULT_FORMATTERS_PATH = os.path.join(os.path.dirname(__file__), "formatters")
+FormatterFunc = Callable[[Result], Any]
+
+FORMATTERS_REGISTRY: dict[str, FormatterFunc] = {}
 
 
-Self = TypeVar("Self", bound="BaseFormatter")
+# NOTE: Here asterisk is used to make the argument `rich_console` keyword-only
+#       This is done to avoid the following usage, where it is unclear what the boolean value is for:
+#           @register("My Formatter", True)
+#           def my_formatter(result: Result) -> str:
+#               return "My formatter"
+#
+#       Instead, the following usage is enforced:
+#           @register("My Formatter", rich_console=True)
+#           def my_formatter(result: Result) -> str:
+#               return "My formatter"
+
+def register(display_name: Optional[str] = None, *, rich_console: bool = False) -> Callable[[FormatterFunc], FormatterFunc]:
+    """
+    A decorator to register a formatter function.
+
+    Args:
+        display_name (str, optional): The name to use for the formatter in the registry.
+        rich_console (bool): Whether or not the formatter is for a rich console. Defaults to False.
+
+    Returns:
+        Callable[[FormatterFunc], FormatterFunc]: The decorator function.
+    """
+
+    def decorator(func: FormatterFunc) -> FormatterFunc:
+        name = display_name or func.__name__
+
+        FORMATTERS_REGISTRY[name] = func
+
+        func.__display_name__ = name  # type: ignore
+        func.__rich_console__ = rich_console  # type: ignore
+
+        return func
+
+    return decorator
 
 
-@add_display_name(postfix="Formatter")
-class BaseFormatter(abc.ABC):
-    """Base class for result formatters."""
+def find(name: str) -> FormatterFunc:
+    """
+    Find a formatter by name in the registry.
 
-    __display_name__: str
-    __rich_console__: bool = False
+    Args:
+        name (str): The name of the formatter.
 
-    def __str__(self) -> str:
-        return self.__display_name__.title()
+    Returns:
+        FormatterFunc: The formatter function.
 
-    @abc.abstractmethod
-    def format(self, result: Result) -> Any:
-        """Format the result.
+    Raises:
+        ValueError: If a formatter with the given name does not exist.
+    """
 
-        Args:
-            result: The result to format.
-
-        Returns:
-            The formatted result.
-        """
-
-    @classmethod
-    def get_all(cls: type[Self]) -> dict[str, type[Self]]:
-        """Get all available formatters."""
-
-        # NOTE: Load default formatters
-        from robusta_krr import formatters as _  # noqa: F401
-
-        return {sub_cls.__display_name__.lower(): sub_cls for sub_cls in cls.__subclasses__()}
-
-    @staticmethod
-    def find(name: str) -> type[BaseFormatter]:
-        """Get a strategy from its name."""
-
-        formatters = BaseFormatter.get_all()
-
-        l_name = name.lower()
-        if l_name in formatters:
-            return formatters[l_name]
-
-        raise ValueError(f"Unknown formatter name: {name}. Available formatters: {', '.join(formatters)}")
+    try:
+        return FORMATTERS_REGISTRY[name]
+    except KeyError as e:
+        raise ValueError(f"Formatter '{name}' not found") from e
 
 
-__all__ = ["BaseFormatter"]
+def list_available() -> list[str]:
+    """
+    List available formatters in the registry.
+
+    Returns:
+    list[str]: A list of the names of the available formatters.
+    """
+
+    return list(FORMATTERS_REGISTRY)
+
+
+__all__ = ["register", "find"]

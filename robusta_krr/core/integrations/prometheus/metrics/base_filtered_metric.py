@@ -22,7 +22,6 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
                 return series["metric"][label]
         return None
 
-    # TODO: Rework this, as now our query can return multiple metrics for different pods
     @staticmethod
     def filter_prom_jobs_results(
         series_list_result: list[PrometheusSeries],
