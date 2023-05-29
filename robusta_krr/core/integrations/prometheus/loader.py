@@ -129,8 +129,10 @@ class PrometheusLoader(Configurable):
 
         if len(object.pods) == 0:
             return
-
-        period_literal = f"{int(period.total_seconds()) // 60 // 24}d"
+        
+        # Prometheus limit, the max can be 32 days
+        days_literal = min(int(period.total_seconds()) // 60 // 24, 32) 
+        period_literal = f"{days_literal}d"
         owner = await asyncio.to_thread(
             self.prometheus.custom_query,
             query=f'kube_pod_owner{{pod="{next(iter(object.pods)).name}"}}[{period_literal}]',
