@@ -25,13 +25,7 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
     recommended = getattr(item.recommended, selector)[resource]
     severity = recommended.severity
 
-    return (
-        f"[{severity.color}]"
-        + _format(allocated)
-        + " -> "
-        + _format(recommended.value)
-        + f"[/{severity.color}]"
-    )
+    return f"[{severity.color}]" + _format(allocated) + " -> " + _format(recommended.value) + f"[/{severity.color}]"
 
 
 @formatters.register(rich_console=True)
@@ -50,8 +44,7 @@ def table(result: Result) -> Table:
         title=f"\n{result.description}\n" if result.description else None,
         title_justify="left",
         title_style="",
-        # TODO: Fix points calculation at [MAIN-270]
-        # caption=f"Scan result ({result.score} points)",
+        caption=f"{result.score} points - {result.score_letter}",
     )
 
     table.add_column("Number", justify="right", no_wrap=True)

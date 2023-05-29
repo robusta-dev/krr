@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import enum
-import itertools
 from datetime import datetime
 from typing import Any, Optional, Union
 
@@ -10,45 +8,7 @@ import pydantic as pd
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
-
-
-class Severity(str, enum.Enum):
-    """The severity of the scan."""
-
-    UNKNOWN = "UNKNOWN"
-    GOOD = "GOOD"
-    OK = "OK"
-    WARNING = "WARNING"
-    CRITICAL = "CRITICAL"
-
-    @property
-    def color(self) -> str:
-        return {
-            self.UNKNOWN: "dim",
-            self.GOOD: "green",
-            self.OK: "gray",
-            self.WARNING: "yellow",
-            self.CRITICAL: "red",
-        }[self]
-
-    @classmethod
-    def calculate(cls, current: RecommendationValue, recommended: RecommendationValue) -> Severity:
-        if isinstance(recommended, str) or isinstance(current, str):
-            return cls.UNKNOWN
-
-        if current is None and recommended is None:
-            return cls.OK
-        if current is None or recommended is None:
-            return cls.WARNING
-
-        diff = (current - recommended) / recommended
-
-        if diff > 1.0 or diff < -0.5:
-            return cls.CRITICAL
-        elif diff > 0.5 or diff < -0.25:
-            return cls.WARNING
-        else:
-            return cls.GOOD
+from robusta_krr.core.models.severity import Severity
 
 
 class Recommendation(pd.BaseModel):
@@ -88,7 +48,7 @@ class ResourceScan(pd.BaseModel):
                 current = getattr(object.allocations, selector).get(resource_type)
                 recommended = getattr(recommendation, selector).get(resource_type)
 
-                current_severity = Severity.calculate(current, recommended)
+                current_severity = Severity.calculate(current, recommended, resource_type)
 
                 getattr(recommendation_processed, selector)[resource_type] = Recommendation(
                     value=recommended, severity=current_severity
@@ -129,18 +89,8 @@ class Result(pd.BaseModel):
         return formatter(self)
 
     @staticmethod
-    def __percentage_difference(current: RecommendationValue, recommended: RecommendationValue) -> float:
-        """Get the percentage difference between two numbers.
-
-        Args:
-            current: The current value.
-            recommended: The recommended value.
-
-        Returns:
-            The percentage difference.
-        """
-
-        return 1
+    def __scan_cost(scan: ResourceScan) -> float:
+        return 0.7 if scan.severity == Severity.WARNING else 1 if scan.severity == Severity.CRITICAL else 0
 
     def __calculate_score(self) -> int:
         """Get the score of the result.
@@ -149,18 +99,19 @@ class Result(pd.BaseModel):
             The score of the result.
         """
 
-        total_diff = 0.0
-        for scan, resource_type in itertools.product(self.scans, ResourceType):
-            total_diff += self.__percentage_difference(
-                scan.object.allocations.requests[resource_type], scan.recommended.requests[resource_type]
-            )
-            total_diff += self.__percentage_difference(
-                scan.object.allocations.limits[resource_type], scan.recommended.limits[resource_type]
-            )
+        score = sum(self.__scan_cost(scan) for scan in self.scans)
+        return int((len(self.scans) - score) / len(self.scans) * 100)
 
-        if len(self.scans) == 0:
-            return 0
-
-        return int(
-            max(0, round(100 - total_diff / len(self.scans) / len(ResourceType) / 50, 2))
-        )  # 50 is just a constant
+    @property
+    def score_letter(self) -> str:
+        return (
+            "F"
+            if self.score < 30
+            else "D"
+            if self.score < 55
+            else "C"
+            if self.score < 70
+            else "B"
+            if self.score < 90
+            else "A"
+        )
