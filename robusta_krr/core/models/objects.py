@@ -39,3 +39,8 @@ class K8sObjectData(pd.BaseModel):
     @property
     def pods_count(self) -> int:
         return len(self.pods)
+
+    class Config:
+        json_encoders = {
+            PodData: lambda pod: pod.name,
+        }

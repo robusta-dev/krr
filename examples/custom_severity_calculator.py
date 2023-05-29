@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Optional
 
 import robusta_krr
-from robusta_krr.api.models import Severity, ResourceType
+from robusta_krr.api.models import Severity, ResourceType, register_severity_calculator
 
 
-@Severity.bind_calculator(ResourceType.CPU)
+@register_severity_calculator(ResourceType.CPU)
 def percentage_severity_calculator(
     current: Optional[float], recommended: Optional[float], resource_type: ResourceType
 ) -> Severity:

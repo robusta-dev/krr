@@ -39,28 +39,28 @@ class Severity(str, enum.Enum):
 
         return calculate_severity(current, recommended, resource_type)
 
-    @staticmethod
-    def bind_calculator(resource_type: ResourceType) -> Callable[[SeverityCalculator], SeverityCalculator]:
-        """
-        Bind a severity calculator function to a resource type.
-        Use this decorator to bind a severity calculator function to a resource type.
 
-        Example:
-        >>> @bind_calculator(ResourceType.CPU)
-        >>> def cpu_severity_calculator(current: Optional[float], recommended: Optional[float], resource_type: ResourceType) -> Severity:
-        >>>     if current is None and recommended is None:
-        >>>         return Severity.GOOD
-        >>>     if current is None or recommended is None:
-        >>>         return Severity.WARNING
-        >>>
-        >>>     return Severity.CRITICAL if abs(current - recommended) >= 0.5 else Severity.GOOD
-        """
+def register_severity_calculator(resource_type: ResourceType) -> Callable[[SeverityCalculator], SeverityCalculator]:
+    """
+    Bind a severity calculator function to a resource type.
+    Use this decorator to bind a severity calculator function to a resource type.
 
-        def decorator(func: SeverityCalculator) -> SeverityCalculator:
-            SEVERITY_CALCULATORS_REGISTRY[resource_type] = func
-            return func
+    Example:
+    >>> @bind_severity_calculator(ResourceType.CPU)
+    >>> def cpu_severity_calculator(current: Optional[float], recommended: Optional[float], resource_type: ResourceType) -> Severity:
+    >>>     if current is None and recommended is None:
+    >>>         return Severity.GOOD
+    >>>     if current is None or recommended is None:
+    >>>         return Severity.WARNING
+    >>>
+    >>>     return Severity.CRITICAL if abs(current - recommended) >= 0.5 else Severity.GOOD
+    """
 
-        return decorator
+    def decorator(func: SeverityCalculator) -> SeverityCalculator:
+        SEVERITY_CALCULATORS_REGISTRY[resource_type] = func
+        return func
+
+    return decorator
 
 
 SeverityCalculator = Callable[[Optional[float], Optional[float], ResourceType], Severity]
@@ -86,7 +86,7 @@ def default_severity_calculator(
     return Severity.UNKNOWN
 
 
-@Severity.bind_calculator(ResourceType.CPU)
+@register_severity_calculator(ResourceType.CPU)
 def cpu_severity_calculator(
     current: Optional[float], recommended: Optional[float], resource_type: ResourceType
 ) -> Severity:
@@ -107,7 +107,7 @@ def cpu_severity_calculator(
         return Severity.GOOD
 
 
-@Severity.bind_calculator(ResourceType.Memory)
+@register_severity_calculator(ResourceType.Memory)
 def memory_severity_calculator(
     current: Optional[float], recommended: Optional[float], resource_type: ResourceType
 ) -> Severity:
