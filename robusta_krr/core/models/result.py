@@ -5,7 +5,7 @@ from typing import Any, Optional, Union
 
 import pydantic as pd
 
-from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.severity import Severity
@@ -75,7 +75,7 @@ class Result(pd.BaseModel):
         super().__init__(*args, **kwargs)
         self.score = self.__calculate_score()
 
-    def format(self, formatter: Union[type[BaseFormatter], str], **kwargs: Any) -> Any:
+    def format(self, formatter: Union[formatters.FormatterFunc, str]) -> Any:
         """Format the result.
 
         Args:
@@ -85,9 +85,8 @@ class Result(pd.BaseModel):
             The formatted result.
         """
 
-        FormatterType = BaseFormatter.find(formatter) if isinstance(formatter, str) else formatter
-        _formatter = FormatterType(**kwargs)
-        return _formatter.format(self)
+        formatter = formatters.find(formatter) if isinstance(formatter, str) else formatter
+        return formatter(self)
 
     @staticmethod
     def __scan_cost(scan: ResourceScan) -> float:
