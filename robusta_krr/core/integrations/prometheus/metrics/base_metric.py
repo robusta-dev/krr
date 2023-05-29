@@ -77,7 +77,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         )
 
     async def load_data(
-        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
+        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta, service_name: str
     ) -> ResourceHistoryData:
         """
         Asynchronous method that loads metric data for a specific object.
@@ -102,7 +102,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         result = await self.query_prometheus(metric)
 
         if result == []:
-            self.warning(f"Prometheus returned no {self.__class__.__name__} metrics for {object}")
+            self.warning(f"{service_name} returned no {self.__class__.__name__} metrics for {object}")
             return ResourceHistoryData(metric=metric, data={})
 
         return ResourceHistoryData(

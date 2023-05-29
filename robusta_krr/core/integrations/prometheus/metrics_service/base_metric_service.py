@@ -20,6 +20,10 @@ class MetricsService(Configurable, abc.ABC):
         ...
 
     @abc.abstractmethod
+    def name(self) -> str:
+        ...
+
+    @abc.abstractmethod
     async def gather_data(
         self,
         object: K8sObjectData,

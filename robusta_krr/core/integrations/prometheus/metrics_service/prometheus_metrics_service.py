@@ -3,7 +3,6 @@ from typing import Optional, no_type_check
 
 import asyncio
 import requests
-from kubernetes import config as k8s_config
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusConnect, Retry
 from requests.adapters import HTTPAdapter
@@ -20,7 +19,16 @@ from ..metrics import BaseMetricLoader
 from .base_metric_service import MetricsService
 
 class PrometheusDiscovery(ServiceDiscovery):
-    def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    
+    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+        """
+        Finds the Prometheus URL using selectors.
+        Args:
+            api_client (Optional[ApiClient]): A Kubernetes API client. Defaults to None.
+        Returns:
+            Optional[str]: The discovered Prometheus URL, or None if not found.
+        """
+
         return super().find_url(
             selectors=[
                 "app=kube-prometheus-stack-prometheus",
@@ -30,16 +38,22 @@ class PrometheusDiscovery(ServiceDiscovery):
                 "app=prometheus-msteams",
                 "app=rancher-monitoring-prometheus",
                 "app=prometheus-prometheus",
-            ],
-            api_client=api_client,
+            ]
         )
 
 
 class PrometheusNotFound(Exception):
+    """
+    An exception raised when Prometheus is not found.
+    """
     pass
 
 
 class CustomPrometheusConnect(PrometheusConnect):
+    """
+    Custom PrometheusConnect class to handle retries.
+    """
+    
     @no_type_check
     def __init__(
         self,
@@ -55,6 +69,9 @@ class CustomPrometheusConnect(PrometheusConnect):
 
 
 class PrometheusMetricsService(MetricsService):
+    """
+    A class for fetching metrics from Prometheus.
+    """
     def __init__(
         self,
         config: Config,
@@ -65,21 +82,23 @@ class PrometheusMetricsService(MetricsService):
     ) -> None:
         super().__init__(config=config, api_client=api_client, cluster=cluster)
 
-        self.info(f"Connecting to Prometheus for {self.cluster} cluster")
+        self.info(f"Connecting to {self.name()} for {self.cluster} cluster")
 
         self.auth_header = self.config.prometheus_auth_header
         self.ssl_enabled = self.config.prometheus_ssl_enabled
-
-        self.prometheus_discovery = service_discovery(config=self.config)
+        
+        self.prometheus_discovery = service_discovery(config=self.config, api_client=self.api_client)
 
         self.url = self.config.prometheus_url
-        self.url = self.url or self.prometheus_discovery.find_prometheus_url(api_client=self.api_client)
+        self.url = self.url or self.prometheus_discovery.find_metrics_url()
 
         if not self.url:
             raise PrometheusNotFound(
-                f"Prometheus instance could not be found while scanning in {self.cluster} cluster.\n"
+                f"{self.name()} instance could not be found while scanning in {self.cluster} cluster.\n"
                 "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
             )
+
+        self.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 
         headers = {}
 
@@ -89,9 +108,16 @@ class PrometheusMetricsService(MetricsService):
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
         self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
-        self.info(f"Prometheus connected successfully for {self.cluster} cluster")
+
+    def name(self):
+        return "Prometheus"
 
     def check_connection(self):
+        """
+        Checks the connection to Prometheus.
+        Raises:
+            PrometheusNotFound: If the connection to Prometheus cannot be established.
+        """
         try:
             response = self.prometheus._session.get(
                 f"{self.prometheus.url}/api/v1/query",
@@ -106,6 +132,9 @@ class PrometheusMetricsService(MetricsService):
                 f"Couldn't connect to Prometheus found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"
             ) from e
 
+    async def query(self, query: str) -> dict:
+        return await asyncio.to_thread(self.prometheus.custom_query, query=query)
+
     async def gather_data(
         self,
         object: K8sObjectData,
@@ -113,49 +142,59 @@ class PrometheusMetricsService(MetricsService):
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> ResourceHistoryData:
+        """
+            ResourceHistoryData: The gathered resource history data.
+        """
         self.debug(f"Gathering data for {object} and {resource}")
 
         await self.add_historic_pods(object, period)
 
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
         metric_loader = MetricLoaderType(self.config, self.prometheus)
-        return await metric_loader.load_data(object, period, step)
+        return await metric_loader.load_data(object, period, step, self.name())
 
-    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
-        """
-        Finds pods that have been deleted but still have some metrics in Prometheus.
-        Args:
-            object (K8sObjectData): The Kubernetes object.
-            period (datetime.timedelta): The time period for which to gather data.
-        """
+    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:	
+        """	
+        Finds pods that have been deleted but still have some metrics in Prometheus.	
+        Args:	
+            object (K8sObjectData): The Kubernetes object.	
+            period (datetime.timedelta): The time period for which to gather data.	
+        """	
 
-        if len(object.pods) == 0:
-            return
+        days_literal = min(int(period.total_seconds()) // 60 // 24, 32)	
+        period_literal = f"{days_literal}d"	
+        pod_owners: list[str]	
+        pod_owner_kind: str	
 
-        # Prometheus limit, the max can be 32 days
-        days_literal = min(int(period.total_seconds()) // 60 // 24, 32) 
-        period_literal = f"{days_literal}d"
-        owner = await asyncio.to_thread(
-            self.prometheus.custom_query,
-            query=f'kube_pod_owner{{pod="{next(iter(object.pods)).name}"}}[{period_literal}]',
-        )
+        if object.kind == "Deployment":	
+            replicasets = await self.query(	
+                "kube_replicaset_owner{"	
+                f'owner_name="{object.name}", '	
+                f'owner_kind="Deployment", '	
+                f'namespace="{object.namespace}"'	
+                "}"	
+                f"[{period_literal}]"	
+            )	
+            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]	
+            pod_owner_kind = "ReplicaSet"	
+        else:	
+            pod_owners = [object.name]	
+            pod_owner_kind = object.kind	
 
-        if owner == []:
-            return
+        owners_regex = "|".join(pod_owners)	
+        related_pods = await self.query(	
+            "kube_pod_owner{"	
+            f'owner_name=~"{owners_regex}", '	
+            f'owner_kind="{pod_owner_kind}", '	
+            f'namespace="{object.namespace}"'	
+            "}"	
+            f"[{period_literal}]"	
+        )	
 
-        owner = owner[0]["metric"]["owner_name"]
+        current_pods = {p.name for p in object.pods}	
 
-        related_pods = await asyncio.to_thread(
-            self.prometheus.custom_query, query=f'kube_pod_owner{{owner_name="{owner}"}}[{period_literal}]'
-        )
-
-        current_pods = {p.name for p in object.pods}
-
-        object.pods += [
-            PodData(
-                name=pod["metric"]["pod"],
-                deleted=True,
-            )
-            for pod in related_pods
-            if pod["metric"]["pod"] not in current_pods
-        ]
+        object.pods += [	
+            PodData(name=pod["metric"]["pod"], deleted=True)	
+            for pod in related_pods	
+            if pod["metric"]["pod"] not in current_pods	
+        ]	

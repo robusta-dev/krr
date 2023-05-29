@@ -8,22 +8,35 @@ from robusta_krr.utils.service_discovery import ServiceDiscovery
 from .prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
 
 class ThanosMetricsDiscovery(ServiceDiscovery):
-    def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+        """
+        Finds the Thanos URL using selectors.
+        Args:
+            api_client (Optional[ApiClient]): A Kubernetes API client. Defaults to None.
+        Returns:
+            Optional[str]: The discovered Thanos URL, or None if not found.
+        """
+
         return super().find_url(
             selectors=[
                 "app.kubernetes.io/component=query,app.kubernetes.io/name=thanos",
                 "app.kubernetes.io/name=thanos-query",
                 "app=thanos-query",
                 "app=thanos-querier",
-            ],
-            api_client=api_client,
+            ]
         )
 
 
 class ThanosMetricsNotFound(Exception):
+    """
+    An exception raised when Thanos is not found.
+    """
     pass
 
 class ThanosMetricsService(PrometheusMetricsService):
+    """
+    A class for fetching metrics from Thanos.
+    """
     def __init__(
         self,
         config: Config,
@@ -33,7 +46,15 @@ class ThanosMetricsService(PrometheusMetricsService):
     ) -> None:
         super().__init__(config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery)
 
+    def name(self):
+        return "Thanos"
+        
     def check_connection(self):
+        """
+        Checks the connection to Prometheus.
+        Raises:
+            ThanosMetricsNotFound: If the connection to Thanos cannot be established.
+        """
         try:
             super().check_connection()
         except PrometheusNotFound as e:

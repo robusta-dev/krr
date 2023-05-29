@@ -8,7 +8,14 @@ from robusta_krr.utils.service_discovery import ServiceDiscovery
 from .prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
 
 class VictoriaMetricsDiscovery(ServiceDiscovery):
-    def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+        """
+        Finds the Victoria Metrics URL using selectors.
+        Args:
+            api_client (Optional[ApiClient]): A Kubernetes API client. Defaults to None.
+        Returns:
+            Optional[str]: The discovered Victoria Metrics URL, or None if not found.
+        """
         return super().find_url(
             selectors=[
                 "app.kubernetes.io/name=vmsingle",
@@ -16,14 +23,19 @@ class VictoriaMetricsDiscovery(ServiceDiscovery):
                 "app.kubernetes.io/name=vmselect"
                 "app=vmselect",
 
-            ],
-            api_client=api_client,
+            ]
         )
 
 class VictoriaMetricsNotFound(Exception):
+    """
+    An exception raised when Victoria Metrics is not found.
+    """
     pass
 
 class VictoriaMetricsService(PrometheusMetricsService):
+    """
+    A class for fetching metrics from Victoria Metrics.
+    """
     def __init__(
         self,
         config: Config,
@@ -33,7 +45,15 @@ class VictoriaMetricsService(PrometheusMetricsService):
     ) -> None:
         super().__init__(config=config, cluster=cluster, api_client=api_client, service_discovery=VictoriaMetricsDiscovery)
 
+    def name(self):
+        return "Victoria Metrics"
+
     def check_connection(self):
+        """
+        Checks the connection to Prometheus.
+        Raises:
+            VictoriaMetricsNotFound: If the connection to Victoria Metrics cannot be established.
+        """
         try:
             super().check_connection()
         except PrometheusNotFound as e:
