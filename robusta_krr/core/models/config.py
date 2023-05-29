@@ -1,23 +1,13 @@
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
+
+from rich.console import Console
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
-
-try:
-    config.load_incluster_config()
-except ConfigException:
-    try:
-        config.load_kube_config()
-    except ConfigException:
-        IN_CLUSTER = None
-    else:
-        IN_CLUSTER = False
-else:
-    IN_CLUSTER = True
 
 
 class Config(pd.BaseSettings):
@@ -25,6 +15,7 @@ class Config(pd.BaseSettings):
     verbose: bool = pd.Field(False)
 
     clusters: Union[list[str], Literal["*"], None] = None
+    kubeconfig: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
 
     # Value settings
@@ -42,6 +33,14 @@ class Config(pd.BaseSettings):
     log_to_stderr: bool
 
     other_args: dict[str, Any]
+
+    # Internal
+    inside_cluster: bool = False
+    console: Optional[Console] = None
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.console = Console(stderr=self.log_to_stderr)
 
     @property
     def Formatter(self) -> formatters.FormatterFunc:
@@ -70,9 +69,14 @@ class Config(pd.BaseSettings):
         return v
 
     @property
-    def config_loaded(self) -> bool:
-        return IN_CLUSTER is not None
+    def context(self) -> Optional[str]:
+        return self.clusters[0] if self.clusters != "*" and self.clusters else None
 
-    @property
-    def inside_cluster(self) -> bool:
-        return bool(IN_CLUSTER)
+    def load_kubeconfig(self) -> None:
+        try:
+            config.load_incluster_config()
+        except ConfigException:
+            config.load_kube_config(config_file=self.kubeconfig, context=self.context)
+            self.inside_cluster = False
+        else:
+            self.inside_cluster = True

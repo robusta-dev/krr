@@ -26,7 +26,11 @@ class ClusterLoader(Configurable):
         super().__init__(*args, **kwargs)
 
         self.cluster = cluster
-        self.api_client = config.new_client_from_config(context=cluster) if cluster is not None else None
+        self.api_client = (
+            config.new_client_from_config(context=cluster, config_file=self.config.kubeconfig)
+            if cluster is not None
+            else None
+        )
         self.apps = client.AppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
@@ -185,7 +189,19 @@ class KubernetesLoader(Configurable):
             self.debug("Working inside the cluster")
             return None
 
-        contexts, current_context = await asyncio.to_thread(config.list_kube_config_contexts)
+        try:
+            contexts, current_context = await asyncio.to_thread(config.list_kube_config_contexts)
+        except config.ConfigException:
+            if self.config.clusters is not None and self.config.clusters != "*":
+                self.warning("Could not load context from kubeconfig.")
+                self.warning(f"Falling back to clusters from CLI: {self.config.clusters}")
+                return self.config.clusters
+            else:
+                self.error(
+                    "Could not load context from kubeconfig. "
+                    "Please check your kubeconfig file or pass -c flag with the context name."
+                )
+            return None
 
         self.debug(f"Found {len(contexts)} clusters: {', '.join([context['name'] for context in contexts])}")
         self.debug(f"Current cluster: {current_context['name']}")
@@ -202,6 +218,13 @@ class KubernetesLoader(Configurable):
 
         return [context["name"] for context in contexts if context["name"] in self.config.clusters]
 
+    def _try_create_cluster_loader(self, cluster: Optional[str]) -> Optional[ClusterLoader]:
+        try:
+            return ClusterLoader(cluster=cluster, config=self.config)
+        except Exception as e:
+            self.error(f"Could not load cluster {cluster} and will skip it: {e}")
+            return None
+
     async def list_scannable_objects(self, clusters: Optional[list[str]]) -> list[K8sObjectData]:
         """List all scannable objects.
 
@@ -210,9 +233,14 @@ class KubernetesLoader(Configurable):
         """
 
         if clusters is None:
-            cluster_loaders = [ClusterLoader(cluster=None, config=self.config)]
+            _cluster_loaders = [self._try_create_cluster_loader(None)]
         else:
-            cluster_loaders = [ClusterLoader(cluster=cluster, config=self.config) for cluster in clusters]
+            _cluster_loaders = [self._try_create_cluster_loader(cluster) for cluster in clusters]
+
+        cluster_loaders = [cl for cl in _cluster_loaders if cl is not None]
+        if cluster_loaders == []:
+            self.error("Could not load any cluster.")
+            return []
 
         objects = await asyncio.gather(*[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders])
         return list(itertools.chain(*objects))
