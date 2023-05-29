@@ -43,11 +43,25 @@ def load_commands() -> None:
             @app.command(rich_help_panel="Strategies")
             def {func_name}(
                 ctx: typer.Context,
+                kubeconfig: Optional[str] = typer.Option(
+                    None,
+                    "--kubeconfig",
+                    "-k",
+                    help="Path to kubeconfig file. If not provided, will attempt to find it.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
                 clusters: List[str] = typer.Option(
                     None,
+                    "--context",
                     "--cluster",
                     "-c",
-                    help="List of clusters to run on. By default, will run on the current cluster. Use '*' to run on all clusters.",
+                    help="List of clusters to run on. By default, will run on the current cluster. Use --all-clusters to run on all clusters.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
+                all_clusters: bool = typer.Option(
+                    False,
+                    "--all-clusters",
+                    help="Run on all clusters. Overrides --context.",
                     rich_help_panel="Kubernetes Settings"
                 ),
                 namespaces: List[str] = typer.Option(
@@ -85,7 +99,8 @@ def load_commands() -> None:
                 '''Run KRR using the `{func_name}` strategy'''
 
                 config = Config(
-                    clusters="*" if "*" in clusters else clusters,
+                    kubeconfig=kubeconfig,
+                    clusters="*" if all_clusters else clusters,
                     namespaces="*" if "*" in namespaces else namespaces,
                     prometheus_url=prometheus_url,
                     prometheus_auth_header=prometheus_auth_header,

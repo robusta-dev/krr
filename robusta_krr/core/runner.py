@@ -35,7 +35,7 @@ class Runner(Configurable):
         if isinstance(result, self.EXPECTED_EXCEPTIONS):
             if result not in self._prometheus_loaders_error_logged:
                 self._prometheus_loaders_error_logged.add(result)
-                self.error(result)
+                self.error(str(result))
             return None
         elif isinstance(result, Exception):
             raise result
@@ -161,11 +161,15 @@ class Runner(Configurable):
         )
 
     async def run(self) -> None:
-        if not self.config.config_loaded:
-            self.console.print("[CRITICAL] Could not load kubernetes configuration. Do you have kubeconfig set up?")
+        self._greet()
+
+        try:
+            self.config.load_kubeconfig()
+        except Exception as e:
+            self.error(f"Could not load kubernetes configuration: {e}")
+            self.error("Try to explicitly set --context and/or --kubeconfig flags.")
             return
 
-        self._greet()
         try:
             result = await self._collect_result()
             self._process_result(result)

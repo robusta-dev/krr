@@ -15,7 +15,7 @@ class Configurable(abc.ABC):
 
     def __init__(self, config: Config) -> None:
         self.config = config
-        self.console = Console(stderr=self.config.log_to_stderr)
+        self.console: Console = self.config.console  # type: ignore
 
     @property
     def debug_active(self) -> bool:
