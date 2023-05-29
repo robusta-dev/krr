@@ -2,80 +2,24 @@ import asyncio
 import datetime
 from typing import Optional, no_type_check
 
-import requests
 from kubernetes import config as k8s_config
-from prometheus_api_client import PrometheusConnect, Retry
-from requests.adapters import HTTPAdapter
-from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
-from robusta_krr.utils.service_discovery import ServiceDiscovery
+from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
+from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+from .metrics_service.base_metric_service import MetricsService
+from kubernetes.client.api_client import ApiClient
 
-from .metrics import BaseMetricLoader
+METRICS_SERVICES = {
+    "Prometheus": PrometheusMetricsService,
+    "Victoria Metrics": VictoriaMetricsService,
+}
 
-
-class PrometheusDiscovery(ServiceDiscovery):
-    def find_prometheus_url(self) -> Optional[str]:
-        """
-        Finds the Prometheus URL using selectors.
-
-        Args:
-            api_client (Optional[ApiClient]): A Kubernetes API client. Defaults to None.
-
-        Returns:
-            Optional[str]: The discovered Prometheus URL, or None if not found.
-        """
-
-        return super().find_url(
-            selectors=[
-                "app=kube-prometheus-stack-prometheus",
-                "app=prometheus,component=server",
-                "app=prometheus-server",
-                "app=prometheus-operator-prometheus",
-                "app=prometheus-msteams",
-                "app=rancher-monitoring-prometheus",
-                "app=prometheus-prometheus",
-                "app.kubernetes.io/name=vmsingle",
-            ],
-        )
-
-
-class PrometheusNotFound(Exception):
-    """
-    An exception raised when Prometheus is not found.
-    """
-
-    pass
-
-
-class CustomPrometheusConnect(PrometheusConnect):
-    """
-    Custom PrometheusConnect class to handle retries.
-    """
-
-    @no_type_check
-    def __init__(
-        self,
-        url: str = "http://127.0.0.1:9090",
-        headers: dict = None,
-        disable_ssl: bool = False,
-        retry: Retry = None,
-        auth: tuple = None,
-    ):
-        super().__init__(url, headers, disable_ssl, retry, auth)
-        self._session = requests.Session()
-        self._session.mount(self.url, HTTPAdapter(max_retries=retry, pool_maxsize=10, pool_block=True))
-
-
-class PrometheusLoader(Configurable):
-    """
-    A loader class for fetching metrics from Prometheus.
-    """
-
+class MetricsLoader(Configurable):
     def __init__(
         self,
         config: Config,
@@ -92,65 +36,26 @@ class PrometheusLoader(Configurable):
 
         super().__init__(config=config)
 
-        self.info(f"Connecting to Prometheus for {cluster or 'default'} cluster")
-
-        self.auth_header = self.config.prometheus_auth_header
-        self.ssl_enabled = self.config.prometheus_ssl_enabled
-
-        self.api_client = (
-            k8s_config.new_client_from_config(config_file=self.config.kubeconfig, context=cluster)
-            if cluster is not None
-            else None
-        )
-        self.prometheus_discovery = PrometheusDiscovery(config=self.config, api_client=self.api_client)
-
-        self.url = self.config.prometheus_url
-        self.url = self.url or self.prometheus_discovery.find_prometheus_url()
-
-        if not self.url:
-            raise PrometheusNotFound(
-                f"Prometheus instance could not be found while scanning in {cluster or 'default'} cluster.\n"
-                "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
-            )
-
-        self.info(f"Using prometheus at {self.url} for cluster {cluster or 'default'}")
-
-        headers = {}
-
-        if self.auth_header:
-            headers = {"Authorization": self.auth_header}
-        elif not self.config.inside_cluster:
-            self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
-
-        self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
-        self._check_prometheus_connection()
+        self.api_client = k8s_config.new_client_from_config(context=cluster) if cluster is not None else None
+        self.loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
+        self.loader.check_connection()
 
         self.info(f"Prometheus connected successfully for {cluster or 'default'} cluster")
 
-    def _check_prometheus_connection(self):
-        """
-        Checks the connection to Prometheus.
 
-        Raises:
-            PrometheusNotFound: If the connection to Prometheus cannot be established.
-        """
-
-        try:
-            response = self.prometheus._session.get(
-                f"{self.prometheus.url}/api/v1/query",
-                verify=self.prometheus.ssl_verification,
-                headers=self.prometheus.headers,
-                # This query should return empty results, but is correct
-                params={"query": "example"},
-            )
-            response.raise_for_status()
-        except (ConnectionError, HTTPError) as e:
-            raise PrometheusNotFound(
-                f"Couldn't connect to Prometheus found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"
-            ) from e
-
-    async def query(self, query: str) -> dict:
-        return await asyncio.to_thread(self.prometheus.custom_query, query=query)
+    def get_metrics_service(self,
+            config: Config,
+            api_client: Optional[ApiClient] = None,
+            cluster: Optional[str] = None,) -> Optional[MetricsService]:
+        
+        for service_name, metric_service_class in METRICS_SERVICES.items():
+            try:
+                loader = metric_service_class(config, api_client=api_client, cluster=cluster)
+                loader.check_connection()
+                self.echo(f"{service_name} found")
+                return loader
+            except Exception as e:
+                self.warning(f"{service_name} not found")
 
     async def gather_data(
         self,
@@ -173,6 +78,7 @@ class PrometheusLoader(Configurable):
             ResourceHistoryData: The gathered resource history data.
         """
 
+        return await self.loader.gather_data(object, resource, period, step)
         self.debug(f"Gathering data for {object} and {resource}")
 
         await self.add_historic_pods(object, period)

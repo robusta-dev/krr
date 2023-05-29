@@ -13,7 +13,7 @@ from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
 
 if TYPE_CHECKING:
-    from ..loader import CustomPrometheusConnect
+    from .. import CustomPrometheusConnect
 
 # A registry of metrics that can be used to fetch a corresponding metric loader.
 REGISTERED_METRICS: dict[str, type[BaseMetricLoader]] = {}

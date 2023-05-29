@@ -1,1 +1,4 @@
-from .loader import CustomPrometheusConnect, PrometheusDiscovery, PrometheusLoader, PrometheusNotFound
+import imp
+from .metrics_service.prometheus_metrics_service import CustomPrometheusConnect, PrometheusNotFound, PrometheusMetricsService
+from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+from .loader import MetricsLoader
