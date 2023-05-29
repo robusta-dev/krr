@@ -12,6 +12,9 @@ class ThanosMetricsDiscovery(ServiceDiscovery):
         return super().find_url(
             selectors=[
                 "app.kubernetes.io/component=query,app.kubernetes.io/name=thanos",
+                "app.kubernetes.io/name=thanos-query",
+                "app=thanos-query",
+                "app=thanos-querier",
             ],
             api_client=api_client,
         )
