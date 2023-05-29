@@ -4,7 +4,6 @@ from typing import Optional, no_type_check
 
 import requests
 from kubernetes import config as k8s_config
-from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusConnect, Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, HTTPError
@@ -20,11 +19,7 @@ from .metrics import BaseMetricLoader
 
 
 class PrometheusDiscovery(ServiceDiscovery):
-    """
-    Service discovery for Prometheus.
-    """
-
-    def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_prometheus_url(self) -> Optional[str]:
         """
         Finds the Prometheus URL using selectors.
 
@@ -34,6 +29,7 @@ class PrometheusDiscovery(ServiceDiscovery):
         Returns:
             Optional[str]: The discovered Prometheus URL, or None if not found.
         """
+
         return super().find_url(
             selectors=[
                 "app=kube-prometheus-stack-prometheus",
@@ -45,7 +41,6 @@ class PrometheusDiscovery(ServiceDiscovery):
                 "app=prometheus-prometheus",
                 "app.kubernetes.io/name=vmsingle",
             ],
-            api_client=api_client,
         )
 
 
@@ -102,17 +97,23 @@ class PrometheusLoader(Configurable):
         self.auth_header = self.config.prometheus_auth_header
         self.ssl_enabled = self.config.prometheus_ssl_enabled
 
-        self.api_client = k8s_config.new_client_from_config(context=cluster) if cluster is not None else None
-        self.prometheus_discovery = PrometheusDiscovery(config=self.config)
+        self.api_client = (
+            k8s_config.new_client_from_config(config_file=self.config.kubeconfig, context=cluster)
+            if cluster is not None
+            else None
+        )
+        self.prometheus_discovery = PrometheusDiscovery(config=self.config, api_client=self.api_client)
 
         self.url = self.config.prometheus_url
-        self.url = self.url or self.prometheus_discovery.find_prometheus_url(api_client=self.api_client)
+        self.url = self.url or self.prometheus_discovery.find_prometheus_url()
 
         if not self.url:
             raise PrometheusNotFound(
                 f"Prometheus instance could not be found while scanning in {cluster or 'default'} cluster.\n"
                 "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
             )
+
+        self.info(f"Using prometheus at {self.url} for cluster {cluster or 'default'}")
 
         headers = {}
 
@@ -188,9 +189,9 @@ class PrometheusLoader(Configurable):
 
         if len(object.pods) == 0:
             return
-        
+
         # Prometheus limit, the max can be 32 days
-        days_literal = min(int(period.total_seconds()) // 60 // 24, 32) 
+        days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"
         owner = await asyncio.to_thread(
             self.prometheus.custom_query,
