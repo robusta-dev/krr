@@ -10,12 +10,14 @@ from robusta_krr.core.models.config import Config
 class Configurable(abc.ABC):
     """
     A class that can be configured with a Config object.
-    Opens the possibility to use echo and debug methods
+    Opens the possibility to use custom logging methods, that can be configured with the Config object.
+
+    Also makes a `console` attribute available, which is a rich console.
     """
 
     def __init__(self, config: Config) -> None:
         self.config = config
-        self.console = Console(stderr=self.config.log_to_stderr)
+        self.console: Console = self.config.console  # type: ignore
 
     @property
     def debug_active(self) -> bool:

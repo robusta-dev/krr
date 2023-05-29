@@ -9,8 +9,9 @@ from uuid import UUID
 import typer
 import urllib3
 
-from robusta_krr.core.abstract.formatters import BaseFormatter
+from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
@@ -43,11 +44,25 @@ def load_commands() -> None:
             @app.command(rich_help_panel="Strategies")
             def {func_name}(
                 ctx: typer.Context,
+                kubeconfig: Optional[str] = typer.Option(
+                    None,
+                    "--kubeconfig",
+                    "-k",
+                    help="Path to kubeconfig file. If not provided, will attempt to find it.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
                 clusters: List[str] = typer.Option(
                     None,
+                    "--context",
                     "--cluster",
                     "-c",
-                    help="List of clusters to run on. By default, will run on the current cluster. Use '*' to run on all clusters.",
+                    help="List of clusters to run on. By default, will run on the current cluster. Use --all-clusters to run on all clusters.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
+                all_clusters: bool = typer.Option(
+                    False,
+                    "--all-clusters",
+                    help="Run on all clusters. Overrides --context.",
                     rich_help_panel="Kubernetes Settings"
                 ),
                 namespaces: List[str] = typer.Option(
@@ -85,7 +100,8 @@ def load_commands() -> None:
                 '''Run KRR using the `{func_name}` strategy'''
 
                 config = Config(
-                    clusters="*" if "*" in clusters else clusters,
+                    kubeconfig=kubeconfig,
+                    clusters="*" if all_clusters else clusters,
                     namespaces="*" if "*" in namespaces else namespaces,
                     prometheus_url=prometheus_url,
                     prometheus_auth_header=prometheus_auth_header,
@@ -115,7 +131,7 @@ def load_commands() -> None:
                     f"'{field_name}': {field_name}" for field_name in strategy_type.get_settings_type().__fields__
                 )
                 + "}",
-                formatters=", ".join(BaseFormatter.get_all()),
+                formatters=", ".join(formatters.list_available()),
             ),
             globals()
             | {strategy.__name__: strategy for strategy in AnyStrategy.get_all().values()}  # Defined strategies

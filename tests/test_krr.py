@@ -1,8 +1,3 @@
-"""
-    Test the krr command line interface and a general execution.
-    Requires a running kubernetes cluster with the kubectl command configured.
-"""
-
 import json
 
 import pytest
@@ -36,14 +31,19 @@ def test_run(log_flag: str):
 
 @pytest.mark.parametrize("format", ["json", "yaml", "table", "pprint"])
 def test_output_formats(format: str):
-    result = runner.invoke(app, [STRATEGY_NAME, "-q", "-f", format, "--namespace", "default"])
+    result = runner.invoke(app, [STRATEGY_NAME, "-q", "-f", format])
     try:
         assert result.exit_code == 0, result.exc_info
     except AssertionError as e:
         raise e from result.exception
 
-    if format == "json":
-        assert json.loads(result.stdout), result.stdout
+    try:
+        if format == "json":
+            json_output = json.loads(result.stdout)
+            assert json_output, result.stdout
+            assert len(json_output["scans"]) > 0, result.stdout
 
-    if format == "yaml":
-        assert yaml.safe_load(result.stdout), result.stdout
+        if format == "yaml":
+            assert yaml.safe_load(result.stdout), result.stdout
+    except Exception as e:
+        raise Exception(result.stdout) from e

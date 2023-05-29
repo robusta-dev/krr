@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pydantic as pd
 
 from robusta_krr.core.models.allocations import ResourceAllocations
@@ -14,7 +12,7 @@ class PodData(pd.BaseModel):
 
 
 class K8sObjectData(pd.BaseModel):
-    cluster: Optional[str]
+    cluster: str
     name: str
     container: str
     pods: list[PodData]

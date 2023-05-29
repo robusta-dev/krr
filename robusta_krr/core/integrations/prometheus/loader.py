@@ -4,7 +4,6 @@ from typing import Optional, no_type_check
 
 import requests
 from kubernetes import config as k8s_config
-from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusConnect, Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, HTTPError
@@ -20,7 +19,17 @@ from .metrics import BaseMetricLoader
 
 
 class PrometheusDiscovery(ServiceDiscovery):
-    def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_prometheus_url(self) -> Optional[str]:
+        """
+        Finds the Prometheus URL using selectors.
+
+        Args:
+            api_client (Optional[ApiClient]): A Kubernetes API client. Defaults to None.
+
+        Returns:
+            Optional[str]: The discovered Prometheus URL, or None if not found.
+        """
+
         return super().find_url(
             selectors=[
                 "app=kube-prometheus-stack-prometheus",
@@ -30,16 +39,24 @@ class PrometheusDiscovery(ServiceDiscovery):
                 "app=prometheus-msteams",
                 "app=rancher-monitoring-prometheus",
                 "app=prometheus-prometheus",
+                "app.kubernetes.io/name=vmsingle",
             ],
-            api_client=api_client,
         )
 
 
 class PrometheusNotFound(Exception):
+    """
+    An exception raised when Prometheus is not found.
+    """
+
     pass
 
 
 class CustomPrometheusConnect(PrometheusConnect):
+    """
+    Custom PrometheusConnect class to handle retries.
+    """
+
     @no_type_check
     def __init__(
         self,
@@ -55,12 +72,24 @@ class CustomPrometheusConnect(PrometheusConnect):
 
 
 class PrometheusLoader(Configurable):
+    """
+    A loader class for fetching metrics from Prometheus.
+    """
+
     def __init__(
         self,
         config: Config,
         *,
         cluster: Optional[str] = None,
     ) -> None:
+        """
+        Initializes the Prometheus Loader.
+
+        Args:
+            config (Config): The configuration object.
+            cluster (Optional[str]): The name of the cluster. Defaults to None.
+        """
+
         super().__init__(config=config)
 
         self.info(f"Connecting to Prometheus for {cluster or 'default'} cluster")
@@ -68,17 +97,23 @@ class PrometheusLoader(Configurable):
         self.auth_header = self.config.prometheus_auth_header
         self.ssl_enabled = self.config.prometheus_ssl_enabled
 
-        self.api_client = k8s_config.new_client_from_config(context=cluster) if cluster is not None else None
-        self.prometheus_discovery = PrometheusDiscovery(config=self.config)
+        self.api_client = (
+            k8s_config.new_client_from_config(config_file=self.config.kubeconfig, context=cluster)
+            if cluster is not None
+            else None
+        )
+        self.prometheus_discovery = PrometheusDiscovery(config=self.config, api_client=self.api_client)
 
         self.url = self.config.prometheus_url
-        self.url = self.url or self.prometheus_discovery.find_prometheus_url(api_client=self.api_client)
+        self.url = self.url or self.prometheus_discovery.find_prometheus_url()
 
         if not self.url:
             raise PrometheusNotFound(
                 f"Prometheus instance could not be found while scanning in {cluster or 'default'} cluster.\n"
                 "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
             )
+
+        self.info(f"Using prometheus at {self.url} for cluster {cluster or 'default'}")
 
         headers = {}
 
@@ -93,6 +128,13 @@ class PrometheusLoader(Configurable):
         self.info(f"Prometheus connected successfully for {cluster or 'default'} cluster")
 
     def _check_prometheus_connection(self):
+        """
+        Checks the connection to Prometheus.
+
+        Raises:
+            PrometheusNotFound: If the connection to Prometheus cannot be established.
+        """
+
         try:
             response = self.prometheus._session.get(
                 f"{self.prometheus.url}/api/v1/query",
@@ -118,6 +160,19 @@ class PrometheusLoader(Configurable):
         *,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> ResourceHistoryData:
+        """
+        Gathers data from Prometheus for a specified object and resource.
+
+        Args:
+            object (K8sObjectData): The Kubernetes object.
+            resource (ResourceType): The resource type.
+            period (datetime.timedelta): The time period for which to gather data.
+            step (datetime.timedelta, optional): The time step between data points. Defaults to 30 minutes.
+
+        Returns:
+            ResourceHistoryData: The gathered resource history data.
+        """
+
         self.debug(f"Gathering data for {object} and {resource}")
 
         await self.add_historic_pods(object, period)
@@ -127,9 +182,16 @@ class PrometheusLoader(Configurable):
         return await metric_loader.load_data(object, period, step)
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
-        """Find pods that were already deleted, but still have some metrics in Prometheus"""
+        """
+        Finds pods that have been deleted but still have some metrics in Prometheus.
 
-        period_literal = f"{int(period.total_seconds()) // 60 // 24}d"
+        Args:
+            object (K8sObjectData): The Kubernetes object.
+            period (datetime.timedelta): The time period for which to gather data.
+        """
+
+        days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
+        period_literal = f"{days_literal}d"
         pod_owners: list[str]
         pod_owner_kind: str
 
