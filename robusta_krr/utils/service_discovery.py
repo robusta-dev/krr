@@ -3,11 +3,10 @@ from typing import Optional
 
 from cachetools import TTLCache
 from kubernetes import client
-from kubernetes.client import V1ServiceList, V1IngressList
+from kubernetes.client import V1IngressList, V1ServiceList
 from kubernetes.client.api_client import ApiClient
-from kubernetes.client.models.v1_service import V1Service
 from kubernetes.client.models.v1_ingress import V1Ingress
-from kubernetes.config.config_exception import ConfigException
+from kubernetes.client.models.v1_service import V1Service
 
 from robusta_krr.utils.configurable import Configurable
 
@@ -76,6 +75,6 @@ class ServiceDiscovery(Configurable):
             self.find_ingress_host(label_selector, api_client=api_client)
             ingress_url = self.find_ingress_host(label_selector, api_client=api_client)
             if ingress_url:
-                return ingress_url 
+                return ingress_url
 
         return None

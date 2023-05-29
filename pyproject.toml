@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "robusta-krr"
-version = "1.0.0"
+version = "1.1.1"
 description = "Robusta's Resource Recommendation engine for Kubernetes"
 authors = ["Павел Жуков <33721692+LeaveMyYard@users.noreply.github.com>"]
 license = "MIT"
@@ -29,6 +29,7 @@ pydantic = "1.10.7"
 kubernetes = "^26.1.0"
 prometheus-api-client = "^0.5.3"
 numpy = "^1.24.2"
+alive-progress = "^3.1.2"
 
 
 [tool.poetry.group.dev.dependencies]

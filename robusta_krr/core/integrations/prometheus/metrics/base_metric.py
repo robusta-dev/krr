@@ -5,12 +5,12 @@ import asyncio
 import datetime
 from typing import TYPE_CHECKING, Callable, TypeVar
 
-from robusta_krr.core.abstract.strategies import ResourceHistoryData
+import numpy as np
+
+from robusta_krr.core.abstract.strategies import Metric, ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
-
-import numpy as np
 
 if TYPE_CHECKING:
     from ..loader import CustomPrometheusConnect
@@ -24,45 +24,44 @@ class BaseMetricLoader(Configurable, abc.ABC):
         self.prometheus = prometheus
 
     @abc.abstractmethod
-    def get_query(self, namespace: str, pod: str, container: str) -> str:
+    def get_query(self, object: K8sObjectData) -> str:
         ...
 
-    async def query_prometheus(
-        self, query: str, start_time: datetime.datetime, end_time: datetime.datetime, step: datetime.timedelta
-    ) -> list[dict]:
+    def _step_to_string(self, step: datetime.timedelta) -> str:
+        return f"{int(step.total_seconds()) // 60}m"
+
+    async def query_prometheus(self, metric: Metric) -> list[dict]:
         return await asyncio.to_thread(
             self.prometheus.custom_query_range,
-            query=query,
-            start_time=start_time,
-            end_time=end_time,
-            step=f"{int(step.total_seconds()) // 60}m",
+            query=metric.query,
+            start_time=metric.start_time,
+            end_time=metric.end_time,
+            step=metric.step,
         )
 
     async def load_data(
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
     ) -> ResourceHistoryData:
-        result = await asyncio.gather(
-            *[
-                self.query_prometheus(
-                    query=self.get_query(object.namespace, pod.name, object.container),
-                    start_time=datetime.datetime.now() - period,
-                    end_time=datetime.datetime.now(),
-                    step=step,
-                )
-                for pod in object.pods
-            ]
+        query = self.get_query(object)
+        end_time = datetime.datetime.now().astimezone()
+        metric = Metric(
+            query=query,
+            start_time=end_time - period,
+            end_time=end_time,
+            step=self._step_to_string(step),
         )
+        result = await self.query_prometheus(metric)
 
         if result == []:
             self.warning(f"Prometheus returned no {self.__class__.__name__} metrics for {object}")
-            return {pod.name: np.array([]) for pod in object.pods}
+            return ResourceHistoryData(metric=metric, data={})
 
-        pod_results = {pod: result[i] for i, pod in enumerate(object.pods)}
-        return {
-            pod.name: np.array([(timestamp, value) for timestamp, value in pod_result[0]["values"]], dtype=np.float64)
-            for pod, pod_result in pod_results.items()
-            if pod_result != []
-        }
+        return ResourceHistoryData(
+            metric=metric,
+            data={
+                pod_result["metric"]["pod"]: np.array(pod_result["values"], dtype=np.float64) for pod_result in result
+            },
+        )
 
     @staticmethod
     def get_by_resource(resource: str) -> type[BaseMetricLoader]:

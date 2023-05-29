@@ -6,22 +6,12 @@ WORKDIR /app
 
 # Install system dependencies required for Poetry
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    dpkg --add-architecture arm64
 
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python -
-
-# Add Poetry to the PATH
-ENV PATH="/root/.local/bin:${PATH}"
-
-# Copy the pyproject.toml files
-COPY pyproject.toml ./
+COPY ./requirements.txt requirements.txt
 
 # Install the project dependencies
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi --no-root
+RUN pip install -r requirements.txt
 
 # Copy the rest of the application code
 COPY . .

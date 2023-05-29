@@ -1,5 +1,6 @@
-import datetime
 from typing import Any, Optional
+
+from robusta_krr.core.abstract.strategies import Metric
 
 from .base_metric import BaseMetricLoader
 
@@ -21,6 +22,7 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
                 return series["metric"][label]
         return None
 
+    # TODO: Rework this, as now our query can return multiple metrics for different pods
     @staticmethod
     def filter_prom_jobs_results(
         series_list_result: list[PrometheusSeries],
@@ -44,7 +46,9 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
         # takes kubelet job if exists, return first job alphabetically if it doesn't
         for target_name in target_names:
             relevant_series = [
-                series for series in series_list_result if BaseFilteredMetricLoader.get_target_name(series) == target_name
+                series
+                for series in series_list_result
+                if BaseFilteredMetricLoader.get_target_name(series) == target_name
             ]
             relevant_kubelet_metric = [series for series in relevant_series if series["metric"].get("job") == "kubelet"]
             if len(relevant_kubelet_metric) == 1:
@@ -54,8 +58,6 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
             return_list.append(sorted_relevant_series[0])
         return return_list
 
-    async def query_prometheus(
-        self, query: str, start_time: datetime.datetime, end_time: datetime.datetime, step: datetime.timedelta
-    ) -> list[PrometheusSeries]:
-        result = await super().query_prometheus(query, start_time, end_time, step)
+    async def query_prometheus(self, metric: Metric) -> list[PrometheusSeries]:
+        result = await super().query_prometheus(metric)
         return self.filter_prom_jobs_results(result)

@@ -9,7 +9,6 @@ __pycache__
 .gitignore
 Dockerfile
 *.md
-*.txt
 .vscode
 
 # Exclude logs and cache
