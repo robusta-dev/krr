@@ -7,23 +7,20 @@ from robusta_krr.utils.service_discovery import ServiceDiscovery
 
 from .prometheus_metrics_service import PrometheusMetricsService
 
-class VictoriaMetricsDiscovery(ServiceDiscovery):
+class ThanosMetricsDiscovery(ServiceDiscovery):
     def find_prometheus_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         return super().find_url(
             selectors=[
-                "app.kubernetes.io/name=vmsingle",
-                "app.kubernetes.io/name=victoria-metrics-single",
-                "app.kubernetes.io/name=vmselect"
-                "app=vmselect",
-
+                "app.kubernetes.io/component=query,app.kubernetes.io/name=thanos",
             ],
             api_client=api_client,
         )
 
-class VictoriaMetricsNotFound(Exception):
+
+class ThanosMetricsNotFound(Exception):
     pass
 
-class VictoriaMetricsService(PrometheusMetricsService):
+class ThanosMetricsService(PrometheusMetricsService):
     def __init__(
         self,
         config: Config,
@@ -31,7 +28,7 @@ class VictoriaMetricsService(PrometheusMetricsService):
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
     ) -> None:
-        super().__init__(config=config, cluster=cluster, api_client=api_client, service_discovery=VictoriaMetricsDiscovery)
+        super().__init__(config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery)
 
     def check_connection(self):
         try:
@@ -44,6 +41,6 @@ class VictoriaMetricsService(PrometheusMetricsService):
             )
             response.raise_for_status()
         except (ConnectionError, HTTPError) as e:
-            raise VictoriaMetricsNotFound(
-                f"Couldn't connect to Victoria Metrics found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"
+            raise ThanosMetricsNotFound(
+                f"Couldn't connect to Thanos found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"
             ) from e
