@@ -1,7 +1,8 @@
 from robusta_krr.core.abstract.strategies import HistoryData, ResourceRecommendation, RunResult
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import ResourceScan, Result, Severity
+from robusta_krr.core.models.result import ResourceScan, Result
+from robusta_krr.core.models.severity import Severity
 
 __all__ = [
     "ResourceType",
@@ -10,6 +11,7 @@ __all__ = [
     "K8sObjectData",
     "Result",
     "Severity",
+    "bind_calculator",
     "ResourceScan",
     "ResourceRecommendation",
     "HistoryData",
