@@ -40,6 +40,8 @@ class MetricsLoader(Configurable):
 
         self.api_client = k8s_config.new_client_from_config(context=cluster) if cluster is not None else None
         self.loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
+        if not self.loader:
+            raise PrometheusNotFound("No prometheus found")
         self.loader.check_connection()
 
         self.info(f"Prometheus connected successfully for {cluster or 'default'} cluster")
