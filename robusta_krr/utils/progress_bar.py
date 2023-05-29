@@ -5,6 +5,13 @@ from robusta_krr.utils.configurable import Configurable
 
 
 class ProgressBar(Configurable):
+    """
+    Progress bar for displaying progress of gathering recommendations.
+
+    Use `ProgressBar` as a context manager to automatically handle the progress bar.
+    Use `progress` method to step the progress bar.
+    """
+
     def __init__(self, config: Config, **kwargs) -> None:
         super().__init__(config)
         self.show_bar = self.echo_active
