@@ -57,7 +57,7 @@ def mock_prometheus_loader():
     metric_points_data = np.array([(t, random.randrange(0, 100)) for t in np.linspace(start_ts, now_ts, 3600)])
 
     with patch(
-        "robusta_krr.core.integrations.prometheus.loader.PrometheusLoader.gather_data",
+        "robusta_krr.core.integrations.prometheus.loader.MetricsLoader.gather_data",
         new=AsyncMock(
             return_value=ResourceHistoryData(
                 data={pod.name: metric_points_data for pod in TEST_OBJECT.pods},
@@ -76,5 +76,5 @@ def mock_prometheus_loader():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_prometheus_init():
-    with patch("robusta_krr.core.integrations.prometheus.loader.PrometheusLoader.__init__", return_value=None):
+    with patch("robusta_krr.core.integrations.prometheus.loader.MetricsLoader.__init__", return_value=None):
         yield
