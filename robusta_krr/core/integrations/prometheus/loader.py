@@ -149,6 +149,9 @@ class PrometheusLoader(Configurable):
                 f"Couldn't connect to Prometheus found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"
             ) from e
 
+    async def query(self, query: str) -> dict:
+        return await asyncio.to_thread(self.prometheus.custom_query, query=query)
+
     async def gather_data(
         self,
         object: K8sObjectData,
@@ -187,33 +190,40 @@ class PrometheusLoader(Configurable):
             period (datetime.timedelta): The time period for which to gather data.
         """
 
-        if len(object.pods) == 0:
-            return
-
-        # Prometheus limit, the max can be 32 days
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"
-        owner = await asyncio.to_thread(
-            self.prometheus.custom_query,
-            query=f'kube_pod_owner{{pod="{next(iter(object.pods)).name}"}}[{period_literal}]',
-        )
+        pod_owners: list[str]
+        pod_owner_kind: str
 
-        if owner == []:
-            return
+        if object.kind == "Deployment":
+            replicasets = await self.query(
+                "kube_replicaset_owner{"
+                f'owner_name="{object.name}", '
+                f'owner_kind="Deployment", '
+                f'namespace="{object.namespace}"'
+                "}"
+                f"[{period_literal}]"
+            )
+            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
+            pod_owner_kind = "ReplicaSet"
+        else:
+            pod_owners = [object.name]
+            pod_owner_kind = object.kind
 
-        owner = owner[0]["metric"]["owner_name"]
-
-        related_pods = await asyncio.to_thread(
-            self.prometheus.custom_query, query=f'kube_pod_owner{{owner_name="{owner}"}}[{period_literal}]'
+        owners_regex = "|".join(pod_owners)
+        related_pods = await self.query(
+            "kube_pod_owner{"
+            f'owner_name=~"{owners_regex}", '
+            f'owner_kind="{pod_owner_kind}", '
+            f'namespace="{object.namespace}"'
+            "}"
+            f"[{period_literal}]"
         )
 
         current_pods = {p.name for p in object.pods}
 
         object.pods += [
-            PodData(
-                name=pod["metric"]["pod"],
-                deleted=True,
-            )
+            PodData(name=pod["metric"]["pod"], deleted=True)
             for pod in related_pods
             if pod["metric"]["pod"] not in current_pods
         ]
