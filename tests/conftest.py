@@ -44,9 +44,8 @@ def mock_list_scannable_objects():
 
 
 @pytest.fixture(autouse=True, scope="session")
-def mock_config_loaded():
-    with patch("robusta_krr.core.models.config.Config.config_loaded", new_callable=PropertyMock) as mock_config:
-        mock_config.return_value = True
+def mock_load_kubeconfig():
+    with patch("robusta_krr.core.models.config.Config.load_kubeconfig", return_value=None):
         yield
 
 
