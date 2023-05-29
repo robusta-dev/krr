@@ -11,12 +11,14 @@ from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.base_metric_service import MetricsService
 from kubernetes.client.api_client import ApiClient
 
 METRICS_SERVICES = {
     "Prometheus": PrometheusMetricsService,
     "Victoria Metrics": VictoriaMetricsService,
+    "Thanos" : ThanosMetricsService,
 }
 
 class MetricsLoader(Configurable):
