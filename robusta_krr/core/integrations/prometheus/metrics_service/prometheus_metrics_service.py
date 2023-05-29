@@ -122,11 +122,16 @@ class PrometheusMetricsService(MetricsService):
         return await metric_loader.load_data(object, period, step)
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
-        """Find pods that were already deleted, but still have some metrics in Prometheus"""
+        """
+        Finds pods that have been deleted but still have some metrics in Prometheus.
+        Args:
+            object (K8sObjectData): The Kubernetes object.
+            period (datetime.timedelta): The time period for which to gather data.
+        """
 
         if len(object.pods) == 0:
             return
-        
+
         # Prometheus limit, the max can be 32 days
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32) 
         period_literal = f"{days_literal}d"
