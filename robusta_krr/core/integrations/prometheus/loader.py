@@ -9,7 +9,7 @@ from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
-from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
+from .metrics_service.prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.base_metric_service import MetricsService
@@ -42,7 +42,6 @@ class MetricsLoader(Configurable):
         self.loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
         if not self.loader:
             raise PrometheusNotFound("No Prometheus or metrics service found")
-        self.loader.check_connection()
 
         self.info(f"Prometheus connected successfully for {cluster or 'default'} cluster")
 
