@@ -3,23 +3,25 @@ import datetime
 from typing import Optional, no_type_check
 
 from kubernetes import config as k8s_config
+from kubernetes.client.api_client import ApiClient
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
+
+from .metrics_service.base_metric_service import MetricsNotFound, MetricsService
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
-from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
-from .metrics_service.base_metric_service import MetricsService, MetricsNotFound
-from kubernetes.client.api_client import ApiClient
+from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 
 METRICS_SERVICES = {
     "Prometheus": PrometheusMetricsService,
     "Victoria Metrics": VictoriaMetricsService,
-    "Thanos" : ThanosMetricsService,
+    "Thanos": ThanosMetricsService,
 }
+
 
 class MetricsLoader(Configurable):
     def __init__(
@@ -49,12 +51,12 @@ class MetricsLoader(Configurable):
 
         self.info(f"{self.loader.name()} connected successfully for {cluster or 'default'} cluster")
 
-
-    def get_metrics_service(self,
-            config: Config,
-            api_client: Optional[ApiClient] = None,
-            cluster: Optional[str] = None,) -> Optional[MetricsService]:
-        
+    def get_metrics_service(
+        self,
+        config: Config,
+        api_client: Optional[ApiClient] = None,
+        cluster: Optional[str] = None,
+    ) -> Optional[MetricsService]:
         for service_name, metric_service_class in METRICS_SERVICES.items():
             try:
                 loader = metric_service_class(config, api_client=api_client, cluster=cluster)

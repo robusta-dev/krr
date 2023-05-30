@@ -1,11 +1,13 @@
 from typing import Optional
+
 from kubernetes.client import ApiClient
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.models.config import Config
 from robusta_krr.utils.service_discovery import ServiceDiscovery
 
-from .prometheus_metrics_service import PrometheusMetricsService, MetricsNotFound
+from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
+
 
 class ThanosMetricsDiscovery(ServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
@@ -31,12 +33,15 @@ class ThanosMetricsNotFound(MetricsNotFound):
     """
     An exception raised when Thanos is not found.
     """
+
     pass
+
 
 class ThanosMetricsService(PrometheusMetricsService):
     """
     A class for fetching metrics from Thanos.
     """
+
     def __init__(
         self,
         config: Config,
@@ -44,7 +49,9 @@ class ThanosMetricsService(PrometheusMetricsService):
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
     ) -> None:
-        super().__init__(config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery)
+        super().__init__(
+            config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery
+        )
 
     def check_connection(self):
         """

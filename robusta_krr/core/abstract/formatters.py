@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Callable
+from typing import Any, Callable, Optional
 
 from robusta_krr.core.models.result import Result
-
 
 FormatterFunc = Callable[[Result], Any]
 
@@ -21,7 +20,10 @@ FORMATTERS_REGISTRY: dict[str, FormatterFunc] = {}
 #           def my_formatter(result: Result) -> str:
 #               return "My formatter"
 
-def register(display_name: Optional[str] = None, *, rich_console: bool = False) -> Callable[[FormatterFunc], FormatterFunc]:
+
+def register(
+    display_name: Optional[str] = None, *, rich_console: bool = False
+) -> Callable[[FormatterFunc], FormatterFunc]:
     """
     A decorator to register a formatter function.
 

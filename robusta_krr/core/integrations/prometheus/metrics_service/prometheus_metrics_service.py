@@ -1,7 +1,7 @@
+import asyncio
 import datetime
 from typing import Optional, no_type_check
 
-import asyncio
 import requests
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusConnect, Retry
@@ -16,10 +16,10 @@ from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.service_discovery import ServiceDiscovery
 
 from ..metrics import BaseMetricLoader
-from .base_metric_service import MetricsService, MetricsNotFound
+from .base_metric_service import MetricsNotFound, MetricsService
+
 
 class PrometheusDiscovery(ServiceDiscovery):
-    
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Prometheus URL using selectors.
@@ -46,6 +46,7 @@ class PrometheusNotFound(MetricsNotFound):
     """
     An exception raised when Prometheus is not found.
     """
+
     pass
 
 
@@ -53,7 +54,7 @@ class CustomPrometheusConnect(PrometheusConnect):
     """
     Custom PrometheusConnect class to handle retries.
     """
-    
+
     @no_type_check
     def __init__(
         self,
@@ -72,13 +73,14 @@ class PrometheusMetricsService(MetricsService):
     """
     A class for fetching metrics from Prometheus.
     """
+
     def __init__(
         self,
         config: Config,
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
-        service_discovery: ServiceDiscovery = PrometheusDiscovery
+        service_discovery: ServiceDiscovery = PrometheusDiscovery,
     ) -> None:
         super().__init__(config=config, api_client=api_client, cluster=cluster)
 
@@ -86,7 +88,7 @@ class PrometheusMetricsService(MetricsService):
 
         self.auth_header = self.config.prometheus_auth_header
         self.ssl_enabled = self.config.prometheus_ssl_enabled
-        
+
         self.prometheus_discovery = service_discovery(config=self.config, api_client=self.api_client)
 
         self.url = self.config.prometheus_url
@@ -140,7 +142,7 @@ class PrometheusMetricsService(MetricsService):
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> ResourceHistoryData:
         """
-            ResourceHistoryData: The gathered resource history data.
+        ResourceHistoryData: The gathered resource history data.
         """
         self.debug(f"Gathering data for {object} and {resource}")
 
@@ -150,48 +152,48 @@ class PrometheusMetricsService(MetricsService):
         metric_loader = MetricLoaderType(self.config, self.prometheus)
         return await metric_loader.load_data(object, period, step, self.name())
 
-    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:	
-        """	
-        Finds pods that have been deleted but still have some metrics in Prometheus.	
-        Args:	
-            object (K8sObjectData): The Kubernetes object.	
-            period (datetime.timedelta): The time period for which to gather data.	
-        """	
+    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
+        """
+        Finds pods that have been deleted but still have some metrics in Prometheus.
+        Args:
+            object (K8sObjectData): The Kubernetes object.
+            period (datetime.timedelta): The time period for which to gather data.
+        """
 
-        days_literal = min(int(period.total_seconds()) // 60 // 24, 32)	
-        period_literal = f"{days_literal}d"	
-        pod_owners: list[str]	
-        pod_owner_kind: str	
+        days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
+        period_literal = f"{days_literal}d"
+        pod_owners: list[str]
+        pod_owner_kind: str
 
-        if object.kind == "Deployment":	
-            replicasets = await self.query(	
-                "kube_replicaset_owner{"	
-                f'owner_name="{object.name}", '	
-                f'owner_kind="Deployment", '	
-                f'namespace="{object.namespace}"'	
-                "}"	
-                f"[{period_literal}]"	
-            )	
-            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]	
-            pod_owner_kind = "ReplicaSet"	
-        else:	
-            pod_owners = [object.name]	
-            pod_owner_kind = object.kind	
+        if object.kind == "Deployment":
+            replicasets = await self.query(
+                "kube_replicaset_owner{"
+                f'owner_name="{object.name}", '
+                f'owner_kind="Deployment", '
+                f'namespace="{object.namespace}"'
+                "}"
+                f"[{period_literal}]"
+            )
+            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
+            pod_owner_kind = "ReplicaSet"
+        else:
+            pod_owners = [object.name]
+            pod_owner_kind = object.kind
 
-        owners_regex = "|".join(pod_owners)	
-        related_pods = await self.query(	
-            "kube_pod_owner{"	
-            f'owner_name=~"{owners_regex}", '	
-            f'owner_kind="{pod_owner_kind}", '	
-            f'namespace="{object.namespace}"'	
-            "}"	
-            f"[{period_literal}]"	
-        )	
+        owners_regex = "|".join(pod_owners)
+        related_pods = await self.query(
+            "kube_pod_owner{"
+            f'owner_name=~"{owners_regex}", '
+            f'owner_kind="{pod_owner_kind}", '
+            f'namespace="{object.namespace}"'
+            "}"
+            f"[{period_literal}]"
+        )
 
-        current_pods = {p.name for p in object.pods}	
+        current_pods = {p.name for p in object.pods}
 
-        object.pods += [	
-            PodData(name=pod["metric"]["pod"], deleted=True)	
-            for pod in related_pods	
-            if pod["metric"]["pod"] not in current_pods	
-        ]	
+        object.pods += [
+            PodData(name=pod["metric"]["pod"], deleted=True)
+            for pod in related_pods
+            if pod["metric"]["pod"] not in current_pods
+        ]
