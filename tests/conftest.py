@@ -1,20 +1,20 @@
 import random
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, PropertyMock, patch
+from unittest.mock import AsyncMock, patch
 
 import numpy as np
 import pytest
 
-from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, ResourceHistoryData
+from robusta_krr.api.models import K8sObjectData, ResourceAllocations, ResourceHistoryData
 
 TEST_OBJECT = K8sObjectData(
     cluster="mock-cluster",
     name="mock-object-1",
     container="mock-container-1",
     pods=[
-        PodData(name="mock-pod-1", deleted=False),
-        PodData(name="mock-pod-2", deleted=False),
-        PodData(name="mock-pod-3", deleted=True),
+        "mock-pod-1",
+        "mock-pod-2",
+        "mock-pod-3",
     ],
     namespace="default",
     kind="Deployment",
@@ -22,6 +22,7 @@ TEST_OBJECT = K8sObjectData(
         requests={"cpu": 1, "memory": 1},  # type: ignore
         limits={"cpu": 2, "memory": 2},  # type: ignore
     ),
+    deleted_pods_count=1,
 )
 
 
@@ -60,9 +61,9 @@ def mock_prometheus_loader():
         "robusta_krr.core.integrations.prometheus.loader.PrometheusLoader.gather_data",
         new=AsyncMock(
             return_value=ResourceHistoryData(
-                data={pod.name: metric_points_data for pod in TEST_OBJECT.pods},
+                data={pod: metric_points_data for pod in TEST_OBJECT.pods},
                 metric={  # type: ignore
-                    "query": f"example_promql_metric{{pod_name=~\"{'|'.join(pod.name for pod in TEST_OBJECT.pods)}\"}}",
+                    "query": f"example_promql_metric{{pod_name=~\"{'|'.join(TEST_OBJECT.pods)}\"}}",
                     "start_time": start,
                     "end_time": now,
                     "step": "30s",
