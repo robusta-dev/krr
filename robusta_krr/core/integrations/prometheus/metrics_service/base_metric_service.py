@@ -8,6 +8,12 @@ from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
 from kubernetes.client.api_client import ApiClient
 
+class MetricsNotFound(Exception):
+    """
+    An exception raised when Metrics service is not found.
+    """
+    pass
+
 
 class MetricsService(Configurable, abc.ABC):
     def __init__(self, config: Config, api_client: Optional[ApiClient] = None, cluster: Optional[str] = None,) -> None:
@@ -19,9 +25,9 @@ class MetricsService(Configurable, abc.ABC):
     def check_connection(self):
         ...
 
-    @abc.abstractmethod
     def name(self) -> str:
-        ...
+        classname = self.__class__.__name__
+        return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
 
     @abc.abstractmethod
     async def gather_data(

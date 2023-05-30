@@ -12,7 +12,7 @@ from robusta_krr.utils.configurable import Configurable
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
-from .metrics_service.base_metric_service import MetricsService
+from .metrics_service.base_metric_service import MetricsService, MetricsNotFound
 from kubernetes.client.api_client import ApiClient
 
 METRICS_SERVICES = {
@@ -61,8 +61,8 @@ class MetricsLoader(Configurable):
                 loader.check_connection()
                 self.echo(f"{service_name} found")
                 return loader
-            except Exception as e:
-                self.warning(f"{service_name} not found")
+            except MetricsNotFound as e:
+                self.debug(f"{service_name} not found")
 
     async def gather_data(
         self,

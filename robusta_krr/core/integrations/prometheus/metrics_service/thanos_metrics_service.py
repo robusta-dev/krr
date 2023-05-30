@@ -5,7 +5,7 @@ from requests.exceptions import ConnectionError, HTTPError
 from robusta_krr.core.models.config import Config
 from robusta_krr.utils.service_discovery import ServiceDiscovery
 
-from .prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
+from .prometheus_metrics_service import PrometheusMetricsService, MetricsNotFound
 
 class ThanosMetricsDiscovery(ServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
@@ -27,7 +27,7 @@ class ThanosMetricsDiscovery(ServiceDiscovery):
         )
 
 
-class ThanosMetricsNotFound(Exception):
+class ThanosMetricsNotFound(MetricsNotFound):
     """
     An exception raised when Thanos is not found.
     """
@@ -46,9 +46,6 @@ class ThanosMetricsService(PrometheusMetricsService):
     ) -> None:
         super().__init__(config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery)
 
-    def name(self):
-        return "Thanos"
-        
     def check_connection(self):
         """
         Checks the connection to Prometheus.
@@ -57,7 +54,7 @@ class ThanosMetricsService(PrometheusMetricsService):
         """
         try:
             super().check_connection()
-        except PrometheusNotFound as e:
+        except MetricsNotFound as e:
             # This is to clarify which metrics service had the issue and not say its a prometheus issue
             raise ThanosMetricsNotFound(
                 f"Couldn't connect to Thanos found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"

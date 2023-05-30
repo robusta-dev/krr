@@ -16,7 +16,7 @@ from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.service_discovery import ServiceDiscovery
 
 from ..metrics import BaseMetricLoader
-from .base_metric_service import MetricsService
+from .base_metric_service import MetricsService, MetricsNotFound
 
 class PrometheusDiscovery(ServiceDiscovery):
     
@@ -42,7 +42,7 @@ class PrometheusDiscovery(ServiceDiscovery):
         )
 
 
-class PrometheusNotFound(Exception):
+class PrometheusNotFound(MetricsNotFound):
     """
     An exception raised when Prometheus is not found.
     """
@@ -108,9 +108,6 @@ class PrometheusMetricsService(MetricsService):
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
         self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
-
-    def name(self):
-        return "Prometheus"
 
     def check_connection(self):
         """
