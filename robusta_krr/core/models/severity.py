@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import enum
-
 from typing import Callable, Optional
+
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceType
 
 
