@@ -16,7 +16,7 @@ from kubernetes.client.models import (
     V1StatefulSetList,
 )
 
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
@@ -90,7 +90,7 @@ class ClusterLoader(Configurable):
 
         return ",".join(label_filters)
 
-    async def __list_pods(self, resource: Union[V1Deployment, V1DaemonSet, V1StatefulSet]) -> list[PodData]:
+    async def __list_pods(self, resource: Union[V1Deployment, V1DaemonSet, V1StatefulSet]) -> list[str]:
         selector = self._build_selector_query(resource.spec.selector)
         if selector is None:
             return []
@@ -98,7 +98,7 @@ class ClusterLoader(Configurable):
         ret: V1PodList = await asyncio.to_thread(
             self.core.list_namespaced_pod, namespace=resource.metadata.namespace, label_selector=selector
         )
-        return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
+        return [pod.metadata.name for pod in ret.items]
 
     async def __build_obj(
         self, item: Union[V1Deployment, V1DaemonSet, V1StatefulSet], container: V1Container

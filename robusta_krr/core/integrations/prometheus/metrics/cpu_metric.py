@@ -8,7 +8,7 @@ from .base_metric import bind_metric
 @bind_metric(ResourceType.CPU)
 class CPUMetricLoader(BaseFilteredMetricLoader):
     def get_query(self, object: K8sObjectData) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(object.pods)
         return (
             "sum(irate(container_cpu_usage_seconds_total{"
             f'namespace="{object.namespace}", '

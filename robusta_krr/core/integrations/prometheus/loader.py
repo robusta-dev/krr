@@ -10,7 +10,7 @@ from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.service_discovery import ServiceDiscovery
@@ -190,6 +190,7 @@ class PrometheusLoader(Configurable):
             period (datetime.timedelta): The time period for which to gather data.
         """
 
+        # Prometheus limit, the max can be 32 days
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"
         pod_owners: list[str]
@@ -220,10 +221,7 @@ class PrometheusLoader(Configurable):
             f"[{period_literal}]"
         )
 
-        current_pods = {p.name for p in object.pods}
-
-        object.pods += [
-            PodData(name=pod["metric"]["pod"], deleted=True)
-            for pod in related_pods
-            if pod["metric"]["pod"] not in current_pods
-        ]
+        current_pods = set(object.pods)
+        old_pods = [pod["metric"]["pod"] for pod in related_pods if pod["metric"]["pod"] not in current_pods]
+        object.pods += old_pods
+        object.deleted_pods_count += len(old_pods)
