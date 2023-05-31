@@ -36,6 +36,10 @@ class MetricsService(Configurable, abc.ABC):
     @abc.abstractmethod
     def check_connection(self):
         ...
+    
+    @abc.abstractmethod
+    async def query(self, query: str) -> dict:
+        ...
 
     def name(self) -> str:
         classname = self.__class__.__name__

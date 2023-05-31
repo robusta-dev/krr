@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
+from robusta_krr.core.integrations.metrics import PrometheusLoader
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import (
@@ -28,7 +29,7 @@ class Runner(Configurable):
 
     def __init__(self, config: Config) -> None:
         super().__init__(config)
-        self._k8s_loader = KubernetesLoader(self.config)
+        self._obj_loader = PrometheusLoader(self.config)
         self._metrics_service_loaders: dict[Optional[str], Union[MetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
@@ -153,7 +154,7 @@ class Runner(Configurable):
         ]
 
     async def _collect_result(self) -> Result:
-        clusters = await self._k8s_loader.list_clusters()
+        clusters = await self._obj_loader.list_clusters()
         if len(clusters) > 1 and self.config.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
             # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
@@ -162,7 +163,7 @@ class Runner(Configurable):
             )
 
         self.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
-        objects = await self._k8s_loader.list_scannable_objects(clusters)
+        objects = await self._obj_loader.list_scannable_objects(clusters)
 
         if len(objects) == 0:
             self.warning("Current filters resulted in no objects available to scan.")
@@ -195,9 +196,11 @@ class Runner(Configurable):
         try:
             self.config.load_kubeconfig()
         except Exception as e:
-            self.error(f"Could not load kubernetes configuration: {e}")
-            self.error("Try to explicitly set --context and/or --kubeconfig flags.")
-            return
+            if self.config.prometheus_url is None:
+                self.error(f"Could not load kubernetes configuration: {e}")
+                self.error("Try to explicitly set --context and/or --kubeconfig flags.")
+                return
+            self.warning("Could not load kubernetes configuration, use Prometheus-based worload instead.")
 
         try:
             result = await self._collect_result()

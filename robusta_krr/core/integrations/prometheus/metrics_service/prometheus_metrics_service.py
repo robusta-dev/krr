@@ -116,7 +116,7 @@ class PrometheusMetricsService(MetricsService):
 
         if self.auth_header:
             headers = {"Authorization": self.auth_header}
-        elif not self.config.inside_cluster:
+        elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
         self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
