@@ -6,8 +6,8 @@ from kubernetes.client import V1IngressList, V1ServiceList
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.models.v1_ingress import V1Ingress
 from kubernetes.client.models.v1_service import V1Service
-from robusta_krr.core.models.config import Config
 
+from robusta_krr.core.models.config import Config
 from robusta_krr.utils.configurable import Configurable
 
 

@@ -100,7 +100,7 @@ class Result(pd.BaseModel):
         """
 
         score = sum(self.__scan_cost(scan) for scan in self.scans)
-        return int((len(self.scans) - score) / len(self.scans) * 100)
+        return int((len(self.scans) - score) / len(self.scans) * 100) if self.scans else 0
 
     @property
     def score_letter(self) -> str:

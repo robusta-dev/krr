@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 import robusta_krr
-from robusta_krr.api.models import Severity, ResourceType, register_severity_calculator
+from robusta_krr.api.models import ResourceType, Severity, register_severity_calculator
 
 
 @register_severity_calculator(ResourceType.CPU)

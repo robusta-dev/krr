@@ -1,10 +1,9 @@
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
-
-from rich.console import Console
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
+from rich.console import Console
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
