@@ -23,6 +23,13 @@ from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version
 
+async def gather_with_concurrency(n: int, *coros):
+    semaphore = asyncio.Semaphore(n)
+
+    async def sem_coro(coro):
+        async with semaphore:
+            return await coro
+    return await asyncio.gather(*(sem_coro(c) for c in coros))
 
 class Runner(Configurable):
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
@@ -137,7 +144,8 @@ class Runner(Configurable):
     async def _gather_objects_recommendations(
         self, objects: list[K8sObjectData]
     ) -> list[tuple[ResourceAllocations, MetricsData]]:
-        recommendations: list[tuple[RunResult, MetricsData]] = await asyncio.gather(
+        recommendations: list[tuple[RunResult, MetricsData]] = await gather_with_concurrency(
+            2,
             *[self._calculate_object_recommendations(object) for object in objects]
         )
 

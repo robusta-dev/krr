@@ -1,6 +1,7 @@
 from typing import Optional
 
 import pydantic as pd
+from typing import Optional
 
 from robusta_krr.core.models.allocations import ResourceAllocations
 

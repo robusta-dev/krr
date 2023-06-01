@@ -78,7 +78,7 @@ class PrometheusLoader(Configurable):
     async def __build_from_owner(self, namespace: str, app_name: str, containers: List[str], pod_names: List[str]) -> List[K8sObjectData]:
         return [
             K8sObjectData(
-                cluster="default",
+                cluster=None,
                 namespace=namespace,
                 name=app_name,
                 kind="Deployment",
