@@ -220,7 +220,7 @@ python krr.py --help
 Notice that using source code requires you to run as a python script, when installing with brew allows to run `krr`.
 All above examples show running command as `krr ...`, replace it with `python krr.py ...` if you are using a manual installation.
 
-To use krr with [Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus) some [additional configuration](./docs/google-cloud-managed-service-for-prometheus.md) is necessary.
+[To use krr with Google Cloud Managed Service for Prometheus, some additional configuration is necessary.](./docs/google-cloud-managed-service-for-prometheus.md)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
