@@ -8,7 +8,10 @@ from .base_metric import bind_metric
 @bind_metric(ResourceType.Memory)
 class MemoryMetricLoader(BaseFilteredMetricLoader):
     def get_query(self, object: K8sObjectData) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        if len(object.pods) < 300:
+            pods_selector = "|".join(pod.name for pod in object.pods)
+        else:
+            pods_selector = "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{5}' for pod in object.pods]))
         return (
             "sum(container_memory_working_set_bytes{"
             f'namespace="{object.namespace}", '
