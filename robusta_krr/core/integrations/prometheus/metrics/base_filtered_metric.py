@@ -17,7 +17,7 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
 
     @staticmethod
     def get_target_name(series: PrometheusSeries) -> Optional[str]:
-        for label in ["container", "pod", "node"]:
+        for label in [ "pod","container", "node"]:
             if label in series["metric"]:
                 return series["metric"][label]
         return None
