@@ -317,36 +317,6 @@ Look into the `examples` directory for examples on how to create a custom strate
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- BUILDING -->
-
-## Building
-
-_We are planning to use pyinstaller to build binaries for distribution. Right now you can build the binaries yourself, but we're not distributing them yet._
-
-1. Install the project manually (see above)
-2. Navigate to the project root directory
-3. Install poetry (https://python-poetry.org/docs/#installing-with-the-official-installer)
-4. Install requirements with dev dependencies:
-
-```sh
-poetry install --group dev
-```
-
-5. Build the binary:
-
-```sh
-poetry run pyinstaller krr.py
-```
-
-6. The binary will be located in the `dist` directory. Test that it works:
-
-```sh
-cd ./dist/krr
-./krr --help
-```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 <!-- TESTING -->
 
 ## Testing
