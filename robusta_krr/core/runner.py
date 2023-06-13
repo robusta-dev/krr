@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
-from robusta_krr.core.integrations.prometheus import MetricsLoader, PrometheusNotFound
+from robusta_krr.core.integrations.prometheus import MetricsLoader, PrometheusNotFound, ClusterNotSpecifiedException
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import MetricsData, ResourceAllocations, ResourceScan, ResourceType, Result
@@ -12,13 +12,6 @@ from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version
-
-class ClusterNotSpecifiedException(Exception):
-    """
-    An exception raised when a cluster is not specified.
-    """
-    pass
-
 
 class Runner(Configurable):
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
@@ -184,5 +177,7 @@ class Runner(Configurable):
         try:
             result = await self._collect_result()
             self._process_result(result)
-        except Exception:
+        except ClusterNotSpecifiedException as e:
+            self.error(e)
+        except Exception as e:
             self.console.print_exception(extra_lines=1, max_frames=10)
