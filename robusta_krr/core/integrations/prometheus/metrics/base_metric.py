@@ -30,6 +30,17 @@ class BaseMetricLoader(Configurable, abc.ABC):
         super().__init__(config)
         self.prometheus = prometheus
 
+    def get_prometheus_cluster_label(self) -> str:
+        """
+        Generates the cluster label for querying a centralized Prometheus
+
+        Returns:
+        str: a promql safe label string for querying the cluster.
+        """
+        if self.config.prometheus_cluster_label is None:
+            return ''
+        return f', cluster="{self.config.prometheus_cluster_label}"'
+
     @abc.abstractmethod
     def get_query(self, object: K8sObjectData) -> str:
         """

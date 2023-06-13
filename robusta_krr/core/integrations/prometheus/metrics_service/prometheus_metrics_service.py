@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-from typing import Optional, no_type_check
+from typing import Optional, no_type_check, List
 
 import requests
 from kubernetes.client import ApiClient
@@ -133,6 +133,9 @@ class PrometheusMetricsService(MetricsService):
 
     async def query(self, query: str) -> dict:
         return await asyncio.to_thread(self.prometheus.custom_query, query=query)
+
+    async def get_cluster_names(self) -> Optional[List[str]]:
+        return await asyncio.to_thread(self.prometheus.get_label_values, label_name="cluster")
 
     async def gather_data(
         self,
