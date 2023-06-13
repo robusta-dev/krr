@@ -309,6 +309,25 @@ krr simple -p http://127.0.0.1:9090
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- Formatters -->
+
+## Available formatters
+
+Currently KRR ships with a few formatters to represent the scan data:
+
+- `table` - a pretty CLI table used by default, powered by [Rich](https://github.com/Textualize/rich) library
+- `json`
+- `yaml`
+- `pprint` - data representation from python's pprint library
+
+To run a strategy with a selected formatter, add a `-f` flag:
+
+```sh
+krr simple -f json
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- CUSTOM -->
 
 ## Creating a Custom Strategy/Formatter
