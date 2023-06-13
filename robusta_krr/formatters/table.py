@@ -21,17 +21,25 @@ def _format(value: RecommendationValue) -> str:
         return resource_units.format(value)
 
 
+def __calc_diff(allocated, recommended, selector, multiplier=1) -> str:
+    if recommended is None or isinstance(recommended, str) or selector != "requests":
+        return ""
+    else:
+        reccomended_val = recommended.value if isinstance(recommended.value, (int, float)) else 0
+        allocated_val = allocated if isinstance(allocated, (int, float)) else 0
+        diff_val = reccomended_val - allocated_val
+        diff_sign = "[green]+[/green]" if diff_val >= 0 else "[red]-[/red]"
+        return f"{diff_sign}{_format(abs(diff_val) * multiplier)}"
+
+
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
     allocated = getattr(item.object.allocations, selector)[resource]
     recommended = getattr(item.recommended, selector)[resource]
     severity = recommended.severity
 
-    if allocated is None or isinstance(allocated, str) or selector != "requests":
-        diff = ""
-    else:
-        diff_val = recommended.value - allocated
-        diff_sign = "[green]+[/green]" if diff_val > 0 else "[red]-[/red]"
-        diff = f"({diff_sign}{_format(abs(diff_val))}) "
+    diff = __calc_diff(allocated, recommended, selector)
+    if diff != "":
+        diff = f"({diff}) "
 
     return (
         diff + f"[{severity.color}]" + _format(allocated) + " -> " + _format(recommended.value) + f"[/{severity.color}]"
@@ -43,12 +51,7 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
     allocated = getattr(item.object.allocations, selector)[resource]
     recommended = getattr(item.recommended, selector)[resource]
 
-    if allocated is None or isinstance(allocated, str) or selector != "requests":
-        return ""
-    else:
-        diff_val = recommended.value - allocated
-        diff_sign = "[green]+[/green]" if diff_val > 0 else "[red]-[/red]"
-        return f"{diff_sign}{_format(abs(diff_val) * pods_current)}"
+    return __calc_diff(allocated, recommended, selector, pods_current)
 
 
 @formatters.register(rich_console=True)
