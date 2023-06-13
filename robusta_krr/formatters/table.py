@@ -37,6 +37,9 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
     recommended = getattr(item.recommended, selector)[resource]
     severity = recommended.severity
 
+    if allocated is None and recommended.value is None:
+        return f"[{severity.color}]{NONE_LITERAL}[/{severity.color}]"
+
     diff = __calc_diff(allocated, recommended, selector)
     if diff != "":
         diff = f"({diff}) "
