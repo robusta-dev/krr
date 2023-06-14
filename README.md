@@ -326,7 +326,7 @@ krr simple -p http://127.0.0.1:9090
 
 ## Scanning with a centralized Prometheus
 
-If your Prometheus monitors multiple clusters you we require the label you defined for your cluster in Prometheus.
+If your Prometheus monitors multiple clusters we require the label you defined for your cluster in Prometheus.
 
 For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"` and your prometheus is at url `http://my-centralized-prometheus:9090`, then run this command:
 
@@ -334,7 +334,7 @@ For example, if your cluster has the Prometheus label `cluster: "my-cluster-name
 krr.py simple -p http://my-centralized-prometheus:9090 -l my-cluster-name
 ```
 
-If you are using a label other than `cluster` for example the label `env: "dev-tests"` you can specify it by running:
+If you are using a label for your cluster other than `cluster` for example the label `env: "dev-tests"` you can specify it by running:
 
 ```sh
 krr.py simple -p http://my-centralized-prometheus:9090 --prometheus-label env -l dev-tests
