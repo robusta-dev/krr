@@ -12,10 +12,12 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
             pods_selector = "|".join(pod.name for pod in object.pods)
         else:
             pods_selector = "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{5}' for pod in object.pods]))
+        cluster_label = self.get_prometheus_cluster_label()
         return (
             "sum(container_memory_working_set_bytes{"
             f'namespace="{object.namespace}", '
             f'pod=~"{pods_selector}", '
             f'container="{object.container}"'
+            f"{cluster_label}"
             "}) by (container, pod, job)"
         )

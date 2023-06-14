@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
-from robusta_krr.core.integrations.prometheus import MetricsLoader, PrometheusNotFound
+from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import MetricsData, ResourceAllocations, ResourceScan, ResourceType, Result
@@ -139,6 +139,13 @@ class Runner(Configurable):
 
     async def _collect_result(self) -> Result:
         clusters = await self._k8s_loader.list_clusters()
+        if len(clusters) > 1 and self.config.prometheus_url:
+            # this can only happen for multi-cluster querying a single centeralized prometheus
+            # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
+            raise ClusterNotSpecifiedException(
+                f"Cannot scan multiple clusters for this prometheus, Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
+            )
+
         self.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
         objects = await self._k8s_loader.list_scannable_objects(clusters)
 
@@ -173,5 +180,7 @@ class Runner(Configurable):
         try:
             result = await self._collect_result()
             self._process_result(result)
-        except Exception:
+        except ClusterNotSpecifiedException as e:
+            self.error(e)
+        except Exception as e:
             self.console.print_exception(extra_lines=1, max_frames=10)

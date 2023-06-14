@@ -62,6 +62,7 @@ class MetricsLoader(Configurable):
                 loader = metric_service_class(config, api_client=api_client, cluster=cluster)
                 loader.check_connection()
                 self.echo(f"{service_name} found")
+                loader.validate_cluster_name()
                 return loader
             except MetricsNotFound as e:
                 self.debug(f"{service_name} not found")

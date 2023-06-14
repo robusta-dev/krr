@@ -274,9 +274,10 @@ krr simple --help
 
 <!-- Port-forwarding -->
 
-## Prometheus auto-discovery
+## Prometheus, Victoria Metrics and Thanos auto-discovery
 
-By default, KRR will try to auto-discover the running Prometheus by scanning those labels:
+By default, KRR will try to auto-discover the running Prometheus Victoria Metrics and Thanos.
+For discovering prometheus it scan services for those labels:
 ```python
 "app=kube-prometheus-stack-prometheus"
 "app=prometheus,component=server"
@@ -286,8 +287,22 @@ By default, KRR will try to auto-discover the running Prometheus by scanning tho
 "app=rancher-monitoring-prometheus"
 "app=prometheus-prometheus"
 ```
+For Thanos its these labels:
+```python
+"app.kubernetes.io/component=query,app.kubernetes.io/name=thanos",
+"app.kubernetes.io/name=thanos-query",
+"app=thanos-query",
+"app=thanos-querier",
+```
+And for Victoria Metrics its the following labels:
+```python
+"app.kubernetes.io/name=vmsingle",
+"app.kubernetes.io/name=victoria-metrics-single",
+"app.kubernetes.io/name=vmselect",
+"app=vmselect",
+```
 
-If none of those labels result in finding Prometheus, you will get an error and will have to pass the working url explicitly (using the `-p` flag).
+If none of those labels result in finding Prometheus, Victoria Metrics or Thanos, you will get an error and will have to pass the working url explicitly (using the `-p` flag).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -305,6 +320,24 @@ Then, open another terminal and run krr in it, giving an explicit prometheus url
 
 ```sh
 krr simple -p http://127.0.0.1:9090
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Scanning with a centralized Prometheus
+
+If your Prometheus monitors multiple clusters we require the label you defined for your cluster in Prometheus.
+
+For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"` and your prometheus is at url `http://my-centralized-prometheus:9090`, then run this command:
+
+```sh
+krr.py simple -p http://my-centralized-prometheus:9090 -l my-cluster-name
+```
+
+If you are using a label for your cluster other than `cluster` for example the label `env: "dev-tests"` you can specify it by running:
+
+```sh
+krr.py simple -p http://my-centralized-prometheus:9090 --prometheus-label env -l dev-tests
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
