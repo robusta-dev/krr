@@ -26,6 +26,7 @@ class Config(pd.BaseSettings):
     prometheus_auth_header: Optional[str] = pd.Field(None)
     prometheus_ssl_enabled: bool = pd.Field(False)
     prometheus_cluster_label: Optional[str] = pd.Field(None)
+    prometheus_label: Optional[str] = pd.Field(None)
 
     # Logging Settings
     format: str

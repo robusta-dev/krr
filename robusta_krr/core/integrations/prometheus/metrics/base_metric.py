@@ -39,7 +39,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         """
         if self.config.prometheus_cluster_label is None:
             return ""
-        return f', cluster="{self.config.prometheus_cluster_label}"'
+        return f', {self.config.prometheus_label}="{self.config.prometheus_cluster_label}"'
 
     @abc.abstractmethod
     def get_query(self, object: K8sObjectData) -> str:
