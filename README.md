@@ -309,41 +309,30 @@ krr simple -p http://127.0.0.1:9090
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- Formatters -->
+
+## Available formatters
+
+Currently KRR ships with a few formatters to represent the scan data:
+
+- `table` - a pretty CLI table used by default, powered by [Rich](https://github.com/Textualize/rich) library
+- `json`
+- `yaml`
+- `pprint` - data representation from python's pprint library
+
+To run a strategy with a selected formatter, add a `-f` flag:
+
+```sh
+krr simple -f json
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- CUSTOM -->
 
 ## Creating a Custom Strategy/Formatter
 
 Look into the `examples` directory for examples on how to create a custom strategy/formatter.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- BUILDING -->
-
-## Building
-
-_We are planning to use pyinstaller to build binaries for distribution. Right now you can build the binaries yourself, but we're not distributing them yet._
-
-1. Install the project manually (see above)
-2. Navigate to the project root directory
-3. Install poetry (https://python-poetry.org/docs/#installing-with-the-official-installer)
-4. Install requirements with dev dependencies:
-
-```sh
-poetry install --group dev
-```
-
-5. Build the binary:
-
-```sh
-poetry run pyinstaller krr.py
-```
-
-6. The binary will be located in the `dist` directory. Test that it works:
-
-```sh
-cd ./dist/krr
-./krr --help
-```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
