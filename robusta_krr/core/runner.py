@@ -141,7 +141,7 @@ class Runner(Configurable):
         if len(clusters) > 1 and self.config.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
             # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
-            raise ClusterNotSpecifiedException(f"Must specify only one cluster from {clusters} to for prometheus at {self.config.prometheus_url}")
+            raise ClusterNotSpecifiedException(f"Cannot scan multiple clusters for this prometheus, Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}")
         
         self.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
         objects = await self._k8s_loader.list_scannable_objects(clusters)

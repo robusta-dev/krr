@@ -151,11 +151,11 @@ class PrometheusMetricsService(MetricsService):
 
         if not cluster_label:
             raise ClusterNotSpecifiedException(
-                f"KRR requires a prometheus_cluster_label to run your query, please select one of the following clusters {cluster_names}"
+                f"No label specified, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
                 )
         if cluster_label not in  cluster_names:
             raise ClusterNotSpecifiedException(
-                f"prometheus_cluster_label {cluster_label} does not exist, please use one of the following {cluster_names}"
+                f"Label {cluster_label} does not exist, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
                 )
 
     def get_cluster_names(self) -> Optional[List[str]]:
