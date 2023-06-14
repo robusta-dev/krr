@@ -38,7 +38,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         str: a promql safe label string for querying the cluster.
         """
         if self.config.prometheus_cluster_label is None:
-            return ''
+            return ""
         return f', cluster="{self.config.prometheus_cluster_label}"'
 
     @abc.abstractmethod

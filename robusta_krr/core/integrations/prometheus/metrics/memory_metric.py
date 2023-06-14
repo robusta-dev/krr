@@ -15,6 +15,6 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
             f'namespace="{object.namespace}", '
             f'pod=~"{pods_selector}", '
             f'container="{object.container}"'
-            f'{cluster_label}'
+            f"{cluster_label}"
             "}) by (container, pod, job)"
         )

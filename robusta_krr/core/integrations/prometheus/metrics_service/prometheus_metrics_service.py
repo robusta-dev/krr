@@ -49,12 +49,14 @@ class PrometheusNotFound(MetricsNotFound):
 
     pass
 
+
 class ClusterNotSpecifiedException(Exception):
     """
     An exception raised when a prometheus requires a cluster label but an invalid one is provided.
     """
 
     pass
+
 
 class CustomPrometheusConnect(PrometheusConnect):
     """
@@ -137,14 +139,13 @@ class PrometheusMetricsService(MetricsService):
                 f"Couldn't connect to Prometheus found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"
             ) from e
 
-    
     async def query(self, query: str) -> dict:
         return await asyncio.to_thread(self.prometheus.custom_query, query=query)
 
     def validate_cluster_name(self):
         cluster_label = self.config.prometheus_cluster_label
         cluster_names = self.get_cluster_names()
-    
+
         if len(cluster_names) <= 1:
             # there is only one cluster of metrics in this prometheus
             return
@@ -152,11 +153,11 @@ class PrometheusMetricsService(MetricsService):
         if not cluster_label:
             raise ClusterNotSpecifiedException(
                 f"No label specified, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
-                )
-        if cluster_label not in  cluster_names:
+            )
+        if cluster_label not in cluster_names:
             raise ClusterNotSpecifiedException(
                 f"Label {cluster_label} does not exist, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
-                )
+            )
 
     def get_cluster_names(self) -> Optional[List[str]]:
         return self.prometheus.get_label_values(label_name="cluster")
