@@ -160,7 +160,7 @@ class PrometheusMetricsService(MetricsService):
             )
 
     def get_cluster_names(self) -> Optional[List[str]]:
-        return self.prometheus.get_label_values(label_name="cluster")
+        return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
 
     async def gather_data(
         self,
