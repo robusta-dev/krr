@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-from typing import Optional, no_type_check, List
+from typing import List, Optional, no_type_check
 
 import requests
 from kubernetes.client import ApiClient

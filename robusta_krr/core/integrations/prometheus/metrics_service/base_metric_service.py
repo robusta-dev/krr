@@ -1,6 +1,6 @@
 import abc
 import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from kubernetes.client.api_client import ApiClient
 
