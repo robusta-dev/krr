@@ -62,7 +62,7 @@ Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resou
 
 ### Features
 
--   No Agent Required: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster.
+-   No Agent Required: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster. (But it can optionally be run in-cluster for weekly Slack reports.)
 -   Prometheus Integration: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
 -   Extensible Strategies: Easily create and use your own strategies for calculating resource recommendations.
 -   Future Support: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
