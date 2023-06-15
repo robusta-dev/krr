@@ -145,7 +145,7 @@ class Runner(Configurable):
         self, objects: list[K8sObjectData]
     ) -> list[tuple[ResourceAllocations, MetricsData]]:
         recommendations: list[tuple[RunResult, MetricsData]] = await gather_with_concurrency(
-            2,
+            3,
             *[self._calculate_object_recommendations(object) for object in objects]
         )
 

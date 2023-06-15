@@ -1,7 +1,7 @@
 from typing import Optional
 
 import pydantic as pd
-from typing import Optional
+from typing import Optional, Dict
 
 from robusta_krr.core.models.allocations import ResourceAllocations
 
@@ -32,6 +32,7 @@ class K8sObjectData(pd.BaseModel):
     hpa: Optional[HPAData]
     namespace: str
     kind: str
+    labels: Dict[str, str]
     allocations: ResourceAllocations
 
     def __str__(self) -> str:
