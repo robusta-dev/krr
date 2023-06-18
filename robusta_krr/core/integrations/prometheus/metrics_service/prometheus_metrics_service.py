@@ -227,14 +227,3 @@ class PrometheusMetricsService(MetricsService):
             for pod in related_pods
             if pod["metric"]["pod"] not in current_pods
         ]
-
-    def get_prometheus_cluster_label(self) -> str:
-        """
-        Generates the cluster label for querying a centralized Prometheus
-
-        Returns:
-        str: a promql safe label string for querying the cluster.
-        """
-        if self.config.prometheus_cluster_label is None:
-            return ""
-        return f', {self.config.prometheus_label}="{self.config.prometheus_cluster_label}"'
