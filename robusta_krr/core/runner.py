@@ -163,7 +163,7 @@ class Runner(Configurable):
 
     async def _collect_result(self) -> Result:
         clusters = await self._obj_loader.list_clusters()
-        if len(clusters) > 1 and self.config.prometheus_url:
+        if clusters is not None and len(clusters) > 1 and self.config.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
             # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
             raise ClusterNotSpecifiedException(
