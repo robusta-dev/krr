@@ -141,11 +141,11 @@ class PrometheusLoader(Configurable):
             replicaset_dict[replicaset['metric']['namespace'] + "/" + replicaset['metric']['owner_name']].append(replicaset['metric'])
         objects = await asyncio.gather(
             *[
-                self._list_containers_in_pods(deployment[0]['owner_name'], pod_owner_kind, deployment[0]['namespace'], 
-                                              "|".join(list(map(lambda metric: metric['replicaset'], deployment))),
-                                              await self._list_labels("Deployment", deployment[0]['namespace'], deployment[0]['owner_name'])
+                self._list_containers_in_pods(replicas[0]['owner_name'], pod_owner_kind, replicas[0]['namespace'], 
+                                              "|".join(list(map(lambda metric: metric['replicaset'], replicas))),
+                                              await self._list_labels("Deployment", replicas[0]['namespace'], replicas[0]['owner_name'])
                                               )
-                for deployment in replicaset_dict.values()
+                for replicas in replicaset_dict.values()
             ]
         )
         return list(itertools.chain(*objects))
