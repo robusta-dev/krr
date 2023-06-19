@@ -1,7 +1,6 @@
 import numpy as np
 import pydantic as pd
 from numpy.typing import NDArray
-
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
     HistoryData,

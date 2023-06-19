@@ -33,6 +33,10 @@ class Config(pd.BaseSettings):
     strategy: str
     log_to_stderr: bool
 
+    # Outputs Settings
+    file_output: bool
+    slack_output: bool
+
     other_args: dict[str, Any]
 
     # Internal

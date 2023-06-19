@@ -1,6 +1,8 @@
 import asyncio
 import math
 from typing import Optional, Union
+import sys, os
+from slack_sdk import WebClient
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
@@ -54,6 +56,19 @@ class Runner(Configurable):
         formatted = result.format(Formatter)
         self.echo("\n", no_prefix=True)
         self.print_result(formatted, rich=Formatter.__rich_console__)
+        if (self.config.file_output):
+            with open('report.txt', 'w') as file:
+                sys.stdout = file
+                print(self.print_result(formatted, rich=Formatter.__rich_console__) , file=file)
+                sys.stdout = sys.stdout
+        if (self.config.slack_output):
+            client = WebClient(os.environ["SLACK_BOT_TOKEN"])
+            client.files_upload(
+                channels=f'#krr-report-test',  # You can specify multiple channels here in the form of a string array
+                title="KRR Report",
+                file="./report.txt",
+                initial_comment=f'Kubernetes Resource Report for {(" ".join(self.config.namespaces))}',
+            )
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
