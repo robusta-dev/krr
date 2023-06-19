@@ -64,7 +64,7 @@ class Runner(Configurable):
                 file_name = self.config.slack_output
             with open(file_name, 'w') as target_file:
                 sys.stdout = target_file
-                print(self.print_result(formatted, rich=Formatter.__rich_console__) , file=target_file)
+                self.print_result(formatted, rich=Formatter.__rich_console__)
                 sys.stdout = sys.stdout
             if (self.config.slack_output):
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
