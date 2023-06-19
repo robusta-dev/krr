@@ -34,8 +34,8 @@ class Config(pd.BaseSettings):
     log_to_stderr: bool
 
     # Outputs Settings
-    file_output: bool
-    slack_output: bool
+    file_output: Optional[str] = pd.Field(None)
+    slack_output: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
 
