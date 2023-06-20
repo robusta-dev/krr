@@ -47,10 +47,14 @@ def table(result: Result) -> Table:
         caption=f"{result.score} points - {result.score_letter}",
     )
 
-    table.add_column("Number", justify="right")
-    table.add_column("Namespace", style="cyan",no_wrap=True)
-    table.add_column("Name", style="cyan",no_wrap=True)
-    table.add_column("Container", style="cyan",no_wrap=True)
+    table.add_column("Number", justify="right", no_wrap=True)
+    table.add_column("Cluster", style="cyan")
+    table.add_column("Namespace", style="cyan")
+    table.add_column("Name", style="cyan")
+    table.add_column("Pods", style="cyan")
+    table.add_column("Old Pods", style="cyan")
+    table.add_column("Type", style="cyan")
+    table.add_column("Container", style="cyan")
     for resource in ResourceType:
         table.add_column(f"{resource.name} Requests")
         table.add_column(f"{resource.name} Limits")
@@ -66,8 +70,12 @@ def table(result: Result) -> Table:
 
             table.add_row(
                 f"[{item.severity.color}]{i + 1}.[/{item.severity.color}]",
+                item.object.cluster if full_info_row else "",
                 item.object.namespace if full_info_row else "",
                 item.object.name if full_info_row else "",
+                f"{item.object.current_pods_count}" if full_info_row else "",
+                f"{item.object.deleted_pods_count}" if full_info_row else "",
+                item.object.kind if full_info_row else "",
                 item.object.container,
                 *[
                     _format_request_str(item, resource, selector)
