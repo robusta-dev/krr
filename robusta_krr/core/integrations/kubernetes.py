@@ -3,6 +3,7 @@ import itertools
 from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
+from kubernetes.client.rest import ApiException
 from kubernetes.client.models import (
     V1Container,
     V1DaemonSet,
@@ -12,13 +13,24 @@ from kubernetes.client.models import (
     V1JobList,
     V1LabelSelector,
     V1PodList,
+    V1Pod,
+    V1Job,
     V1StatefulSet,
     V1StatefulSetList,
+    V2HorizontalPodAutoscaler,
+    V2HorizontalPodAutoscalerSpec,
+    V2HorizontalPodAutoscalerBehavior,
+    V2MetricSpec,
+    V2ResourceMetricSource,
+    V2MetricTarget,
 )
 
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sObjectData, PodData, HPAData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
+
+
+AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
 
 
 class ClusterLoader(Configurable):
@@ -34,6 +46,7 @@ class ClusterLoader(Configurable):
         self.apps = client.AppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
+        self.autoscaling = client.AutoscalingV2Api(api_client=self.api_client)
 
     async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.
@@ -100,9 +113,7 @@ class ClusterLoader(Configurable):
         )
         return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
 
-    async def __build_obj(
-        self, item: Union[V1Deployment, V1DaemonSet, V1StatefulSet], container: V1Container
-    ) -> K8sObjectData:
+    async def __build_obj(self, item: AnyKubernetesAPIObject, container: V1Container) -> K8sObjectData:
         return K8sObjectData(
             cluster=self.cluster,
             namespace=item.metadata.namespace,
@@ -111,6 +122,7 @@ class ClusterLoader(Configurable):
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
             pods=await self.__list_pods(item),
+            hpa=await self._get_hpa(item),
         )
 
     async def _list_deployments(self) -> list[K8sObjectData]:
@@ -175,6 +187,40 @@ class ClusterLoader(Configurable):
         return await asyncio.gather(
             *[self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
         )
+
+    async def _get_hpa(self, item: AnyKubernetesAPIObject) -> Optional[HPAData]:
+        # NOTE: HPA is not supported for jobs, pods, daemonsets, only deployments and statefulsets
+        # (also for replicasets, but we don't support them yet)
+        if not isinstance(item, (V1Deployment, V1StatefulSet)):
+            return None
+
+        try:
+            res: V2HorizontalPodAutoscaler = await asyncio.to_thread(
+                self.autoscaling.read_namespaced_horizontal_pod_autoscaler, item.metadata.name, item.metadata.namespace
+            )
+
+            def __get_metric(metric_name: str) -> Optional[float]:
+                return next(
+                    (
+                        metric.resource.target.average_utilization
+                        for metric in res.spec.metrics
+                        if metric.type == "Resource" and metric.resource.name == metric_name
+                    ),
+                    None,
+                )
+
+            return HPAData(
+                min_replicas=res.spec.min_replicas,
+                max_replicas=res.spec.max_replicas,
+                current_replicas=res.status.current_replicas,
+                desired_replicas=res.status.desired_replicas,
+                target_cpu_utilization_percentage=__get_metric("cpu"),
+                target_memory_utilization_percentage=__get_metric("memory"),
+            )
+        except ApiException as e:
+            if e.status == 404:
+                return None
+            raise e
 
 
 class KubernetesLoader(Configurable):

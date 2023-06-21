@@ -48,11 +48,24 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     __display_name__ = "simple"
     __rich_console__ = True
 
-    def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
-        cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU].data)
-        memory_usage = self.settings.calculate_memory_proposal(history_data[ResourceType.Memory].data)
+    def __calculate_cpu_proposal(self, history_data: HistoryData, object_data: K8sObjectData) -> ResourceRecommendation:
+        if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None:
+            return ResourceRecommendation.undefined()
 
+        cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU].data)
+        return ResourceRecommendation(request=cpu_usage, limit=None)
+
+    def __calculate_memory_proposal(
+        self, history_data: HistoryData, object_data: K8sObjectData
+    ) -> ResourceRecommendation:
+        if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None:
+            return ResourceRecommendation.undefined()
+
+        memory_usage = self.settings.calculate_memory_proposal(history_data[ResourceType.Memory].data)
+        return ResourceRecommendation(request=memory_usage, limit=memory_usage)
+
+    def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
         return {
-            ResourceType.CPU: ResourceRecommendation(request=cpu_usage, limit=None),
-            ResourceType.Memory: ResourceRecommendation(request=memory_usage, limit=memory_usage),
+            ResourceType.CPU: self.__calculate_cpu_proposal(history_data, object_data),
+            ResourceType.Memory: self.__calculate_memory_proposal(history_data, object_data),
         }

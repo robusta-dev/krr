@@ -161,7 +161,10 @@ class Runner(Configurable):
             self.warning("Try to change the filters or check if there is anything available.")
             if self.config.namespaces == "*":
                 self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
-            return Result(scans=[])
+            return Result(
+                scans=[],
+                strategy=StrategyData(name=str(self._strategy).lower(), settings=self._strategy.settings.dict()),
+            )
 
         with ProgressBar(self.config, total=len(objects), title="Calculating Recommendation") as self.__progressbar:
             resource_recommendations = await self._gather_objects_recommendations(objects)
