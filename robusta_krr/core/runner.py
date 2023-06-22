@@ -59,7 +59,7 @@ class Runner(Configurable):
         if resource == ResourceType.CPU:
             return 1 / 1000 * self.config.cpu_min_value
         elif resource == ResourceType.Memory:
-            return 1_000_000 * self.config.memory_min_value
+            return 1024**2 * self.config.memory_min_value
         else:
             return 0
 
@@ -73,7 +73,7 @@ class Runner(Configurable):
             prec_power = 10**3
         elif resource == ResourceType.Memory:
             # NOTE: We use 10**6 as the minimal value for memory is 1M
-            prec_power = 1 / 10**6
+            prec_power = 1 / (1024**2)
         else:
             # NOTE: We use 1 as the minimal value for other resources
             prec_power = 1
