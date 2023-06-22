@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Literal, Optional, Union
 from uuid import UUID
 
+
 import typer
 import urllib3
 
@@ -129,6 +130,7 @@ def load_commands() -> None:
                     other_args={strategy_args},
                 )
                 runner = Runner(config)
+
                 asyncio.run(runner.run())
             """
         )

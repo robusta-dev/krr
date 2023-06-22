@@ -2,6 +2,8 @@ import asyncio
 import math
 from typing import Optional, Union
 
+from concurrent.futures import ThreadPoolExecutor
+
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
@@ -23,6 +25,9 @@ class Runner(Configurable):
         self._metrics_service_loaders: dict[Optional[str], Union[MetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
+
+        # This executor will be running calculations for recommendations
+        self._executor = ThreadPoolExecutor(12)
 
     def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[MetricsLoader]:
         if cluster not in self._metrics_service_loaders:
@@ -116,7 +121,8 @@ class Runner(Configurable):
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
-        result = await asyncio.to_thread(self._strategy.run, data, object)
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(self._executor, self._strategy.run, data, object)
         return self._format_result(result), metrics
 
     async def _gather_objects_recommendations(

@@ -2,6 +2,8 @@ import asyncio
 import datetime
 from typing import Optional, no_type_check
 
+from concurrent.futures import ThreadPoolExecutor
+
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
 
@@ -39,6 +41,8 @@ class MetricsLoader(Configurable):
         """
 
         super().__init__(config=config)
+
+        self.executor = ThreadPoolExecutor(8)
 
         self.api_client = (
             k8s_config.new_client_from_config(config_file=self.config.kubeconfig, context=cluster)
