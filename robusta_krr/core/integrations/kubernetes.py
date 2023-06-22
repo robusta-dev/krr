@@ -24,7 +24,7 @@ from robusta_krr.utils.configurable import Configurable
 
 
 # This executor will be running requests to Kubernetes API
-executor = ThreadPoolExecutor(12)
+executor = ThreadPoolExecutor(6)
 
 
 class ClusterLoader(Configurable):

@@ -42,7 +42,7 @@ class MetricsLoader(Configurable):
 
         super().__init__(config=config)
 
-        self.executor = ThreadPoolExecutor(8)
+        self.executor = ThreadPoolExecutor(6)
 
         self.api_client = (
             k8s_config.new_client_from_config(config_file=self.config.kubeconfig, context=cluster)

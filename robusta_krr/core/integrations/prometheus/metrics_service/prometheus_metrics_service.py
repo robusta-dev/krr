@@ -174,9 +174,6 @@ class PrometheusMetricsService(MetricsService):
         ResourceHistoryData: The gathered resource history data.
         """
         self.debug(f"Gathering data for {object} and {resource}")
-        import threading
-
-        print(threading.active_count())
 
         await self.add_historic_pods(object, period)
 
