@@ -22,7 +22,7 @@ def parse(x: str, /) -> Union[float, int]:
 
     for unit, multiplier in UNITS.items():
         if x.endswith(unit):
-            return int(x[: -len(unit)]) * multiplier
+            return float(x[: -len(unit)]) * multiplier
     if "." in x:
         return float(x)
     return int(x)

@@ -1,6 +1,6 @@
 import abc
 import datetime
-from typing import Optional
+from typing import List, Optional
 
 from kubernetes.client.api_client import ApiClient
 
@@ -37,6 +37,10 @@ class MetricsService(Configurable, abc.ABC):
     def name(self) -> str:
         classname = self.__class__.__name__
         return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
+
+    @abc.abstractmethod
+    async def get_cluster_names(self) -> Optional[List[str]]:
+        ...
 
     @abc.abstractmethod
     async def gather_data(
