@@ -20,7 +20,7 @@ from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
-from .rollout import RolloutAppsV1Api
+from robusta_krr.core.integrations.rollout import RolloutAppsV1Api
 
 
 class ClusterLoader(Configurable):
