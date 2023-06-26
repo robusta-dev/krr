@@ -349,6 +349,24 @@ krr.py simple -p http://my-centralized-prometheus:9090 --prometheus-label env -l
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Azure managed Prometheus
+
+For Azure managed Prometheus you need to generate an access token, which can be done by running the following command:
+
+```sh
+# If you are not logged in to Azure, uncomment out the following line
+# az login
+AZURE_BEARER=$(az account get-access-token --resource=https://prometheus.monitor.azure.com  --query accesssToken --output tsv); echo $AZURE_BEARER 
+```
+
+Than run the following command with PROMETHEUS_URL substituted for your Azure Managed Prometheus URL:
+
+```sh
+python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-header "Bearer $AZURE_BEARER"
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- Formatters -->
 
 ## Available formatters
