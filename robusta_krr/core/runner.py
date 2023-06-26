@@ -7,7 +7,14 @@ from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import MetricsData, ResourceAllocations, ResourceScan, ResourceType, Result
+from robusta_krr.core.models.result import (
+    MetricsData,
+    ResourceAllocations,
+    ResourceScan,
+    ResourceType,
+    Result,
+    StrategyData,
+)
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.progress_bar import ProgressBar
@@ -165,6 +172,10 @@ class Runner(Configurable):
                 for obj, (recommended, metrics) in zip(objects, resource_recommendations)
             ],
             description=self._strategy.description,
+            strategy=StrategyData(
+                name=str(self._strategy).lower(),
+                settings=self._strategy.settings.dict(),
+            ),
         )
 
     async def run(self) -> None:
