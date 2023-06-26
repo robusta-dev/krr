@@ -130,11 +130,12 @@ All above examples show running command as `krr ...`, replace it with `python kr
 
 ### Other Configuration Methods
 
-* [Robusta UI Integration](#robusta-ui-integration)
-* [Slack Integration](#slack-integration) 
-* KRR with [Google Cloud Managed Service for Prometheus](./docs/google-cloud-managed-service-for-prometheus.md)
-* [Prometheus Victoria Metrics and Thanos autodiscovery](#prometheus-victoria-metrics-and-thanos-auto-discovery)
-* [Azure managed Prometheus](#azure-managed-prometheus)
+* [View KRR Reports in a Web UI](#robusta-ui-integration)
+* [Get a Weekly Message in Slack with KRR Recommendations](#slack-integration) 
+* Setup KRR on [Google Cloud Managed Prometheus
+](./docs/google-cloud-managed-service-for-prometheus.md)
+* [Prometheus, Victoria Metrics and Thanos autodiscovery](#prometheus-victoria-metrics-and-thanos-auto-discovery)
+* Setup KRR for [Azure managed Prometheus](#azure-managed-prometheus)
 
 <!-- USAGE EXAMPLES -->
 
