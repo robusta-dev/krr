@@ -1,4 +1,4 @@
-<a name="readme-top"></a>
+<!-- <a name="readme-top"></a> -->
 
 <!-- [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
@@ -6,11 +6,9 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url] -->
-
-<!-- PROJECT LOGO -->
-<br />
+![Product Name Screen Shot][product-screenshot]
 <div align="center">
-  <h3 align="center">Robusta KRR</h3>
+  <h1 align="center">Robusta KRR</h1>
   <p align="center">
     Prometheus-based Kubernetes Resource Recommendations
     <br />
@@ -58,8 +56,6 @@
 
 ## About The Project
 
-![Product Name Screen Shot][product-screenshot]
-
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
 ### Features
@@ -103,9 +99,9 @@ krr --help
 
 ### On Windows:
 
-You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or install manually:
+You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or install manually.
 
-#### Manual Installation
+### Manual Installation
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
 2. Clone the repo:
@@ -130,7 +126,61 @@ python krr.py --help
 Notice that using source code requires you to run as a python script, when installing with brew allows to run `krr`.
 All above examples show running command as `krr ...`, replace it with `python krr.py ...` if you are using a manual installation.
 
-[To use krr with Google Cloud Managed Service for Prometheus, some additional configuration is necessary.](./docs/google-cloud-managed-service-for-prometheus.md)
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Other Configuration Methods
+
+* [Robusta UI Integration](#robusta-ui-integration)
+* [Slack Integration](#slack-integration) 
+* KRR with [Google Cloud Managed Service for Prometheus](./docs/google-cloud-managed-service-for-prometheus.md)
+* [Prometheus Victoria Metrics and Thanos autodiscovery](#prometheus-victoria-metrics-and-thanos-auto-discovery)
+* [Azure managed Prometheus](#azure-managed-prometheus)
+
+<!-- USAGE EXAMPLES -->
+
+## Usage
+
+Straightforward usage, to run the simple strategy:
+
+```sh
+krr simple
+```
+
+If you want only specific namespaces (default and ingress-nginx):
+
+```sh
+krr simple -n default -n ingress-nginx
+```
+
+By default krr will run in the current context. If you want to run it in a different context:
+
+```sh
+krr simple -c my-cluster-1 -c my-cluster-2
+```
+
+If you want to get the output in JSON format (--logtostderr is required so no logs go to the result file):
+
+```sh
+krr simple --logtostderr -f json > result.json
+```
+
+If you want to get the output in YAML format:
+
+```sh
+krr simple --logtostderr -f yaml > result.yaml
+```
+
+If you want to see additional debug logs:
+
+```sh
+krr simple -v
+```
+
+More specific information on Strategy Settings can be found using
+
+```sh
+krr simple --help
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -228,54 +278,6 @@ customPlaybooks:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-<!-- USAGE EXAMPLES -->
-
-## Usage
-
-Straightforward usage, to run the simple strategy:
-
-```sh
-krr simple
-```
-
-If you want only specific namespaces (default and ingress-nginx):
-
-```sh
-krr simple -n default -n ingress-nginx
-```
-
-By default krr will run in the current context. If you want to run it in a different context:
-
-```sh
-krr simple -c my-cluster-1 -c my-cluster-2
-```
-
-If you want to get the output in JSON format (--logtostderr is required so no logs go to the result file):
-
-```sh
-krr simple --logtostderr -f json > result.json
-```
-
-If you want to get the output in YAML format:
-
-```sh
-krr simple --logtostderr -f yaml > result.yaml
-```
-
-If you want to see additional debug logs:
-
-```sh
-krr simple -v
-```
-
-More specific information on Strategy Settings can be found using
-
-```sh
-krr simple --help
-```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- Port-forwarding -->
 
