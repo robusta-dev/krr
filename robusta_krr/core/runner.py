@@ -34,7 +34,7 @@ class Runner(Configurable):
         self._strategy = self.config.create_strategy()
 
         # This executor will be running calculations for recommendations
-        self._executor = ThreadPoolExecutor(6)
+        self._executor = ThreadPoolExecutor(self.config.max_workers)
 
     def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[MetricsLoader]:
         if cluster not in self._metrics_service_loaders:

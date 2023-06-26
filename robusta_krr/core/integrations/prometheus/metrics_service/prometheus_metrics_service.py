@@ -1,6 +1,7 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import Any, List, Optional, no_type_check
+from typing import List, Optional, no_type_check, Type
 
 import requests
 from kubernetes.client import ApiClient
@@ -88,9 +89,10 @@ class PrometheusMetricsService(MetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
-        service_discovery: ServiceDiscovery = PrometheusDiscovery,
+        service_discovery: Type[ServiceDiscovery] = PrometheusDiscovery,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
-        super().__init__(config=config, api_client=api_client, cluster=cluster)
+        super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
 
         self.info(f"Connecting to {self.name()} for {self.cluster} cluster")
 

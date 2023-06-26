@@ -29,7 +29,7 @@ class ClusterLoader(Configurable):
 
         self.cluster = cluster
         # This executor will be running requests to Kubernetes API
-        self.executor = ThreadPoolExecutor(6)
+        self.executor = ThreadPoolExecutor(self.config.max_workers)
         self.api_client = (
             config.new_client_from_config(context=cluster, config_file=self.config.kubeconfig)
             if cluster is not None
