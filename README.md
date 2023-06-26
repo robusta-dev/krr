@@ -1,4 +1,4 @@
-<!-- <a name="readme-top"></a> -->
+<a name="readme-top"></a>
 
 <!-- [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
@@ -217,6 +217,8 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
@@ -234,7 +236,7 @@ Find about how KRR tries to find the default prometheus to connect <a href="#pro
 
 
 
-### Robusta UI integration
+## Robusta UI integration
 
 If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
 
@@ -246,16 +248,16 @@ More features (like seeing graphs, based on which recommendations were made) com
 
 <!-- ADVANCED USAGE EXAMPLES -->
 
-### Slack integration
+## Slack integration
 
 Put cost savings on autopilot. Get notified in Slack about recommendations above X%. Send a weekly global report, or one report per team.
 
 ![Slack Screen Shot][slack-screenshot]
 
-#### Prerequisites
+### Prerequisites
 * A Slack workspace
 
-#### Setup
+### Setup
 1. [Install Robusta with Helm to your cluster and configure slack](https://docs.robusta.dev/master/installation.html)
 2. Create your KRR slack playbook by adding the following to `generated_values.yaml`:
 ```
