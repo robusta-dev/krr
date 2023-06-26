@@ -9,7 +9,14 @@ from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import MetricsData, ResourceAllocations, ResourceScan, ResourceType, Result
+from robusta_krr.core.models.result import (
+    MetricsData,
+    ResourceAllocations,
+    ResourceScan,
+    ResourceType,
+    Result,
+    StrategyData,
+)
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.progress_bar import ProgressBar
@@ -64,7 +71,7 @@ class Runner(Configurable):
         if resource == ResourceType.CPU:
             return 1 / 1000 * self.config.cpu_min_value
         elif resource == ResourceType.Memory:
-            return 1_000_000 * self.config.memory_min_value
+            return 1024**2 * self.config.memory_min_value
         else:
             return 0
 
@@ -78,7 +85,7 @@ class Runner(Configurable):
             prec_power = 10**3
         elif resource == ResourceType.Memory:
             # NOTE: We use 10**6 as the minimal value for memory is 1M
-            prec_power = 1 / 10**6
+            prec_power = 1 / (1024**2)
         else:
             # NOTE: We use 1 as the minimal value for other resources
             prec_power = 1
@@ -171,6 +178,10 @@ class Runner(Configurable):
                 for obj, (recommended, metrics) in zip(objects, resource_recommendations)
             ],
             description=self._strategy.description,
+            strategy=StrategyData(
+                name=str(self._strategy).lower(),
+                settings=self._strategy.settings.dict(),
+            ),
         )
 
     async def run(self) -> None:

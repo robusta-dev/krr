@@ -1,4 +1,5 @@
 import itertools
+from typing import Any
 
 from rich.table import Table
 
@@ -20,12 +21,40 @@ def _format(value: RecommendationValue) -> str:
         return resource_units.format(value)
 
 
+def __calc_diff(allocated, recommended, selector, multiplier=1) -> str:
+    if recommended is None or isinstance(recommended, str) or selector != "requests":
+        return ""
+    else:
+        reccomended_val = recommended.value if isinstance(recommended.value, (int, float)) else 0
+        allocated_val = allocated if isinstance(allocated, (int, float)) else 0
+        diff_val = reccomended_val - allocated_val
+        diff_sign = "[green]+[/green]" if diff_val >= 0 else "[red]-[/red]"
+        return f"{diff_sign}{_format(abs(diff_val) * multiplier)}"
+
+
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
     allocated = getattr(item.object.allocations, selector)[resource]
     recommended = getattr(item.recommended, selector)[resource]
     severity = recommended.severity
 
-    return f"[{severity.color}]" + _format(allocated) + " -> " + _format(recommended.value) + f"[/{severity.color}]"
+    if allocated is None and recommended.value is None:
+        return f"[{severity.color}]{NONE_LITERAL}[/{severity.color}]"
+
+    diff = __calc_diff(allocated, recommended, selector)
+    if diff != "":
+        diff = f"({diff}) "
+
+    return (
+        diff + f"[{severity.color}]" + _format(allocated) + " -> " + _format(recommended.value) + f"[/{severity.color}]"
+    )
+
+
+def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current: int) -> str:
+    selector = "requests"
+    allocated = getattr(item.object.allocations, selector)[resource]
+    recommended = getattr(item.recommended, selector)[resource]
+
+    return __calc_diff(allocated, recommended, selector, pods_current)
 
 
 @formatters.register(rich_console=True)
@@ -47,8 +76,11 @@ def table(result: Result) -> Table:
         caption=f"{result.score} points - {result.score_letter}",
     )
 
+    cluster_count = len(set(item.object.cluster for item in result.scans))
+
     table.add_column("Number", justify="right", no_wrap=True)
-    table.add_column("Cluster", style="cyan")
+    if cluster_count > 1:
+        table.add_column("Cluster", style="cyan")
     table.add_column("Namespace", style="cyan")
     table.add_column("Name", style="cyan")
     table.add_column("Pods", style="cyan")
@@ -56,6 +88,7 @@ def table(result: Result) -> Table:
     table.add_column("Type", style="cyan")
     table.add_column("Container", style="cyan")
     for resource in ResourceType:
+        table.add_column(f"{resource.name} Diff")
         table.add_column(f"{resource.name} Requests")
         table.add_column(f"{resource.name} Limits")
 
@@ -68,21 +101,22 @@ def table(result: Result) -> Table:
             last_row = j == len(group_items) - 1
             full_info_row = j == 0
 
-            table.add_row(
-                f"[{item.severity.color}]{i + 1}.[/{item.severity.color}]",
-                item.object.cluster if full_info_row else "",
+            cells: list[Any] = [f"[{item.severity.color}]{i + 1}.[/{item.severity.color}]"]
+            if cluster_count > 1:
+                cells.append(item.object.cluster if full_info_row else "")
+            cells += [
                 item.object.namespace if full_info_row else "",
                 item.object.name if full_info_row else "",
                 f"{item.object.current_pods_count}" if full_info_row else "",
                 f"{item.object.deleted_pods_count}" if full_info_row else "",
                 item.object.kind if full_info_row else "",
                 item.object.container,
-                *[
-                    _format_request_str(item, resource, selector)
-                    for resource in ResourceType
-                    for selector in ["requests", "limits"]
-                ],
-                end_section=last_row,
-            )
+            ]
+
+            for resource in ResourceType:
+                cells.append(_format_total_diff(item, resource, item.object.current_pods_count))
+                cells += [_format_request_str(item, resource, selector) for selector in ["requests", "limits"]]
+
+            table.add_row(*cells, end_section=last_row)
 
     return table

@@ -65,11 +65,17 @@ class ResourceScan(pd.BaseModel):
         return cls(object=object, recommended=recommendation_processed, severity=Severity.UNKNOWN, metrics=metrics)
 
 
+class StrategyData(pd.BaseModel):
+    name: str
+    settings: dict[str, Any]
+
+
 class Result(pd.BaseModel):
     scans: list[ResourceScan]
     score: int = 0
     resources: list[str] = ["cpu", "memory"]
     description: Optional[str] = None
+    strategy: StrategyData
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
