@@ -14,9 +14,9 @@ class PodData(pd.BaseModel):
 
 
 class HPAData(pd.BaseModel):
-    min_replicas: int
+    min_replicas: Optional[int]
     max_replicas: int
-    current_replicas: int
+    current_replicas: Optional[int]
     desired_replicas: int
     target_cpu_utilization_percentage: Optional[float]
     target_memory_utilization_percentage: Optional[float]
