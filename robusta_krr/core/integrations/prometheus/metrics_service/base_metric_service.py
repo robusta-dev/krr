@@ -1,4 +1,5 @@
 import abc
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 from typing import List, Optional
 
@@ -25,10 +26,12 @@ class MetricsService(Configurable, abc.ABC):
         config: Config,
         api_client: Optional[ApiClient] = None,
         cluster: Optional[str] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(config=config)
         self.api_client = api_client
         self.cluster = cluster or "default"
+        self.executor = executor
 
     @abc.abstractmethod
     def check_connection(self):

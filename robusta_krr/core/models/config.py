@@ -28,6 +28,9 @@ class Config(pd.BaseSettings):
     prometheus_cluster_label: Optional[str] = pd.Field(None)
     prometheus_label: str = pd.Field("cluster")
 
+    # Threading settings
+    max_workers: int = pd.Field(6, ge=1)
+
     # Logging Settings
     format: str
     strategy: str
