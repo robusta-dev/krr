@@ -1,5 +1,6 @@
 import asyncio
 import math
+import time
 from typing import Optional, Union
 from concurrent.futures import ThreadPoolExecutor
 
@@ -108,7 +109,7 @@ class Runner(Configurable):
 
         if prometheus_loader is None:
             return {resource: ResourceRecommendation.undefined() for resource in ResourceType}, {}
-        await asyncio.sleep(0.5)
+        time.sleep(0.5)
         data_tuple = await asyncio.gather(
             *[
                 prometheus_loader.gather_data(
