@@ -177,54 +177,6 @@ class PrometheusMetricsService(MetricsService):
         """
         self.debug(f"Gathering data for {object} and {resource}")
 
-        await self.add_historic_pods(object, period)
-
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
-
-    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
-        """
-        Finds pods that have been deleted but still have some metrics in Prometheus.
-        Args:
-            object (K8sObjectData): The Kubernetes object.
-            period (datetime.timedelta): The time period for which to gather data.
-        """
-
-        days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
-        period_literal = f"{days_literal}d"
-        pod_owners: list[str]
-        pod_owner_kind: str
-
-        if object.kind == "Deployment":
-            replicasets = await self.query(
-                "kube_replicaset_owner{"
-                f'owner_name="{object.name}", '
-                f'owner_kind="Deployment", '
-                f'namespace="{object.namespace}"'
-                "}"
-                f"[{period_literal}]"
-            )
-            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
-            pod_owner_kind = "ReplicaSet"
-        else:
-            pod_owners = [object.name]
-            pod_owner_kind = object.kind
-
-        owners_regex = "|".join(pod_owners)
-        related_pods = await self.query(
-            "kube_pod_owner{"
-            f'owner_name=~"{owners_regex}", '
-            f'owner_kind="{pod_owner_kind}", '
-            f'namespace="{object.namespace}"'
-            "}"
-            f"[{period_literal}]"
-        )
-
-        current_pods = {p.name for p in object.pods}
-
-        object.pods += [
-            PodData(name=pod["metric"]["pod"], deleted=True)
-            for pod in related_pods
-            if pod["metric"]["pod"] not in current_pods
-        ]

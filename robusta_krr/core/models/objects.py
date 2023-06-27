@@ -18,7 +18,6 @@ class K8sObjectData(pd.BaseModel):
     cluster: Optional[str]
     name: str
     container: str
-    pods: list[PodData]
     namespace: str
     kind: str
     allocations: ResourceAllocations
@@ -31,12 +30,12 @@ class K8sObjectData(pd.BaseModel):
 
     @property
     def current_pods_count(self) -> int:
-        return len([pod for pod in self.pods if not pod.deleted])
+        return 1  # len([pod for pod in self.pods if not pod.deleted])
 
     @property
     def deleted_pods_count(self) -> int:
-        return len([pod for pod in self.pods if pod.deleted])
+        return 1  # len([pod for pod in self.pods if pod.deleted])
 
     @property
     def pods_count(self) -> int:
-        return len(self.pods)
+        return 1  # len(self.pods)

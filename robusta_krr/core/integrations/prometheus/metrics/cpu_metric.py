@@ -8,13 +8,30 @@ from .base_metric import bind_metric
 @bind_metric(ResourceType.CPU)
 class CPUMetricLoader(BaseFilteredMetricLoader):
     def get_query(self, object: K8sObjectData) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
-        cluster_label = self.get_prometheus_cluster_label()
-        return (
-            "sum(irate(container_cpu_usage_seconds_total{"
-            f'namespace="{object.namespace}", '
-            f'pod=~"{pods_selector}", '
-            f'container="{object.container}"'
-            f"{cluster_label}"
-            "}[5m])) by (container, pod, job)"
-        )
+        if object.kind == "Deployment":
+            return f"""
+                max by (namespace, pod) (
+                    label_replace(
+                        kube_pod_owner{{owner_kind="ReplicaSet"}}, "replicaset", "$1", "owner_name", "(.*)"
+                    )
+                    * on (namespace, replicaset) group_left(owner_name) topk by (namespace, replicaset) (
+                        1, max by (namespace, replicaset, owner_name) (
+                            kube_replicaset_owner{{owner_kind="Deployment", owner_name="{object.name}"}}
+                        )
+                    )
+                ) * on(namespace, pod) group_right() avg by (namespace, pod, container) (
+                    sum by (namespace, pod, container, job, service) (
+                        irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", container="{object.container}", image!=""}}[5m])
+                    )
+                )
+            """
+        else:
+            return f"""
+                max by (namespace, pod) (
+                    kube_pod_owner{{owner_kind="{object.kind}", owner_name="{object.name}"}}
+                ) * on(namespace, pod) group_right() avg by (namespace, pod, container) (
+                    sum by (namespace, pod, container, job, service) (
+                        irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", container="{object.container}", image!=""}}[5m])
+                    )
+                )
+            """
