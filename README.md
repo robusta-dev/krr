@@ -134,7 +134,6 @@ All above examples show running command as `krr ...`, replace it with `python kr
 * [Get a Weekly Message in Slack with KRR Recommendations](#slack-integration) 
 * Setup KRR on [Google Cloud Managed Prometheus
 ](./docs/google-cloud-managed-service-for-prometheus.md)
-* [Prometheus, Victoria Metrics and Thanos autodiscovery](#prometheus-victoria-metrics-and-thanos-auto-discovery)
 * Setup KRR for [Azure managed Prometheus](#azure-managed-prometheus)
 
 <!-- USAGE EXAMPLES -->
@@ -216,7 +215,7 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 ### Prometheus connection
 
-Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
+Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-victoria-metrics-and-thanos-auto-discovery">here</a>.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
