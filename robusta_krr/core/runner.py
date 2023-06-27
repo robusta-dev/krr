@@ -109,7 +109,7 @@ class Runner(Configurable):
 
         if prometheus_loader is None:
             return {resource: ResourceRecommendation.undefined() for resource in ResourceType}, {}
-        time.sleep(0.5)
+        time.sleep(5)
         data_tuple = await asyncio.gather(
             *[
                 prometheus_loader.gather_data(
