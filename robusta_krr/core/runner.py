@@ -1,7 +1,6 @@
 import asyncio
 import math
 from typing import Optional, Union
-from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
@@ -109,7 +108,7 @@ class Runner(Configurable):
 
         if prometheus_loader is None:
             return {resource: ResourceRecommendation.undefined() for resource in ResourceType}, {}
-        sleep(0.5)
+        await asyncio.sleep(0.5)
         data_tuple = await asyncio.gather(
             *[
                 prometheus_loader.gather_data(
