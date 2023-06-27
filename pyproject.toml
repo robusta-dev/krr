@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "robusta-krr"
-version = "1.1.1"
+version = "1.3.0-dev"
 description = "Robusta's Resource Recommendation engine for Kubernetes"
 authors = ["Pavel Zhukov <33721692+LeaveMyYard@users.noreply.github.com>"]
 license = "MIT"
