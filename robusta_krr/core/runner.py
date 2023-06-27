@@ -138,7 +138,7 @@ class Runner(Configurable):
         for object in objects:
             result = await self._calculate_object_recommendations(object)
             recommendations.append(result)
-            time.sleep(1)
+            time.sleep(2)
 
         return [
             (
