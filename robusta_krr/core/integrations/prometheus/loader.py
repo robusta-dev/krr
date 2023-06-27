@@ -9,7 +9,7 @@ from kubernetes.client.api_client import ApiClient
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
 
@@ -49,9 +49,12 @@ class MetricsLoader(Configurable):
             if cluster is not None
             else None
         )
-        self.loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
-        if not self.loader:
+
+        loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
+        if not loader:
             raise PrometheusNotFound("No Prometheus or metrics service found")
+
+        self.loader = loader
 
         self.info(f"{self.loader.name()} connected successfully for {cluster or 'default'} cluster")
 
@@ -92,4 +95,13 @@ class MetricsLoader(Configurable):
             ResourceHistoryData: The gathered resource history data.
         """
 
-        return await self.loader.gather_data(object, resource, period, step)
+        data: ResourceHistoryData = await self.loader.gather_data(object, resource, period, step=step)
+        last_timestamp = max([graph[-1, 0] for graph in data.data.values()] + [-1])
+        object.pods = [
+            PodData(
+                name=pod,
+                deleted=last_timestamp == -1 or graph[-1, 0] != last_timestamp,
+            )
+            for pod, graph in data.data.items()
+        ]
+        return data
