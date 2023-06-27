@@ -109,7 +109,6 @@ class Runner(Configurable):
 
         if prometheus_loader is None:
             return {resource: ResourceRecommendation.undefined() for resource in ResourceType}, {}
-        time.sleep(5)
         data_tuple = await asyncio.gather(
             *[
                 prometheus_loader.gather_data(
@@ -135,9 +134,11 @@ class Runner(Configurable):
     async def _gather_objects_recommendations(
         self, objects: list[K8sObjectData]
     ) -> list[tuple[ResourceAllocations, MetricsData]]:
-        recommendations: list[tuple[RunResult, MetricsData]] = await asyncio.gather(
-            *[self._calculate_object_recommendations(object) for object in objects]
-        )
+        recommendations: list[tuple[RunResult, MetricsData]] = []
+        for object in objects:
+            result = await self._calculate_object_recommendations(object)
+            recommendations.append(result)
+            time.sleep(0.5)
 
         return [
             (
