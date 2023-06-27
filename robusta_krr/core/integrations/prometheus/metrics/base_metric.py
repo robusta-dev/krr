@@ -121,8 +121,11 @@ class BaseMetricLoader(Configurable, abc.ABC):
             end_time=end_time,
             step=self._step_to_string(step),
         )
-        result = await self.query_prometheus(metric)
-
+        try:
+            result = await self.query_prometheus(metric)
+        except:
+            self.error(f"Failed query {query}")
+            raise
         if result == []:
             self.warning(f"{service_name} returned no {self.__class__.__name__} metrics for {object}")
             return ResourceHistoryData(metric=metric, data={})
