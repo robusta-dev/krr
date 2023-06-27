@@ -2,6 +2,8 @@ import asyncio
 import datetime
 from typing import Optional, no_type_check
 
+from concurrent.futures import ThreadPoolExecutor
+
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
 
@@ -40,6 +42,8 @@ class MetricsLoader(Configurable):
 
         super().__init__(config=config)
 
+        self.executor = ThreadPoolExecutor(self.config.max_workers)
+
         self.api_client = (
             k8s_config.new_client_from_config(config_file=self.config.kubeconfig, context=cluster)
             if cluster is not None
@@ -59,7 +63,7 @@ class MetricsLoader(Configurable):
     ) -> Optional[MetricsService]:
         for service_name, metric_service_class in METRICS_SERVICES.items():
             try:
-                loader = metric_service_class(config, api_client=api_client, cluster=cluster)
+                loader = metric_service_class(config, api_client=api_client, cluster=cluster, executor=self.executor)
                 loader.check_connection()
                 self.echo(f"{service_name} found")
                 loader.validate_cluster_name()

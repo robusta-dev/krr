@@ -1,5 +1,7 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import itertools
+import os
 from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
@@ -38,6 +40,8 @@ class ClusterLoader(Configurable):
         super().__init__(*args, **kwargs)
 
         self.cluster = cluster
+        # This executor will be running requests to Kubernetes API
+        self.executor = ThreadPoolExecutor(self.config.max_workers)
         self.api_client = (
             config.new_client_from_config(context=cluster, config_file=self.config.kubeconfig)
             if cluster is not None
@@ -108,8 +112,10 @@ class ClusterLoader(Configurable):
         if selector is None:
             return []
 
-        ret: V1PodList = await asyncio.to_thread(
-            self.core.list_namespaced_pod, namespace=resource.metadata.namespace, label_selector=selector
+        loop = asyncio.get_running_loop()
+        ret: V1PodList = await loop.run_in_executor(
+            self.executor,
+            lambda: self.core.list_namespaced_pod(namespace=resource.metadata.namespace, label_selector=selector),
         )
         return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
 
@@ -127,7 +133,10 @@ class ClusterLoader(Configurable):
 
     async def _list_deployments(self) -> list[K8sObjectData]:
         self.debug(f"Listing deployments in {self.cluster}")
-        ret: V1DeploymentList = await asyncio.to_thread(self.apps.list_deployment_for_all_namespaces, watch=False)
+        loop = asyncio.get_running_loop()
+        ret: V1DeploymentList = await loop.run_in_executor(
+            self.executor, lambda: self.apps.list_deployment_for_all_namespaces(watch=False)
+        )
         self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
 
         return await asyncio.gather(
@@ -140,7 +149,10 @@ class ClusterLoader(Configurable):
 
     async def _list_all_statefulsets(self) -> list[K8sObjectData]:
         self.debug(f"Listing statefulsets in {self.cluster}")
-        ret: V1StatefulSetList = await asyncio.to_thread(self.apps.list_stateful_set_for_all_namespaces, watch=False)
+        loop = asyncio.get_running_loop()
+        ret: V1StatefulSetList = await loop.run_in_executor(
+            self.executor, lambda: self.apps.list_stateful_set_for_all_namespaces(watch=False)
+        )
         self.debug(f"Found {len(ret.items)} statefulsets in {self.cluster}")
 
         return await asyncio.gather(
@@ -153,7 +165,10 @@ class ClusterLoader(Configurable):
 
     async def _list_all_daemon_set(self) -> list[K8sObjectData]:
         self.debug(f"Listing daemonsets in {self.cluster}")
-        ret: V1DaemonSetList = await asyncio.to_thread(self.apps.list_daemon_set_for_all_namespaces, watch=False)
+        loop = asyncio.get_running_loop()
+        ret: V1DaemonSetList = await loop.run_in_executor(
+            self.executor, lambda: self.apps.list_daemon_set_for_all_namespaces(watch=False)
+        )
         self.debug(f"Found {len(ret.items)} daemonsets in {self.cluster}")
 
         return await asyncio.gather(
@@ -166,7 +181,10 @@ class ClusterLoader(Configurable):
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
         self.debug(f"Listing jobs in {self.cluster}")
-        ret: V1JobList = await asyncio.to_thread(self.batch.list_job_for_all_namespaces, watch=False)
+        loop = asyncio.get_running_loop()
+        ret: V1JobList = await loop.run_in_executor(
+            self.executor, lambda: self.batch.list_job_for_all_namespaces(watch=False)
+        )
         self.debug(f"Found {len(ret.items)} jobs in {self.cluster}")
 
         return await asyncio.gather(
@@ -181,7 +199,10 @@ class ClusterLoader(Configurable):
         """For future use, not supported yet."""
 
         self.debug(f"Listing pods in {self.cluster}")
-        ret: V1PodList = await asyncio.to_thread(self.apps.list_pod_for_all_namespaces, watch=False)
+        loop = asyncio.get_running_loop()
+        ret: V1PodList = await loop.run_in_executor(
+            self.executor, lambda: self.apps.list_pod_for_all_namespaces(watch=False)
+        )
         self.debug(f"Found {len(ret.items)} pods in {self.cluster}")
 
         return await asyncio.gather(
@@ -236,7 +257,7 @@ class KubernetesLoader(Configurable):
             return None
 
         try:
-            contexts, current_context = await asyncio.to_thread(config.list_kube_config_contexts)
+            contexts, current_context = config.list_kube_config_contexts()
         except config.ConfigException:
             if self.config.clusters is not None and self.config.clusters != "*":
                 self.warning("Could not load context from kubeconfig.")

@@ -1,6 +1,7 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import List, Optional, no_type_check
+from typing import List, Optional, no_type_check, Type
 
 import requests
 from kubernetes.client import ApiClient
@@ -88,9 +89,10 @@ class PrometheusMetricsService(MetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
-        service_discovery: ServiceDiscovery = PrometheusDiscovery,
+        service_discovery: Type[ServiceDiscovery] = PrometheusDiscovery,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
-        super().__init__(config=config, api_client=api_client, cluster=cluster)
+        super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
 
         self.info(f"Connecting to {self.name()} for {self.cluster} cluster")
 
@@ -140,7 +142,8 @@ class PrometheusMetricsService(MetricsService):
             ) from e
 
     async def query(self, query: str) -> dict:
-        return await asyncio.to_thread(self.prometheus.custom_query, query=query)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
 
     def validate_cluster_name(self):
         cluster_label = self.config.prometheus_cluster_label
@@ -177,7 +180,7 @@ class PrometheusMetricsService(MetricsService):
         await self.add_historic_pods(object, period)
 
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
-        metric_loader = MetricLoaderType(self.config, self.prometheus)
+        metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
