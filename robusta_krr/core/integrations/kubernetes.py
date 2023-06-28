@@ -1,7 +1,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import itertools
-import os
 from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
@@ -14,13 +13,20 @@ from kubernetes.client.models import (
     V1JobList,
     V1LabelSelector,
     V1PodList,
+    V1Pod,
+    V1Job,
     V1StatefulSet,
     V1StatefulSetList,
+    V2HorizontalPodAutoscaler,
+    V2HorizontalPodAutoscalerList,
 )
 
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sObjectData, PodData, HPAData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
+
+
+AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
 
 
 class ClusterLoader(Configurable):
@@ -38,6 +44,7 @@ class ClusterLoader(Configurable):
         self.apps = client.AppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
+        self.autoscaling = client.AutoscalingV2Api(api_client=self.api_client)
 
     async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.
@@ -50,6 +57,7 @@ class ClusterLoader(Configurable):
         self.debug(f"Namespaces: {self.config.namespaces}")
 
         try:
+            self.__hpa_list = await self.__list_hpa()
             objects_tuple = await asyncio.gather(
                 self._list_deployments(),
                 self._list_all_statefulsets(),
@@ -106,17 +114,20 @@ class ClusterLoader(Configurable):
         )
         return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
 
-    async def __build_obj(
-        self, item: Union[V1Deployment, V1DaemonSet, V1StatefulSet], container: V1Container
-    ) -> K8sObjectData:
+    async def __build_obj(self, item: AnyKubernetesAPIObject, container: V1Container) -> K8sObjectData:
+        name = item.metadata.name
+        namespace = item.metadata.namespace
+        kind = item.__class__.__name__[2:]
+
         return K8sObjectData(
             cluster=self.cluster,
-            namespace=item.metadata.namespace,
-            name=item.metadata.name,
-            kind=item.__class__.__name__[2:],
+            namespace=namespace,
+            name=name,
+            kind=kind,
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
             pods=await self.__list_pods(item),
+            hpa=self.__hpa_list.get((kind, name)),
         )
 
     async def _list_deployments(self) -> list[K8sObjectData]:
@@ -196,6 +207,40 @@ class ClusterLoader(Configurable):
         return await asyncio.gather(
             *[self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
         )
+
+    async def __list_hpa(self) -> dict[tuple[str, str], HPAData]:
+        """List all HPA objects in the cluster.
+
+        Returns:
+            dict[tuple[str, str], HPAData]: A dictionary of HPA objects, indexed by scaleTargetRef (kind, name).
+        """
+
+        loop = asyncio.get_running_loop()
+        res: V2HorizontalPodAutoscalerList = await loop.run_in_executor(
+            self.executor, lambda: self.autoscaling.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False)
+        )
+
+        def __get_metric(hpa: V2HorizontalPodAutoscaler, metric_name: str) -> Optional[float]:
+            return next(
+                (
+                    metric.resource.target.average_utilization
+                    for metric in hpa.spec.metrics
+                    if metric.type == "Resource" and metric.resource.name == metric_name
+                ),
+                None,
+            )
+
+        return {
+            (hpa.spec.scale_target_ref.kind, hpa.spec.scale_target_ref.name): HPAData(
+                min_replicas=hpa.spec.min_replicas,
+                max_replicas=hpa.spec.max_replicas,
+                current_replicas=hpa.status.current_replicas,
+                desired_replicas=hpa.status.desired_replicas,
+                target_cpu_utilization_percentage=__get_metric(hpa, "cpu"),
+                target_memory_utilization_percentage=__get_metric(hpa, "memory"),
+            )
+            for hpa in res.items
+        }
 
 
 class KubernetesLoader(Configurable):

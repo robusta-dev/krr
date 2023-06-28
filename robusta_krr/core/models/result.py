@@ -19,6 +19,7 @@ class Recommendation(pd.BaseModel):
 class ResourceRecommendation(pd.BaseModel):
     requests: dict[ResourceType, RecommendationValue]
     limits: dict[ResourceType, RecommendationValue]
+    info: dict[ResourceType, Optional[str]]
 
 
 class Metric(pd.BaseModel):
@@ -41,9 +42,11 @@ class ResourceScan(pd.BaseModel):
     def calculate(
         cls, object: K8sObjectData, recommendation: ResourceAllocations, metrics: MetricsData
     ) -> ResourceScan:
-        recommendation_processed = ResourceRecommendation(requests={}, limits={})
+        recommendation_processed = ResourceRecommendation(requests={}, limits={}, info={})
 
         for resource_type in ResourceType:
+            recommendation_processed.info[resource_type] = recommendation.info.get(resource_type)
+
             for selector in ["requests", "limits"]:
                 current = getattr(object.allocations, selector).get(resource_type)
                 recommended = getattr(recommendation, selector).get(resource_type)

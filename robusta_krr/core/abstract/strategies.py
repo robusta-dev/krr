@@ -24,10 +24,13 @@ class ResourceRecommendation(pd.BaseModel):
 
     request: Optional[float]
     limit: Optional[float]
+    info: Optional[str] = pd.Field(
+        None, description="Additional information about the recommendation. Currently used to explain undefined."
+    )
 
     @classmethod
-    def undefined(cls: type[SelfRR]) -> SelfRR:
-        return cls(request=float("NaN"), limit=float("NaN"))
+    def undefined(cls: type[SelfRR], info: Optional[str] = None) -> SelfRR:
+        return cls(request=float("NaN"), limit=float("NaN"), info=info)
 
 
 class StrategySettings(pd.BaseModel):
