@@ -100,6 +100,7 @@ class Runner(Configurable):
             resource: ResourceRecommendation(
                 request=self._round_value(recommendation.request, resource),
                 limit=self._round_value(recommendation.limit, resource),
+                info=recommendation.info,
             )
             for resource, recommendation in result.items()
         }
@@ -144,6 +145,7 @@ class Runner(Configurable):
                 ResourceAllocations(
                     requests={resource: recommendation[resource].request for resource in ResourceType},
                     limits={resource: recommendation[resource].limit for resource in ResourceType},
+                    info={resource: recommendation[resource].info for resource in ResourceType},
                 ),
                 metric,
             )

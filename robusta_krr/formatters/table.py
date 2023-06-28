@@ -1,5 +1,5 @@
 import itertools
-from typing import Any
+from typing import Any, Optional
 
 from rich.table import Table
 
@@ -22,7 +22,7 @@ def _format(value: RecommendationValue) -> str:
 
 
 def __calc_diff(allocated, recommended, selector, multiplier=1) -> str:
-    if recommended is None or isinstance(recommended, str) or selector != "requests":
+    if recommended is None or isinstance(recommended.value, str) or selector != "requests":
         return ""
     else:
         reccomended_val = recommended.value if isinstance(recommended.value, (int, float)) else 0
@@ -34,6 +34,7 @@ def __calc_diff(allocated, recommended, selector, multiplier=1) -> str:
 
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
     allocated = getattr(item.object.allocations, selector)[resource]
+    info = item.recommended.info.get(resource)
     recommended = getattr(item.recommended, selector)[resource]
     severity = recommended.severity
 
@@ -45,7 +46,13 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
         diff = f"({diff}) "
 
     return (
-        diff + f"[{severity.color}]" + _format(allocated) + " -> " + _format(recommended.value) + f"[/{severity.color}]"
+        diff
+        + f"[{severity.color}]"
+        + _format(allocated)
+        + " -> "
+        + _format(recommended.value)
+        + f"[/{severity.color}]"
+        + (f" [grey27]({info})[/grey27]" if info else "")
     )
 
 

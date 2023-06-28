@@ -115,15 +115,19 @@ class ClusterLoader(Configurable):
         return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
 
     async def __build_obj(self, item: AnyKubernetesAPIObject, container: V1Container) -> K8sObjectData:
+        name = item.metadata.name
+        namespace = item.metadata.namespace
+        kind = item.__class__.__name__[2:]
+
         return K8sObjectData(
             cluster=self.cluster,
-            namespace=item.metadata.namespace,
-            name=item.metadata.name,
-            kind=item.__class__.__name__[2:],
+            namespace=namespace,
+            name=name,
+            kind=kind,
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
             pods=await self.__list_pods(item),
-            hpa=self.__hpa_list.get((item.kind, item.metadata.name)),
+            hpa=self.__hpa_list.get((kind, name)),
         )
 
     async def _list_deployments(self) -> list[K8sObjectData]:
