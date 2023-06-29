@@ -53,12 +53,13 @@ class BaseMetricLoader(Configurable, abc.ABC):
         return f', {self.config.prometheus_label}="{self.config.prometheus_cluster_label}"'
 
     @abc.abstractmethod
-    def get_query(self, object: K8sObjectData) -> str:
+    def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
         """
         This method should be implemented by all subclasses to provide a query string to fetch metrics.
 
         Args:
         object (K8sObjectData): The object for which metrics need to be fetched.
+        resolution (Optional[str]): a string for configurable resolution to the query.
 
         Returns:
         str: The query string.
@@ -76,7 +77,8 @@ class BaseMetricLoader(Configurable, abc.ABC):
         Returns:
         str: Step size in string format used by Prometheus.
         """
-
+        if step.total_seconds() > 60 * 60 * 24:
+            return f"{int(step.total_seconds()) // (60 * 60 * 24)}d"
         return f"{int(step.total_seconds()) // 60}m"
 
     def query_prometheus_thread(self, metric: Metric, query_type: QueryType) -> list[dict]:
@@ -88,8 +90,10 @@ class BaseMetricLoader(Configurable, abc.ABC):
                     step=metric.step,
                 )
             return value
-        
+
+        # regular query, lighter on preformance
         results =  self.prometheus.custom_query(query=metric.query)
+        #format the results to return the same format as custom_query_range
         for result in results:
             result["values"] = [result.pop("value")]
         return results
@@ -126,7 +130,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
         """
 
-        query = self.get_query(object)
+        query = self.get_query(object, self._step_to_string(period))
         query_type = self.get_query_type()
         end_time = datetime.datetime.now().astimezone()
         metric = Metric(

@@ -1,3 +1,4 @@
+from typing import Optional
 from robusta_krr.core.models.allocations import ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
 
@@ -7,7 +8,7 @@ from .base_metric import bind_metric, QueryType
 
 @bind_metric(ResourceType.CPU)
 class CPUMetricLoader(BaseFilteredMetricLoader):
-    def get_query(self, object: K8sObjectData) -> str:
+    def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return (
