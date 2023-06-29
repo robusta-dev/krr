@@ -56,14 +56,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-exclude\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.219795+03:00",
-          "end_time": "2023-06-29T11:51:31.219795+03:00",
+          "start_time": "2023-06-15T12:01:34.995320+03:00",
+          "end_time": "2023-06-29T12:01:34.995320+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-exclude\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.289452+03:00",
-          "end_time": "2023-06-29T11:51:31.289452+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-exclude\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.977947+03:00",
+          "end_time": "2023-06-29T12:01:34.977947+03:00",
           "step": "2m"
         }
       }
@@ -124,14 +124,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-okay\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.264765+03:00",
-          "end_time": "2023-06-29T11:51:31.264765+03:00",
+          "start_time": "2023-06-15T12:01:34.983444+03:00",
+          "end_time": "2023-06-29T12:01:34.983444+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-okay\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.420107+03:00",
-          "end_time": "2023-06-29T11:51:31.420107+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-okay\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:35.190002+03:00",
+          "end_time": "2023-06-29T12:01:35.190002+03:00",
           "step": "2m"
         }
       }
@@ -169,11 +169,11 @@
       "recommended": {
         "requests": {
           "cpu": {
-            "value": 0.006,
+            "value": 0.005,
             "severity": "GOOD"
           },
           "memory": {
-            "value": 36700160.0,
+            "value": 48234496.0,
             "severity": "WARNING"
           }
         },
@@ -183,7 +183,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 36700160.0,
+            "value": 48234496.0,
             "severity": "WARNING"
           }
         },
@@ -196,14 +196,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-forwarder-7fdb9b5754-zd6nr|robusta-forwarder-7fdb9b5754-mmk2s\", container=\"kubewatch\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.449408+03:00",
-          "end_time": "2023-06-29T11:51:31.449408+03:00",
+          "start_time": "2023-06-15T12:01:34.980484+03:00",
+          "end_time": "2023-06-29T12:01:34.980484+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-forwarder-7fdb9b5754-zd6nr|robusta-forwarder-7fdb9b5754-mmk2s\", container=\"kubewatch\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.481974+03:00",
-          "end_time": "2023-06-29T11:51:31.481974+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-forwarder-7fdb9b5754-zd6nr|robusta-forwarder-7fdb9b5754-mmk2s\", container=\"kubewatch\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:35.154080+03:00",
+          "end_time": "2023-06-29T12:01:35.154080+03:00",
           "step": "2m"
         }
       }
@@ -241,7 +241,7 @@
             "severity": "WARNING"
           },
           "memory": {
-            "value": 82837504.0,
+            "value": 92274688.0,
             "severity": "WARNING"
           }
         },
@@ -251,7 +251,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 82837504.0,
+            "value": 92274688.0,
             "severity": "WARNING"
           }
         },
@@ -264,14 +264,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-dashboard\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.276252+03:00",
-          "end_time": "2023-06-29T11:51:31.276252+03:00",
+          "start_time": "2023-06-15T12:01:35.378171+03:00",
+          "end_time": "2023-06-29T12:01:35.378171+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-dashboard\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.541820+03:00",
-          "end_time": "2023-06-29T11:51:31.541820+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-dashboard\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:35.250939+03:00",
+          "end_time": "2023-06-29T12:01:35.250939+03:00",
           "step": "2m"
         }
       }
@@ -309,7 +309,7 @@
             "severity": "WARNING"
           },
           "memory": {
-            "value": 80740352.0,
+            "value": 92274688.0,
             "severity": "WARNING"
           }
         },
@@ -319,7 +319,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 80740352.0,
+            "value": 92274688.0,
             "severity": "WARNING"
           }
         },
@@ -332,14 +332,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-datasources\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.555295+03:00",
-          "end_time": "2023-06-29T11:51:31.555295+03:00",
+          "start_time": "2023-06-15T12:01:35.270820+03:00",
+          "end_time": "2023-06-29T12:01:35.270820+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-datasources\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.567328+03:00",
-          "end_time": "2023-06-29T11:51:31.567328+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-datasources\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:35.283845+03:00",
+          "end_time": "2023-06-29T12:01:35.283845+03:00",
           "step": "2m"
         }
       }
@@ -377,7 +377,7 @@
             "severity": "WARNING"
           },
           "memory": {
-            "value": 80740352.0,
+            "value": 84934656.0,
             "severity": "WARNING"
           }
         },
@@ -387,7 +387,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 80740352.0,
+            "value": 84934656.0,
             "severity": "WARNING"
           }
         },
@@ -400,14 +400,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.736552+03:00",
-          "end_time": "2023-06-29T11:51:31.736552+03:00",
+          "start_time": "2023-06-15T12:01:35.499484+03:00",
+          "end_time": "2023-06-29T12:01:35.499484+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.725132+03:00",
-          "end_time": "2023-06-29T11:51:31.725132+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:35.390866+03:00",
+          "end_time": "2023-06-29T12:01:35.390866+03:00",
           "step": "2m"
         }
       }
@@ -445,7 +445,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 44040192.0,
+            "value": 56623104.0,
             "severity": "WARNING"
           }
         },
@@ -455,7 +455,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 44040192.0,
+            "value": 56623104.0,
             "severity": "WARNING"
           }
         },
@@ -468,14 +468,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-kube-prometheus-st-operator-7c5db9ccb9-c8vrh\", container=\"kube-prometheus-stack\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.781048+03:00",
-          "end_time": "2023-06-29T11:51:31.781048+03:00",
+          "start_time": "2023-06-15T12:01:35.554110+03:00",
+          "end_time": "2023-06-29T12:01:35.554110+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-kube-prometheus-st-operator-7c5db9ccb9-c8vrh\", container=\"kube-prometheus-stack\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.711559+03:00",
-          "end_time": "2023-06-29T11:51:31.711559+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-kube-prometheus-st-operator-7c5db9ccb9-c8vrh\", container=\"kube-prometheus-stack\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:35.406971+03:00",
+          "end_time": "2023-06-29T12:01:35.406971+03:00",
           "step": "2m"
         }
       }
@@ -513,7 +513,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 19922944.0,
+            "value": 28311552.0,
             "severity": "WARNING"
           }
         },
@@ -523,7 +523,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 19922944.0,
+            "value": 28311552.0,
             "severity": "WARNING"
           }
         },
@@ -536,14 +536,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-kube-state-metrics-649fd7db9f-kdkft\", container=\"kube-state-metrics\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.807205+03:00",
-          "end_time": "2023-06-29T11:51:31.807205+03:00",
+          "start_time": "2023-06-15T12:01:35.668354+03:00",
+          "end_time": "2023-06-29T12:01:35.668354+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-kube-state-metrics-649fd7db9f-kdkft\", container=\"kube-state-metrics\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.825299+03:00",
-          "end_time": "2023-06-29T11:51:31.825299+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-kube-state-metrics-649fd7db9f-kdkft\", container=\"kube-state-metrics\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:35.687622+03:00",
+          "end_time": "2023-06-29T12:01:35.687622+03:00",
           "step": "2m"
         }
       }
@@ -585,12 +585,12 @@
       "recommended": {
         "requests": {
           "cpu": {
-            "value": 0.389,
+            "value": 0.371,
             "severity": "OK"
           },
           "memory": {
-            "value": 1971322880.0,
-            "severity": "CRITICAL"
+            "value": 1128267776.0,
+            "severity": "GOOD"
           }
         },
         "limits": {
@@ -599,8 +599,8 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 1971322880.0,
-            "severity": "CRITICAL"
+            "value": 1128267776.0,
+            "severity": "GOOD"
           }
         },
         "info": {
@@ -608,18 +608,18 @@
           "memory": null
         }
       },
-      "severity": "CRITICAL",
+      "severity": "OK",
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-runner-5dbc6d6bcc-flcv4|robusta-runner-5dbc6d6bcc-bsmpc|robusta-runner-5dbc6d6bcc-wbhjs\", container=\"runner\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:32.628009+03:00",
-          "end_time": "2023-06-29T11:51:32.628009+03:00",
+          "start_time": "2023-06-15T12:01:35.781313+03:00",
+          "end_time": "2023-06-29T12:01:35.781313+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-runner-5dbc6d6bcc-flcv4|robusta-runner-5dbc6d6bcc-bsmpc|robusta-runner-5dbc6d6bcc-wbhjs\", container=\"runner\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:33.857630+03:00",
-          "end_time": "2023-06-29T11:51:33.857630+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-runner-5dbc6d6bcc-flcv4|robusta-runner-5dbc6d6bcc-bsmpc|robusta-runner-5dbc6d6bcc-wbhjs\", container=\"runner\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:36.041366+03:00",
+          "end_time": "2023-06-29T12:01:36.041366+03:00",
           "step": "2m"
         }
       }
@@ -684,14 +684,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"crashpod-64b874bbbc-4j6rz|crashpod-64b874bbbc-rhdvs\", container=\"crashpod\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:32.404328+03:00",
-          "end_time": "2023-06-29T11:51:32.404328+03:00",
+          "start_time": "2023-06-15T12:01:35.915746+03:00",
+          "end_time": "2023-06-29T12:01:35.915746+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"crashpod-64b874bbbc-4j6rz|crashpod-64b874bbbc-rhdvs\", container=\"crashpod\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:32.245911+03:00",
-          "end_time": "2023-06-29T11:51:32.245911+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"crashpod-64b874bbbc-4j6rz|crashpod-64b874bbbc-rhdvs\", container=\"crashpod\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:36.053201+03:00",
+          "end_time": "2023-06-29T12:01:36.053201+03:00",
           "step": "2m"
         }
       }
@@ -756,14 +756,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"server-1-6f45c78d44-89vjr|server-1-6f45c78d44-h4hcd\", container=\"nginx\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:32.612712+03:00",
-          "end_time": "2023-06-29T11:51:32.612712+03:00",
+          "start_time": "2023-06-15T12:01:36.117335+03:00",
+          "end_time": "2023-06-29T12:01:36.117335+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"server-1-6f45c78d44-89vjr|server-1-6f45c78d44-h4hcd\", container=\"nginx\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:32.434564+03:00",
-          "end_time": "2023-06-29T11:51:32.434564+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"server-1-6f45c78d44-89vjr|server-1-6f45c78d44-h4hcd\", container=\"nginx\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:36.305396+03:00",
+          "end_time": "2023-06-29T12:01:36.305396+03:00",
           "step": "2m"
         }
       }
@@ -973,7 +973,7 @@
             "severity": "WARNING"
           },
           "memory": {
-            "value": 10485760.0,
+            "value": 14680064.0,
             "severity": "WARNING"
           }
         },
@@ -983,7 +983,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 10485760.0,
+            "value": 14680064.0,
             "severity": "WARNING"
           }
         },
@@ -996,14 +996,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"server-2-5696d848f7-7r9xl|server-2-5696d848f7-9ft6w|server-2-5696d848f7-bfksc|server-2-5696d848f7-bgckc|server-2-5696d848f7-cvxpz|server-2-5696d848f7-dmqmr|server-2-5696d848f7-dnb98|server-2-5696d848f7-hf8hb|server-2-5696d848f7-jffrd|server-2-5696d848f7-lqq7z|server-2-5696d848f7-lr7ww|server-2-5696d848f7-lsznb|server-2-5696d848f7-mjlff|server-2-5696d848f7-p4dbs|server-2-5696d848f7-p9v49|server-2-5696d848f7-pd5cp|server-2-5696d848f7-pnzch|server-2-5696d848f7-q7z5j|server-2-5696d848f7-r6lqm|server-2-5696d848f7-wlxnx|server-2-5696d848f7-2lrjz|server-2-5696d848f7-2s8t4|server-2-5696d848f7-7jcfn|server-2-5696d848f7-95jpk|server-2-5696d848f7-bwfxg|server-2-5696d848f7-dbw8s|server-2-5696d848f7-dmhqx|server-2-5696d848f7-fbpgh|server-2-5696d848f7-gn9jj|server-2-5696d848f7-kdnfb|server-2-5696d848f7-mcm9x|server-2-5696d848f7-ml5zj|server-2-5696d848f7-pcd78|server-2-5696d848f7-q66sk|server-2-5696d848f7-qfqdw|server-2-5696d848f7-rwqj2|server-2-5696d848f7-stcgb|server-2-5696d848f7-tfk8k|server-2-5696d848f7-vqmnp|server-2-5696d848f7-wkpp2|server-2-5696d848f7-wnk52|server-2-5696d848f7-xk8tw|server-2-5696d848f7-xm5r6|server-2-5696d848f7-zh4r5\", container=\"nginx\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:35.641604+03:00",
-          "end_time": "2023-06-29T11:51:35.641604+03:00",
+          "start_time": "2023-06-15T12:01:40.082971+03:00",
+          "end_time": "2023-06-29T12:01:40.082971+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"server-2-5696d848f7-7r9xl|server-2-5696d848f7-9ft6w|server-2-5696d848f7-bfksc|server-2-5696d848f7-bgckc|server-2-5696d848f7-cvxpz|server-2-5696d848f7-dmqmr|server-2-5696d848f7-dnb98|server-2-5696d848f7-hf8hb|server-2-5696d848f7-jffrd|server-2-5696d848f7-lqq7z|server-2-5696d848f7-lr7ww|server-2-5696d848f7-lsznb|server-2-5696d848f7-mjlff|server-2-5696d848f7-p4dbs|server-2-5696d848f7-p9v49|server-2-5696d848f7-pd5cp|server-2-5696d848f7-pnzch|server-2-5696d848f7-q7z5j|server-2-5696d848f7-r6lqm|server-2-5696d848f7-wlxnx|server-2-5696d848f7-2lrjz|server-2-5696d848f7-2s8t4|server-2-5696d848f7-7jcfn|server-2-5696d848f7-95jpk|server-2-5696d848f7-bwfxg|server-2-5696d848f7-dbw8s|server-2-5696d848f7-dmhqx|server-2-5696d848f7-fbpgh|server-2-5696d848f7-gn9jj|server-2-5696d848f7-kdnfb|server-2-5696d848f7-mcm9x|server-2-5696d848f7-ml5zj|server-2-5696d848f7-pcd78|server-2-5696d848f7-q66sk|server-2-5696d848f7-qfqdw|server-2-5696d848f7-rwqj2|server-2-5696d848f7-stcgb|server-2-5696d848f7-tfk8k|server-2-5696d848f7-vqmnp|server-2-5696d848f7-wkpp2|server-2-5696d848f7-wnk52|server-2-5696d848f7-xk8tw|server-2-5696d848f7-xm5r6|server-2-5696d848f7-zh4r5\", container=\"nginx\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:36.123560+03:00",
-          "end_time": "2023-06-29T11:51:36.123560+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"server-2-5696d848f7-7r9xl|server-2-5696d848f7-9ft6w|server-2-5696d848f7-bfksc|server-2-5696d848f7-bgckc|server-2-5696d848f7-cvxpz|server-2-5696d848f7-dmqmr|server-2-5696d848f7-dnb98|server-2-5696d848f7-hf8hb|server-2-5696d848f7-jffrd|server-2-5696d848f7-lqq7z|server-2-5696d848f7-lr7ww|server-2-5696d848f7-lsznb|server-2-5696d848f7-mjlff|server-2-5696d848f7-p4dbs|server-2-5696d848f7-p9v49|server-2-5696d848f7-pd5cp|server-2-5696d848f7-pnzch|server-2-5696d848f7-q7z5j|server-2-5696d848f7-r6lqm|server-2-5696d848f7-wlxnx|server-2-5696d848f7-2lrjz|server-2-5696d848f7-2s8t4|server-2-5696d848f7-7jcfn|server-2-5696d848f7-95jpk|server-2-5696d848f7-bwfxg|server-2-5696d848f7-dbw8s|server-2-5696d848f7-dmhqx|server-2-5696d848f7-fbpgh|server-2-5696d848f7-gn9jj|server-2-5696d848f7-kdnfb|server-2-5696d848f7-mcm9x|server-2-5696d848f7-ml5zj|server-2-5696d848f7-pcd78|server-2-5696d848f7-q66sk|server-2-5696d848f7-qfqdw|server-2-5696d848f7-rwqj2|server-2-5696d848f7-stcgb|server-2-5696d848f7-tfk8k|server-2-5696d848f7-vqmnp|server-2-5696d848f7-wkpp2|server-2-5696d848f7-wnk52|server-2-5696d848f7-xk8tw|server-2-5696d848f7-xm5r6|server-2-5696d848f7-zh4r5\", container=\"nginx\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:40.536826+03:00",
+          "end_time": "2023-06-29T12:01:40.536826+03:00",
           "step": "2m"
         }
       }
@@ -1380,14 +1380,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"server-2-prod-567db795df-2fmj4|server-2-prod-567db795df-45xfs|server-2-prod-567db795df-599h5|server-2-prod-567db795df-5gzzn|server-2-prod-567db795df-5vcpd|server-2-prod-567db795df-674xk|server-2-prod-567db795df-6bblm|server-2-prod-567db795df-6cppl|server-2-prod-567db795df-6ljjd|server-2-prod-567db795df-72vl9|server-2-prod-567db795df-76k9p|server-2-prod-567db795df-85j4v|server-2-prod-567db795df-8skdz|server-2-prod-567db795df-97z6d|server-2-prod-567db795df-99fmf|server-2-prod-567db795df-9sgfn|server-2-prod-567db795df-b2h8l|server-2-prod-567db795df-b9jmf|server-2-prod-567db795df-bct22|server-2-prod-567db795df-bm7z5|server-2-prod-567db795df-bqxg8|server-2-prod-567db795df-bzxzj|server-2-prod-567db795df-f8cfw|server-2-prod-567db795df-g2kzb|server-2-prod-567db795df-g76n2|server-2-prod-567db795df-gbt25|server-2-prod-567db795df-gclq9|server-2-prod-567db795df-gqz6j|server-2-prod-567db795df-h4bnd|server-2-prod-567db795df-h54fh|server-2-prod-567db795df-h8r86|server-2-prod-567db795df-jwc4p|server-2-prod-567db795df-kc5cd|server-2-prod-567db795df-kjbpl|server-2-prod-567db795df-ktcxm|server-2-prod-567db795df-kxcw5|server-2-prod-567db795df-l24x2|server-2-prod-567db795df-l97ln|server-2-prod-567db795df-lh9jz|server-2-prod-567db795df-lndvc|server-2-prod-567db795df-m8wqx|server-2-prod-567db795df-mqq6f|server-2-prod-567db795df-nmbzm|server-2-prod-567db795df-q6jwr|server-2-prod-567db795df-qcjdb|server-2-prod-567db795df-qng56|server-2-prod-567db795df-r4hp5|server-2-prod-567db795df-rb8nk|server-2-prod-567db795df-smrtr|server-2-prod-567db795df-swnr4|server-2-prod-567db795df-tg65g|server-2-prod-567db795df-v285g|server-2-prod-567db795df-vp87n|server-2-prod-567db795df-wc6nf|server-2-prod-567db795df-wtf5z|server-2-prod-567db795df-wttmp|server-2-prod-567db795df-x596l|server-2-prod-567db795df-x8mw6|server-2-prod-567db795df-zjmmc|server-2-prod-567db795df-2whxj|server-2-prod-567db795df-4njhc|server-2-prod-567db795df-5m5kc|server-2-prod-567db795df-62zgb|server-2-prod-567db795df-6lv7k|server-2-prod-567db795df-785zk|server-2-prod-567db795df-78hgg|server-2-prod-567db795df-7p54j|server-2-prod-567db795df-7ptxm|server-2-prod-567db795df-82tbm|server-2-prod-567db795df-9kslt|server-2-prod-567db795df-clrnm|server-2-prod-567db795df-dld6q|server-2-prod-567db795df-h4tps|server-2-prod-567db795df-lffbp|server-2-prod-567db795df-pksfc|server-2-prod-567db795df-rhgd9|server-2-prod-567db795df-rtsxj|server-2-prod-567db795df-wffv7|server-2-prod-567db795df-xcs66|server-2-prod-567db795df-zhvtd\", container=\"nginx\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:34.459355+03:00",
-          "end_time": "2023-06-29T11:51:34.459355+03:00",
+          "start_time": "2023-06-15T12:01:38.983049+03:00",
+          "end_time": "2023-06-29T12:01:38.983049+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"server-2-prod-567db795df-2fmj4|server-2-prod-567db795df-45xfs|server-2-prod-567db795df-599h5|server-2-prod-567db795df-5gzzn|server-2-prod-567db795df-5vcpd|server-2-prod-567db795df-674xk|server-2-prod-567db795df-6bblm|server-2-prod-567db795df-6cppl|server-2-prod-567db795df-6ljjd|server-2-prod-567db795df-72vl9|server-2-prod-567db795df-76k9p|server-2-prod-567db795df-85j4v|server-2-prod-567db795df-8skdz|server-2-prod-567db795df-97z6d|server-2-prod-567db795df-99fmf|server-2-prod-567db795df-9sgfn|server-2-prod-567db795df-b2h8l|server-2-prod-567db795df-b9jmf|server-2-prod-567db795df-bct22|server-2-prod-567db795df-bm7z5|server-2-prod-567db795df-bqxg8|server-2-prod-567db795df-bzxzj|server-2-prod-567db795df-f8cfw|server-2-prod-567db795df-g2kzb|server-2-prod-567db795df-g76n2|server-2-prod-567db795df-gbt25|server-2-prod-567db795df-gclq9|server-2-prod-567db795df-gqz6j|server-2-prod-567db795df-h4bnd|server-2-prod-567db795df-h54fh|server-2-prod-567db795df-h8r86|server-2-prod-567db795df-jwc4p|server-2-prod-567db795df-kc5cd|server-2-prod-567db795df-kjbpl|server-2-prod-567db795df-ktcxm|server-2-prod-567db795df-kxcw5|server-2-prod-567db795df-l24x2|server-2-prod-567db795df-l97ln|server-2-prod-567db795df-lh9jz|server-2-prod-567db795df-lndvc|server-2-prod-567db795df-m8wqx|server-2-prod-567db795df-mqq6f|server-2-prod-567db795df-nmbzm|server-2-prod-567db795df-q6jwr|server-2-prod-567db795df-qcjdb|server-2-prod-567db795df-qng56|server-2-prod-567db795df-r4hp5|server-2-prod-567db795df-rb8nk|server-2-prod-567db795df-smrtr|server-2-prod-567db795df-swnr4|server-2-prod-567db795df-tg65g|server-2-prod-567db795df-v285g|server-2-prod-567db795df-vp87n|server-2-prod-567db795df-wc6nf|server-2-prod-567db795df-wtf5z|server-2-prod-567db795df-wttmp|server-2-prod-567db795df-x596l|server-2-prod-567db795df-x8mw6|server-2-prod-567db795df-zjmmc|server-2-prod-567db795df-2whxj|server-2-prod-567db795df-4njhc|server-2-prod-567db795df-5m5kc|server-2-prod-567db795df-62zgb|server-2-prod-567db795df-6lv7k|server-2-prod-567db795df-785zk|server-2-prod-567db795df-78hgg|server-2-prod-567db795df-7p54j|server-2-prod-567db795df-7ptxm|server-2-prod-567db795df-82tbm|server-2-prod-567db795df-9kslt|server-2-prod-567db795df-clrnm|server-2-prod-567db795df-dld6q|server-2-prod-567db795df-h4tps|server-2-prod-567db795df-lffbp|server-2-prod-567db795df-pksfc|server-2-prod-567db795df-rhgd9|server-2-prod-567db795df-rtsxj|server-2-prod-567db795df-wffv7|server-2-prod-567db795df-xcs66|server-2-prod-567db795df-zhvtd\", container=\"nginx\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:34.710855+03:00",
-          "end_time": "2023-06-29T11:51:34.710855+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"server-2-prod-567db795df-2fmj4|server-2-prod-567db795df-45xfs|server-2-prod-567db795df-599h5|server-2-prod-567db795df-5gzzn|server-2-prod-567db795df-5vcpd|server-2-prod-567db795df-674xk|server-2-prod-567db795df-6bblm|server-2-prod-567db795df-6cppl|server-2-prod-567db795df-6ljjd|server-2-prod-567db795df-72vl9|server-2-prod-567db795df-76k9p|server-2-prod-567db795df-85j4v|server-2-prod-567db795df-8skdz|server-2-prod-567db795df-97z6d|server-2-prod-567db795df-99fmf|server-2-prod-567db795df-9sgfn|server-2-prod-567db795df-b2h8l|server-2-prod-567db795df-b9jmf|server-2-prod-567db795df-bct22|server-2-prod-567db795df-bm7z5|server-2-prod-567db795df-bqxg8|server-2-prod-567db795df-bzxzj|server-2-prod-567db795df-f8cfw|server-2-prod-567db795df-g2kzb|server-2-prod-567db795df-g76n2|server-2-prod-567db795df-gbt25|server-2-prod-567db795df-gclq9|server-2-prod-567db795df-gqz6j|server-2-prod-567db795df-h4bnd|server-2-prod-567db795df-h54fh|server-2-prod-567db795df-h8r86|server-2-prod-567db795df-jwc4p|server-2-prod-567db795df-kc5cd|server-2-prod-567db795df-kjbpl|server-2-prod-567db795df-ktcxm|server-2-prod-567db795df-kxcw5|server-2-prod-567db795df-l24x2|server-2-prod-567db795df-l97ln|server-2-prod-567db795df-lh9jz|server-2-prod-567db795df-lndvc|server-2-prod-567db795df-m8wqx|server-2-prod-567db795df-mqq6f|server-2-prod-567db795df-nmbzm|server-2-prod-567db795df-q6jwr|server-2-prod-567db795df-qcjdb|server-2-prod-567db795df-qng56|server-2-prod-567db795df-r4hp5|server-2-prod-567db795df-rb8nk|server-2-prod-567db795df-smrtr|server-2-prod-567db795df-swnr4|server-2-prod-567db795df-tg65g|server-2-prod-567db795df-v285g|server-2-prod-567db795df-vp87n|server-2-prod-567db795df-wc6nf|server-2-prod-567db795df-wtf5z|server-2-prod-567db795df-wttmp|server-2-prod-567db795df-x596l|server-2-prod-567db795df-x8mw6|server-2-prod-567db795df-zjmmc|server-2-prod-567db795df-2whxj|server-2-prod-567db795df-4njhc|server-2-prod-567db795df-5m5kc|server-2-prod-567db795df-62zgb|server-2-prod-567db795df-6lv7k|server-2-prod-567db795df-785zk|server-2-prod-567db795df-78hgg|server-2-prod-567db795df-7p54j|server-2-prod-567db795df-7ptxm|server-2-prod-567db795df-82tbm|server-2-prod-567db795df-9kslt|server-2-prod-567db795df-clrnm|server-2-prod-567db795df-dld6q|server-2-prod-567db795df-h4tps|server-2-prod-567db795df-lffbp|server-2-prod-567db795df-pksfc|server-2-prod-567db795df-rhgd9|server-2-prod-567db795df-rtsxj|server-2-prod-567db795df-wffv7|server-2-prod-567db795df-xcs66|server-2-prod-567db795df-zhvtd\", container=\"nginx\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:39.242335+03:00",
+          "end_time": "2023-06-29T12:01:39.242335+03:00",
           "step": "2m"
         }
       }
@@ -1429,7 +1429,7 @@
             "severity": "WARNING"
           },
           "memory": {
-            "value": 156237824.0,
+            "value": 520093696.0,
             "severity": "WARNING"
           }
         },
@@ -1439,7 +1439,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 156237824.0,
+            "value": 520093696.0,
             "severity": "WARNING"
           }
         },
@@ -1452,14 +1452,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"thanos\", pod=~\"thanos-query-c5984db64-cqfr9|thanos-query-c5984db64-5ghg6\", container=\"query\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:33.344035+03:00",
-          "end_time": "2023-06-29T11:51:33.344035+03:00",
+          "start_time": "2023-06-15T12:01:36.597752+03:00",
+          "end_time": "2023-06-29T12:01:36.597752+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"thanos\", pod=~\"thanos-query-c5984db64-cqfr9|thanos-query-c5984db64-5ghg6\", container=\"query\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:33.493162+03:00",
-          "end_time": "2023-06-29T11:51:33.493162+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"thanos\", pod=~\"thanos-query-c5984db64-cqfr9|thanos-query-c5984db64-5ghg6\", container=\"query\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:38.512556+03:00",
+          "end_time": "2023-06-29T12:01:38.512556+03:00",
           "step": "2m"
         }
       }
@@ -1497,7 +1497,7 @@
             "severity": "WARNING"
           },
           "memory": {
-            "value": 12582912.0,
+            "value": 15728640.0,
             "severity": "WARNING"
           }
         },
@@ -1507,7 +1507,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 12582912.0,
+            "value": 15728640.0,
             "severity": "WARNING"
           }
         },
@@ -1520,14 +1520,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"thanos\", pod=~\"thanos-query-frontend-788dd96785-dds52\", container=\"query-frontend\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:33.654729+03:00",
-          "end_time": "2023-06-29T11:51:33.654729+03:00",
+          "start_time": "2023-06-15T12:01:36.765660+03:00",
+          "end_time": "2023-06-29T12:01:36.765660+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"thanos\", pod=~\"thanos-query-frontend-788dd96785-dds52\", container=\"query-frontend\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:34.076301+03:00",
-          "end_time": "2023-06-29T11:51:34.076301+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"thanos\", pod=~\"thanos-query-frontend-788dd96785-dds52\", container=\"query-frontend\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:37.902137+03:00",
+          "end_time": "2023-06-29T12:01:37.902137+03:00",
           "step": "2m"
         }
       }
@@ -1565,7 +1565,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 25165824.0,
+            "value": 26214400.0,
             "severity": "OK"
           }
         },
@@ -1575,7 +1575,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 25165824.0,
+            "value": 26214400.0,
             "severity": "WARNING"
           }
         },
@@ -1588,14 +1588,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"alertmanager\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.379484+03:00",
-          "end_time": "2023-06-29T11:51:29.379484+03:00",
+          "start_time": "2023-06-15T12:01:33.233321+03:00",
+          "end_time": "2023-06-29T12:01:33.233321+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"alertmanager\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.391965+03:00",
-          "end_time": "2023-06-29T11:51:29.391965+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"alertmanager\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.202800+03:00",
+          "end_time": "2023-06-29T12:01:33.202800+03:00",
           "step": "2m"
         }
       }
@@ -1656,14 +1656,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"config-reloader\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.428810+03:00",
-          "end_time": "2023-06-29T11:51:29.428810+03:00",
+          "start_time": "2023-06-15T12:01:33.235672+03:00",
+          "end_time": "2023-06-29T12:01:33.235672+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"config-reloader\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.440296+03:00",
-          "end_time": "2023-06-29T11:51:29.440296+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"config-reloader\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.398254+03:00",
+          "end_time": "2023-06-29T12:01:33.398254+03:00",
           "step": "2m"
         }
       }
@@ -1697,11 +1697,11 @@
       "recommended": {
         "requests": {
           "cpu": {
-            "value": 0.123,
+            "value": 0.121,
             "severity": "GOOD"
           },
           "memory": {
-            "value": 3964665856.0,
+            "value": 3526361088.0,
             "severity": "WARNING"
           }
         },
@@ -1711,7 +1711,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 3964665856.0,
+            "value": 3526361088.0,
             "severity": "WARNING"
           }
         },
@@ -1724,14 +1724,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"prometheus\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.770618+03:00",
-          "end_time": "2023-06-29T11:51:29.770618+03:00",
+          "start_time": "2023-06-15T12:01:33.420906+03:00",
+          "end_time": "2023-06-29T12:01:33.420906+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"prometheus\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.606944+03:00",
-          "end_time": "2023-06-29T11:51:29.606944+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"prometheus\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.606648+03:00",
+          "end_time": "2023-06-29T12:01:33.606648+03:00",
           "step": "2m"
         }
       }
@@ -1769,7 +1769,7 @@
             "severity": "OK"
           },
           "memory": {
-            "value": 14680064.0,
+            "value": 15728640.0,
             "severity": "GOOD"
           }
         },
@@ -1779,7 +1779,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 14680064.0,
+            "value": 15728640.0,
             "severity": "GOOD"
           }
         },
@@ -1792,14 +1792,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"config-reloader\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.624080+03:00",
-          "end_time": "2023-06-29T11:51:29.624080+03:00",
+          "start_time": "2023-06-15T12:01:33.480245+03:00",
+          "end_time": "2023-06-29T12:01:33.480245+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"config-reloader\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.772657+03:00",
-          "end_time": "2023-06-29T11:51:29.772657+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"config-reloader\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.618546+03:00",
+          "end_time": "2023-06-29T12:01:33.618546+03:00",
           "step": "2m"
         }
       }
@@ -1837,7 +1837,7 @@
             "severity": "WARNING"
           },
           "memory": {
-            "value": 41943040.0,
+            "value": 66060288.0,
             "severity": "WARNING"
           }
         },
@@ -1847,7 +1847,7 @@
             "severity": "GOOD"
           },
           "memory": {
-            "value": 41943040.0,
+            "value": 66060288.0,
             "severity": "WARNING"
           }
         },
@@ -1860,14 +1860,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"thanos-sidecar\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.794421+03:00",
-          "end_time": "2023-06-29T11:51:29.794421+03:00",
+          "start_time": "2023-06-15T12:01:33.494160+03:00",
+          "end_time": "2023-06-29T12:01:33.494160+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"thanos-sidecar\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.795510+03:00",
-          "end_time": "2023-06-29T11:51:29.795510+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"thanos-sidecar\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.685696+03:00",
+          "end_time": "2023-06-29T12:01:33.685696+03:00",
           "step": "2m"
         }
       }
@@ -1940,82 +1940,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-prometheus-node-exporter-7ll2r|robusta-prometheus-node-exporter-7t24v|robusta-prometheus-node-exporter-nwfxd|robusta-prometheus-node-exporter-zzzz6\", container=\"node-exporter\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.459127+03:00",
-          "end_time": "2023-06-29T11:51:30.459127+03:00",
+          "start_time": "2023-06-15T12:01:34.216453+03:00",
+          "end_time": "2023-06-29T12:01:34.216453+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-prometheus-node-exporter-7ll2r|robusta-prometheus-node-exporter-7t24v|robusta-prometheus-node-exporter-nwfxd|robusta-prometheus-node-exporter-zzzz6\", container=\"node-exporter\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.504241+03:00",
-          "end_time": "2023-06-29T11:51:30.504241+03:00",
-          "step": "2m"
-        }
-      }
-    },
-    {
-      "object": {
-        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
-        "name": "cron-scripts-sweep-clean-28133750",
-        "container": "fail-always",
-        "pods": [
-          {
-            "name": "cron-scripts-sweep-clean-28133750-6qhd7",
-            "deleted": true
-          }
-        ],
-        "hpa": null,
-        "namespace": "prod",
-        "kind": "Job",
-        "allocations": {
-          "requests": {
-            "cpu": null,
-            "memory": null
-          },
-          "limits": {
-            "cpu": null,
-            "memory": null
-          },
-          "info": {}
-        }
-      },
-      "recommended": {
-        "requests": {
-          "cpu": {
-            "value": 0.005,
-            "severity": "WARNING"
-          },
-          "memory": {
-            "value": 10485760.0,
-            "severity": "WARNING"
-          }
-        },
-        "limits": {
-          "cpu": {
-            "value": null,
-            "severity": "GOOD"
-          },
-          "memory": {
-            "value": 10485760.0,
-            "severity": "WARNING"
-          }
-        },
-        "info": {
-          "cpu": null,
-          "memory": null
-        }
-      },
-      "severity": "WARNING",
-      "metrics": {
-        "cpu": {
-          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133750-6qhd7\", container=\"fail-always\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.960884+03:00",
-          "end_time": "2023-06-29T11:51:29.960884+03:00",
-          "step": "2m"
-        },
-        "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133750-6qhd7\", container=\"fail-always\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:29.962063+03:00",
-          "end_time": "2023-06-29T11:51:29.962063+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"monitoring\", pod=~\"robusta-prometheus-node-exporter-7ll2r|robusta-prometheus-node-exporter-7t24v|robusta-prometheus-node-exporter-nwfxd|robusta-prometheus-node-exporter-zzzz6\", container=\"node-exporter\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.263285+03:00",
+          "end_time": "2023-06-29T12:01:34.263285+03:00",
           "step": "2m"
         }
       }
@@ -2076,14 +2008,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133770-dk6d8\", container=\"fail-always\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.032966+03:00",
-          "end_time": "2023-06-29T11:51:30.032966+03:00",
+          "start_time": "2023-06-15T12:01:33.779763+03:00",
+          "end_time": "2023-06-29T12:01:33.779763+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133770-dk6d8\", container=\"fail-always\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.038271+03:00",
-          "end_time": "2023-06-29T11:51:30.038271+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133770-dk6d8\", container=\"fail-always\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.811275+03:00",
+          "end_time": "2023-06-29T12:01:33.811275+03:00",
           "step": "2m"
         }
       }
@@ -2144,14 +2076,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133780-2sjf4\", container=\"fail-always\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.179404+03:00",
-          "end_time": "2023-06-29T11:51:30.179404+03:00",
+          "start_time": "2023-06-15T12:01:33.811392+03:00",
+          "end_time": "2023-06-29T12:01:33.811392+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133780-2sjf4\", container=\"fail-always\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.181849+03:00",
-          "end_time": "2023-06-29T11:51:30.181849+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133780-2sjf4\", container=\"fail-always\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.891524+03:00",
+          "end_time": "2023-06-29T12:01:33.891524+03:00",
           "step": "2m"
         }
       }
@@ -2212,14 +2144,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133790-cn5jw\", container=\"fail-always\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.221938+03:00",
-          "end_time": "2023-06-29T11:51:30.221938+03:00",
+          "start_time": "2023-06-15T12:01:33.969434+03:00",
+          "end_time": "2023-06-29T12:01:33.969434+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133790-cn5jw\", container=\"fail-always\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.222205+03:00",
-          "end_time": "2023-06-29T11:51:30.222205+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133790-cn5jw\", container=\"fail-always\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:33.988368+03:00",
+          "end_time": "2023-06-29T12:01:33.988368+03:00",
           "step": "2m"
         }
       }
@@ -2280,14 +2212,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133800-k4rkq\", container=\"fail-always\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.348005+03:00",
-          "end_time": "2023-06-29T11:51:30.348005+03:00",
+          "start_time": "2023-06-15T12:01:34.034869+03:00",
+          "end_time": "2023-06-29T12:01:34.034869+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133800-k4rkq\", container=\"fail-always\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.342635+03:00",
-          "end_time": "2023-06-29T11:51:30.342635+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133800-k4rkq\", container=\"fail-always\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.065968+03:00",
+          "end_time": "2023-06-29T12:01:34.065968+03:00",
           "step": "2m"
         }
       }
@@ -2300,74 +2232,6 @@
         "pods": [
           {
             "name": "cron-scripts-sweep-clean-28133810-gjks9",
-            "deleted": false
-          }
-        ],
-        "hpa": null,
-        "namespace": "prod",
-        "kind": "Job",
-        "allocations": {
-          "requests": {
-            "cpu": null,
-            "memory": null
-          },
-          "limits": {
-            "cpu": null,
-            "memory": null
-          },
-          "info": {}
-        }
-      },
-      "recommended": {
-        "requests": {
-          "cpu": {
-            "value": 0.005,
-            "severity": "WARNING"
-          },
-          "memory": {
-            "value": 10485760.0,
-            "severity": "WARNING"
-          }
-        },
-        "limits": {
-          "cpu": {
-            "value": null,
-            "severity": "GOOD"
-          },
-          "memory": {
-            "value": 10485760.0,
-            "severity": "WARNING"
-          }
-        },
-        "info": {
-          "cpu": null,
-          "memory": null
-        }
-      },
-      "severity": "WARNING",
-      "metrics": {
-        "cpu": {
-          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133810-gjks9\", container=\"fail-always\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.458972+03:00",
-          "end_time": "2023-06-29T11:51:30.458972+03:00",
-          "step": "2m"
-        },
-        "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133810-gjks9\", container=\"fail-always\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.459065+03:00",
-          "end_time": "2023-06-29T11:51:30.459065+03:00",
-          "step": "2m"
-        }
-      }
-    },
-    {
-      "object": {
-        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
-        "name": "daily-db-backup-28133750",
-        "container": "db-backup",
-        "pods": [
-          {
-            "name": "daily-db-backup-28133750-vzwsh",
             "deleted": true
           }
         ],
@@ -2415,15 +2279,15 @@
       "severity": "WARNING",
       "metrics": {
         "cpu": {
-          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133750-vzwsh\", container=\"db-backup\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.509018+03:00",
-          "end_time": "2023-06-29T11:51:30.509018+03:00",
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133810-gjks9\", container=\"fail-always\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.149259+03:00",
+          "end_time": "2023-06-29T12:01:34.149259+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133750-vzwsh\", container=\"db-backup\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.516548+03:00",
-          "end_time": "2023-06-29T11:51:30.516548+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133810-gjks9\", container=\"fail-always\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.216347+03:00",
+          "end_time": "2023-06-29T12:01:34.216347+03:00",
           "step": "2m"
         }
       }
@@ -2484,14 +2348,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133770-9gsvv\", container=\"db-backup\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.637138+03:00",
-          "end_time": "2023-06-29T11:51:30.637138+03:00",
+          "start_time": "2023-06-15T12:01:34.223082+03:00",
+          "end_time": "2023-06-29T12:01:34.223082+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133770-9gsvv\", container=\"db-backup\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.637003+03:00",
-          "end_time": "2023-06-29T11:51:30.637003+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133770-9gsvv\", container=\"db-backup\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.263206+03:00",
+          "end_time": "2023-06-29T12:01:34.263206+03:00",
           "step": "2m"
         }
       }
@@ -2552,14 +2416,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133780-rcxdt\", container=\"db-backup\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.628772+03:00",
-          "end_time": "2023-06-29T11:51:30.628772+03:00",
+          "start_time": "2023-06-15T12:01:34.389026+03:00",
+          "end_time": "2023-06-29T12:01:34.389026+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133780-rcxdt\", container=\"db-backup\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.672770+03:00",
-          "end_time": "2023-06-29T11:51:30.672770+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133780-rcxdt\", container=\"db-backup\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.387548+03:00",
+          "end_time": "2023-06-29T12:01:34.387548+03:00",
           "step": "2m"
         }
       }
@@ -2620,14 +2484,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133790-7ch5f\", container=\"db-backup\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.672613+03:00",
-          "end_time": "2023-06-29T11:51:30.672613+03:00",
+          "start_time": "2023-06-15T12:01:34.385912+03:00",
+          "end_time": "2023-06-29T12:01:34.385912+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133790-7ch5f\", container=\"db-backup\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.691138+03:00",
-          "end_time": "2023-06-29T11:51:30.691138+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133790-7ch5f\", container=\"db-backup\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.381439+03:00",
+          "end_time": "2023-06-29T12:01:34.381439+03:00",
           "step": "2m"
         }
       }
@@ -2688,14 +2552,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133800-nk7zk\", container=\"db-backup\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.799132+03:00",
-          "end_time": "2023-06-29T11:51:30.799132+03:00",
+          "start_time": "2023-06-15T12:01:34.435305+03:00",
+          "end_time": "2023-06-29T12:01:34.435305+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133800-nk7zk\", container=\"db-backup\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.806344+03:00",
-          "end_time": "2023-06-29T11:51:30.806344+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133800-nk7zk\", container=\"db-backup\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.433028+03:00",
+          "end_time": "2023-06-29T12:01:34.433028+03:00",
           "step": "2m"
         }
       }
@@ -2708,7 +2572,7 @@
         "pods": [
           {
             "name": "daily-db-backup-28133810-ttgc9",
-            "deleted": false
+            "deleted": true
           }
         ],
         "hpa": null,
@@ -2756,14 +2620,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133810-ttgc9\", container=\"db-backup\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.817123+03:00",
-          "end_time": "2023-06-29T11:51:30.817123+03:00",
+          "start_time": "2023-06-15T12:01:34.540375+03:00",
+          "end_time": "2023-06-29T12:01:34.540375+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133810-ttgc9\", container=\"db-backup\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.851614+03:00",
-          "end_time": "2023-06-29T11:51:30.851614+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133810-ttgc9\", container=\"db-backup\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.551424+03:00",
+          "end_time": "2023-06-29T12:01:34.551424+03:00",
           "step": "2m"
         }
       }
@@ -2840,14 +2704,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"migration-scripts-28133790-bq4bw|migration-scripts-28133790-gm2hr|migration-scripts-28133790-gpj5h|migration-scripts-28133790-ltrhd|migration-scripts-28133790-nmj4w\", container=\"migration-scripts\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.851793+03:00",
-          "end_time": "2023-06-29T11:51:30.851793+03:00",
+          "start_time": "2023-06-15T12:01:34.566975+03:00",
+          "end_time": "2023-06-29T12:01:34.566975+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133790-bq4bw|migration-scripts-28133790-gm2hr|migration-scripts-28133790-gpj5h|migration-scripts-28133790-ltrhd|migration-scripts-28133790-nmj4w\", container=\"migration-scripts\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.869139+03:00",
-          "end_time": "2023-06-29T11:51:30.869139+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133790-bq4bw|migration-scripts-28133790-gm2hr|migration-scripts-28133790-gpj5h|migration-scripts-28133790-ltrhd|migration-scripts-28133790-nmj4w\", container=\"migration-scripts\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.566727+03:00",
+          "end_time": "2023-06-29T12:01:34.566727+03:00",
           "step": "2m"
         }
       }
@@ -2924,14 +2788,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"migration-scripts-28133800-dvsht|migration-scripts-28133800-ftvdk|migration-scripts-28133800-hkn4z|migration-scripts-28133800-nfplk|migration-scripts-28133800-pqnpg\", container=\"migration-scripts\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.970238+03:00",
-          "end_time": "2023-06-29T11:51:30.970238+03:00",
+          "start_time": "2023-06-15T12:01:34.616425+03:00",
+          "end_time": "2023-06-29T12:01:34.616425+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133800-dvsht|migration-scripts-28133800-ftvdk|migration-scripts-28133800-hkn4z|migration-scripts-28133800-nfplk|migration-scripts-28133800-pqnpg\", container=\"migration-scripts\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.998692+03:00",
-          "end_time": "2023-06-29T11:51:30.998692+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133800-dvsht|migration-scripts-28133800-ftvdk|migration-scripts-28133800-hkn4z|migration-scripts-28133800-nfplk|migration-scripts-28133800-pqnpg\", container=\"migration-scripts\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.604409+03:00",
+          "end_time": "2023-06-29T12:01:34.604409+03:00",
           "step": "2m"
         }
       }
@@ -3008,14 +2872,14 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"migration-scripts-28133810-24hql|migration-scripts-28133810-nsgjm|migration-scripts-28133810-q72hr|migration-scripts-28133810-sbtks|migration-scripts-28133810-smt4z\", container=\"migration-scripts\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:30.990849+03:00",
-          "end_time": "2023-06-29T11:51:30.990849+03:00",
+          "start_time": "2023-06-15T12:01:34.708038+03:00",
+          "end_time": "2023-06-29T12:01:34.708038+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133810-24hql|migration-scripts-28133810-nsgjm|migration-scripts-28133810-q72hr|migration-scripts-28133810-sbtks|migration-scripts-28133810-smt4z\", container=\"migration-scripts\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.025287+03:00",
-          "end_time": "2023-06-29T11:51:31.025287+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133810-24hql|migration-scripts-28133810-nsgjm|migration-scripts-28133810-q72hr|migration-scripts-28133810-sbtks|migration-scripts-28133810-smt4z\", container=\"migration-scripts\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.720834+03:00",
+          "end_time": "2023-06-29T12:01:34.720834+03:00",
           "step": "2m"
         }
       }
@@ -3076,20 +2940,20 @@
       "metrics": {
         "cpu": {
           "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"update-services-85xzj\", container=\"run-forever\"}[5m])) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.195788+03:00",
-          "end_time": "2023-06-29T11:51:31.195788+03:00",
+          "start_time": "2023-06-15T12:01:34.946556+03:00",
+          "end_time": "2023-06-29T12:01:34.946556+03:00",
           "step": "2m"
         },
         "memory": {
-          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"update-services-85xzj\", container=\"run-forever\"}) by (container, pod, job)",
-          "start_time": "2023-06-15T11:51:31.208256+03:00",
-          "end_time": "2023-06-29T11:51:31.208256+03:00",
+          "query": "max(max_over_time(container_memory_max_usage_bytes{namespace=\"prod\", pod=~\"update-services-85xzj\", container=\"run-forever\"}[14d])) by (container, pod, job)",
+          "start_time": "2023-06-15T12:01:34.933166+03:00",
+          "end_time": "2023-06-29T12:01:34.933166+03:00",
           "step": "2m"
         }
       }
     }
   ],
-  "score": 42,
+  "score": 46,
   "resources": [
     "cpu",
     "memory"
