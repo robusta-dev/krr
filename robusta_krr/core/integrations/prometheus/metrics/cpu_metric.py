@@ -2,7 +2,7 @@ from robusta_krr.core.models.allocations import ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
 
 from .base_filtered_metric import BaseFilteredMetricLoader
-from .base_metric import bind_metric
+from .base_metric import bind_metric, QueryType
 
 
 @bind_metric(ResourceType.CPU)
@@ -18,3 +18,6 @@ class CPUMetricLoader(BaseFilteredMetricLoader):
             f"{cluster_label}"
             "}[5m])) by (container, pod, job)"
         )
+    
+    def get_query_type(self) -> QueryType:
+        return QueryType.QueryRange

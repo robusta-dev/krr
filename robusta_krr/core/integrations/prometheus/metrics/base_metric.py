@@ -5,9 +5,8 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import datetime
 from typing import TYPE_CHECKING, Callable, Optional, TypeVar
-
+import enum
 import numpy as np
-
 from robusta_krr.core.abstract.strategies import Metric, ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
@@ -15,6 +14,10 @@ from robusta_krr.utils.configurable import Configurable
 
 if TYPE_CHECKING:
     from .. import CustomPrometheusConnect
+
+class QueryType(str, enum.Enum):
+    Query="query"
+    QueryRange="query_range"
 
 # A registry of metrics that can be used to fetch a corresponding metric loader.
 REGISTERED_METRICS: dict[str, type[BaseMetricLoader]] = {}
@@ -76,7 +79,22 @@ class BaseMetricLoader(Configurable, abc.ABC):
 
         return f"{int(step.total_seconds()) // 60}m"
 
-    async def query_prometheus(self, metric: Metric) -> list[dict]:
+    def query_prometheus_thread(self, metric: Metric, query_type: QueryType) -> list[dict]:
+        if query_type == QueryType.QueryRange:
+            value = self.prometheus.custom_query_range(
+                    query=metric.query,
+                    start_time=metric.start_time,
+                    end_time=metric.end_time,
+                    step=metric.step,
+                )
+            return value
+        
+        results =  self.prometheus.custom_query(query=metric.query)
+        for result in results:
+            result["values"] = [result.pop("value")]
+        return results
+        
+    async def query_prometheus(self, metric: Metric, query_type: QueryType) -> list[dict]:
         """
         Asynchronous method that queries Prometheus to fetch metrics.
 
@@ -90,12 +108,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
-            lambda: self.prometheus.custom_query_range(
-                query=metric.query,
-                start_time=metric.start_time,
-                end_time=metric.end_time,
-                step=metric.step,
-            ),
+            lambda: self.query_prometheus_thread( metric= metric, query_type=query_type),
         )
 
     async def load_data(
@@ -114,6 +127,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         """
 
         query = self.get_query(object)
+        query_type = self.get_query_type()
         end_time = datetime.datetime.now().astimezone()
         metric = Metric(
             query=query,
@@ -121,7 +135,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
             end_time=end_time,
             step=self._step_to_string(step),
         )
-        result = await self.query_prometheus(metric)
+        result = await self.query_prometheus(metric=metric, query_type=query_type)
 
         if result == []:
             self.warning(f"{service_name} returned no {self.__class__.__name__} metrics for {object}")
