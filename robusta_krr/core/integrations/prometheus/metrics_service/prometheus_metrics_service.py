@@ -195,13 +195,14 @@ class PrometheusMetricsService(MetricsService):
         period_literal = f"{days_literal}d"
         pod_owners: list[str]
         pod_owner_kind: str
-
+        cluster_label = self.get_prometheus_cluster_label()
         if object.kind == "Deployment":
             replicasets = await self.query(
                 "kube_replicaset_owner{"
                 f'owner_name="{object.name}", '
                 f'owner_kind="Deployment", '
                 f'namespace="{object.namespace}"'
+                f'{cluster_label}'
                 "}"
                 f"[{period_literal}]"
             )
@@ -217,6 +218,7 @@ class PrometheusMetricsService(MetricsService):
             f'owner_name=~"{owners_regex}", '
             f'owner_kind="{pod_owner_kind}", '
             f'namespace="{object.namespace}"'
+            f'{cluster_label}'
             "}"
             f"[{period_literal}]"
         )
