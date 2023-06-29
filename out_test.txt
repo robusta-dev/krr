@@ -1,0 +1,3107 @@
+{
+  "scans": [
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "oom-kill-pod",
+        "container": "container-exclude",
+        "pods": [
+          {
+            "name": "oom-kill-pod-6b4678db47-7bk68",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "default",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": 130023424.0
+          },
+          "limits": {
+            "cpu": null,
+            "memory": 130023424.0
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.011,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 137363456.0,
+            "severity": "GOOD"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 137363456.0,
+            "severity": "GOOD"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-exclude\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.219795+03:00",
+          "end_time": "2023-06-29T11:51:31.219795+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-exclude\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.289452+03:00",
+          "end_time": "2023-06-29T11:51:31.289452+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "oom-kill-pod",
+        "container": "container-okay",
+        "pods": [
+          {
+            "name": "oom-kill-pod-6b4678db47-7bk68",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "default",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": 104857600.0
+          },
+          "limits": {
+            "cpu": null,
+            "memory": 104857600.0
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "GOOD"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "GOOD"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-okay\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.264765+03:00",
+          "end_time": "2023-06-29T11:51:31.264765+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"default\", pod=~\"oom-kill-pod-6b4678db47-7bk68\", container=\"container-okay\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.420107+03:00",
+          "end_time": "2023-06-29T11:51:31.420107+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-forwarder",
+        "container": "kubewatch",
+        "pods": [
+          {
+            "name": "robusta-forwarder-7fdb9b5754-zd6nr",
+            "deleted": false
+          },
+          {
+            "name": "robusta-forwarder-7fdb9b5754-mmk2s",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": 0.01,
+            "memory": 536870912.0
+          },
+          "limits": {
+            "cpu": null,
+            "memory": 536870912.0
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.006,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 36700160.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 36700160.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-forwarder-7fdb9b5754-zd6nr|robusta-forwarder-7fdb9b5754-mmk2s\", container=\"kubewatch\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.449408+03:00",
+          "end_time": "2023-06-29T11:51:31.449408+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-forwarder-7fdb9b5754-zd6nr|robusta-forwarder-7fdb9b5754-mmk2s\", container=\"kubewatch\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.481974+03:00",
+          "end_time": "2023-06-29T11:51:31.481974+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-grafana",
+        "container": "grafana-sc-dashboard",
+        "pods": [
+          {
+            "name": "robusta-grafana-57cf65c765-cfwqb",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 82837504.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 82837504.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-dashboard\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.276252+03:00",
+          "end_time": "2023-06-29T11:51:31.276252+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-dashboard\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.541820+03:00",
+          "end_time": "2023-06-29T11:51:31.541820+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-grafana",
+        "container": "grafana-sc-datasources",
+        "pods": [
+          {
+            "name": "robusta-grafana-57cf65c765-cfwqb",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 80740352.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 80740352.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-datasources\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.555295+03:00",
+          "end_time": "2023-06-29T11:51:31.555295+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana-sc-datasources\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.567328+03:00",
+          "end_time": "2023-06-29T11:51:31.567328+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-grafana",
+        "container": "grafana",
+        "pods": [
+          {
+            "name": "robusta-grafana-57cf65c765-cfwqb",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 80740352.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 80740352.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.736552+03:00",
+          "end_time": "2023-06-29T11:51:31.736552+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-grafana-57cf65c765-cfwqb\", container=\"grafana\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.725132+03:00",
+          "end_time": "2023-06-29T11:51:31.725132+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-kube-prometheus-st-operator",
+        "container": "kube-prometheus-stack",
+        "pods": [
+          {
+            "name": "robusta-kube-prometheus-st-operator-7c5db9ccb9-c8vrh",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": 0.1,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 44040192.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 44040192.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-kube-prometheus-st-operator-7c5db9ccb9-c8vrh\", container=\"kube-prometheus-stack\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.781048+03:00",
+          "end_time": "2023-06-29T11:51:31.781048+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-kube-prometheus-st-operator-7c5db9ccb9-c8vrh\", container=\"kube-prometheus-stack\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.711559+03:00",
+          "end_time": "2023-06-29T11:51:31.711559+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-kube-state-metrics",
+        "container": "kube-state-metrics",
+        "pods": [
+          {
+            "name": "robusta-kube-state-metrics-649fd7db9f-kdkft",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": 0.01,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 19922944.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 19922944.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-kube-state-metrics-649fd7db9f-kdkft\", container=\"kube-state-metrics\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.807205+03:00",
+          "end_time": "2023-06-29T11:51:31.807205+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-kube-state-metrics-649fd7db9f-kdkft\", container=\"kube-state-metrics\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.825299+03:00",
+          "end_time": "2023-06-29T11:51:31.825299+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-runner",
+        "container": "runner",
+        "pods": [
+          {
+            "name": "robusta-runner-5dbc6d6bcc-flcv4",
+            "deleted": false
+          },
+          {
+            "name": "robusta-runner-5dbc6d6bcc-bsmpc",
+            "deleted": true
+          },
+          {
+            "name": "robusta-runner-5dbc6d6bcc-wbhjs",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": 0.25,
+            "memory": 1073741824.0
+          },
+          "limits": {
+            "cpu": null,
+            "memory": 1073741824.0
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.389,
+            "severity": "OK"
+          },
+          "memory": {
+            "value": 1971322880.0,
+            "severity": "CRITICAL"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 1971322880.0,
+            "severity": "CRITICAL"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "CRITICAL",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-runner-5dbc6d6bcc-flcv4|robusta-runner-5dbc6d6bcc-bsmpc|robusta-runner-5dbc6d6bcc-wbhjs\", container=\"runner\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:32.628009+03:00",
+          "end_time": "2023-06-29T11:51:32.628009+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-runner-5dbc6d6bcc-flcv4|robusta-runner-5dbc6d6bcc-bsmpc|robusta-runner-5dbc6d6bcc-wbhjs\", container=\"runner\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:33.857630+03:00",
+          "end_time": "2023-06-29T11:51:33.857630+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "crashpod",
+        "container": "crashpod",
+        "pods": [
+          {
+            "name": "crashpod-64b874bbbc-4j6rz",
+            "deleted": false
+          },
+          {
+            "name": "crashpod-64b874bbbc-rhdvs",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": "No data",
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"crashpod-64b874bbbc-4j6rz|crashpod-64b874bbbc-rhdvs\", container=\"crashpod\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:32.404328+03:00",
+          "end_time": "2023-06-29T11:51:32.404328+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"crashpod-64b874bbbc-4j6rz|crashpod-64b874bbbc-rhdvs\", container=\"crashpod\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:32.245911+03:00",
+          "end_time": "2023-06-29T11:51:32.245911+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "server-1",
+        "container": "nginx",
+        "pods": [
+          {
+            "name": "server-1-6f45c78d44-89vjr",
+            "deleted": false
+          },
+          {
+            "name": "server-1-6f45c78d44-h4hcd",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": 7.0,
+            "memory": null
+          },
+          "limits": {
+            "cpu": 7.0,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "info": {
+          "cpu": "No data",
+          "memory": "No data"
+        }
+      },
+      "severity": "UNKNOWN",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"server-1-6f45c78d44-89vjr|server-1-6f45c78d44-h4hcd\", container=\"nginx\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:32.612712+03:00",
+          "end_time": "2023-06-29T11:51:32.612712+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"server-1-6f45c78d44-89vjr|server-1-6f45c78d44-h4hcd\", container=\"nginx\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:32.434564+03:00",
+          "end_time": "2023-06-29T11:51:32.434564+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "server-2",
+        "container": "nginx",
+        "pods": [
+          {
+            "name": "server-2-5696d848f7-7r9xl",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-9ft6w",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-bfksc",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-bgckc",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-cvxpz",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-dmqmr",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-dnb98",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-hf8hb",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-jffrd",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-lqq7z",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-lr7ww",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-lsznb",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-mjlff",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-p4dbs",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-p9v49",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-pd5cp",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-pnzch",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-q7z5j",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-r6lqm",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-wlxnx",
+            "deleted": false
+          },
+          {
+            "name": "server-2-5696d848f7-2lrjz",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-2s8t4",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-7jcfn",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-95jpk",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-bwfxg",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-dbw8s",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-dmhqx",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-fbpgh",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-gn9jj",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-kdnfb",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-mcm9x",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-ml5zj",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-pcd78",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-q66sk",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-qfqdw",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-rwqj2",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-stcgb",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-tfk8k",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-vqmnp",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-wkpp2",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-wnk52",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-xk8tw",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-xm5r6",
+            "deleted": true
+          },
+          {
+            "name": "server-2-5696d848f7-zh4r5",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"server-2-5696d848f7-7r9xl|server-2-5696d848f7-9ft6w|server-2-5696d848f7-bfksc|server-2-5696d848f7-bgckc|server-2-5696d848f7-cvxpz|server-2-5696d848f7-dmqmr|server-2-5696d848f7-dnb98|server-2-5696d848f7-hf8hb|server-2-5696d848f7-jffrd|server-2-5696d848f7-lqq7z|server-2-5696d848f7-lr7ww|server-2-5696d848f7-lsznb|server-2-5696d848f7-mjlff|server-2-5696d848f7-p4dbs|server-2-5696d848f7-p9v49|server-2-5696d848f7-pd5cp|server-2-5696d848f7-pnzch|server-2-5696d848f7-q7z5j|server-2-5696d848f7-r6lqm|server-2-5696d848f7-wlxnx|server-2-5696d848f7-2lrjz|server-2-5696d848f7-2s8t4|server-2-5696d848f7-7jcfn|server-2-5696d848f7-95jpk|server-2-5696d848f7-bwfxg|server-2-5696d848f7-dbw8s|server-2-5696d848f7-dmhqx|server-2-5696d848f7-fbpgh|server-2-5696d848f7-gn9jj|server-2-5696d848f7-kdnfb|server-2-5696d848f7-mcm9x|server-2-5696d848f7-ml5zj|server-2-5696d848f7-pcd78|server-2-5696d848f7-q66sk|server-2-5696d848f7-qfqdw|server-2-5696d848f7-rwqj2|server-2-5696d848f7-stcgb|server-2-5696d848f7-tfk8k|server-2-5696d848f7-vqmnp|server-2-5696d848f7-wkpp2|server-2-5696d848f7-wnk52|server-2-5696d848f7-xk8tw|server-2-5696d848f7-xm5r6|server-2-5696d848f7-zh4r5\", container=\"nginx\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:35.641604+03:00",
+          "end_time": "2023-06-29T11:51:35.641604+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"server-2-5696d848f7-7r9xl|server-2-5696d848f7-9ft6w|server-2-5696d848f7-bfksc|server-2-5696d848f7-bgckc|server-2-5696d848f7-cvxpz|server-2-5696d848f7-dmqmr|server-2-5696d848f7-dnb98|server-2-5696d848f7-hf8hb|server-2-5696d848f7-jffrd|server-2-5696d848f7-lqq7z|server-2-5696d848f7-lr7ww|server-2-5696d848f7-lsznb|server-2-5696d848f7-mjlff|server-2-5696d848f7-p4dbs|server-2-5696d848f7-p9v49|server-2-5696d848f7-pd5cp|server-2-5696d848f7-pnzch|server-2-5696d848f7-q7z5j|server-2-5696d848f7-r6lqm|server-2-5696d848f7-wlxnx|server-2-5696d848f7-2lrjz|server-2-5696d848f7-2s8t4|server-2-5696d848f7-7jcfn|server-2-5696d848f7-95jpk|server-2-5696d848f7-bwfxg|server-2-5696d848f7-dbw8s|server-2-5696d848f7-dmhqx|server-2-5696d848f7-fbpgh|server-2-5696d848f7-gn9jj|server-2-5696d848f7-kdnfb|server-2-5696d848f7-mcm9x|server-2-5696d848f7-ml5zj|server-2-5696d848f7-pcd78|server-2-5696d848f7-q66sk|server-2-5696d848f7-qfqdw|server-2-5696d848f7-rwqj2|server-2-5696d848f7-stcgb|server-2-5696d848f7-tfk8k|server-2-5696d848f7-vqmnp|server-2-5696d848f7-wkpp2|server-2-5696d848f7-wnk52|server-2-5696d848f7-xk8tw|server-2-5696d848f7-xm5r6|server-2-5696d848f7-zh4r5\", container=\"nginx\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:36.123560+03:00",
+          "end_time": "2023-06-29T11:51:36.123560+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "server-2-prod",
+        "container": "nginx",
+        "pods": [
+          {
+            "name": "server-2-prod-567db795df-2fmj4",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-45xfs",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-599h5",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-5gzzn",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-5vcpd",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-674xk",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-6bblm",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-6cppl",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-6ljjd",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-72vl9",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-76k9p",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-85j4v",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-8skdz",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-97z6d",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-99fmf",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-9sgfn",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-b2h8l",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-b9jmf",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-bct22",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-bm7z5",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-bqxg8",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-bzxzj",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-f8cfw",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-g2kzb",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-g76n2",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-gbt25",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-gclq9",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-gqz6j",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-h4bnd",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-h54fh",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-h8r86",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-jwc4p",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-kc5cd",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-kjbpl",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-ktcxm",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-kxcw5",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-l24x2",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-l97ln",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-lh9jz",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-lndvc",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-m8wqx",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-mqq6f",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-nmbzm",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-q6jwr",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-qcjdb",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-qng56",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-r4hp5",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-rb8nk",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-smrtr",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-swnr4",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-tg65g",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-v285g",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-vp87n",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-wc6nf",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-wtf5z",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-wttmp",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-x596l",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-x8mw6",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-zjmmc",
+            "deleted": false
+          },
+          {
+            "name": "server-2-prod-567db795df-2whxj",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-4njhc",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-5m5kc",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-62zgb",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-6lv7k",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-785zk",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-78hgg",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-7p54j",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-7ptxm",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-82tbm",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-9kslt",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-clrnm",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-dld6q",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-h4tps",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-lffbp",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-pksfc",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-rhgd9",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-rtsxj",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-wffv7",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-xcs66",
+            "deleted": true
+          },
+          {
+            "name": "server-2-prod-567db795df-zhvtd",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "info": {
+          "cpu": "No data",
+          "memory": "No data"
+        }
+      },
+      "severity": "UNKNOWN",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"server-2-prod-567db795df-2fmj4|server-2-prod-567db795df-45xfs|server-2-prod-567db795df-599h5|server-2-prod-567db795df-5gzzn|server-2-prod-567db795df-5vcpd|server-2-prod-567db795df-674xk|server-2-prod-567db795df-6bblm|server-2-prod-567db795df-6cppl|server-2-prod-567db795df-6ljjd|server-2-prod-567db795df-72vl9|server-2-prod-567db795df-76k9p|server-2-prod-567db795df-85j4v|server-2-prod-567db795df-8skdz|server-2-prod-567db795df-97z6d|server-2-prod-567db795df-99fmf|server-2-prod-567db795df-9sgfn|server-2-prod-567db795df-b2h8l|server-2-prod-567db795df-b9jmf|server-2-prod-567db795df-bct22|server-2-prod-567db795df-bm7z5|server-2-prod-567db795df-bqxg8|server-2-prod-567db795df-bzxzj|server-2-prod-567db795df-f8cfw|server-2-prod-567db795df-g2kzb|server-2-prod-567db795df-g76n2|server-2-prod-567db795df-gbt25|server-2-prod-567db795df-gclq9|server-2-prod-567db795df-gqz6j|server-2-prod-567db795df-h4bnd|server-2-prod-567db795df-h54fh|server-2-prod-567db795df-h8r86|server-2-prod-567db795df-jwc4p|server-2-prod-567db795df-kc5cd|server-2-prod-567db795df-kjbpl|server-2-prod-567db795df-ktcxm|server-2-prod-567db795df-kxcw5|server-2-prod-567db795df-l24x2|server-2-prod-567db795df-l97ln|server-2-prod-567db795df-lh9jz|server-2-prod-567db795df-lndvc|server-2-prod-567db795df-m8wqx|server-2-prod-567db795df-mqq6f|server-2-prod-567db795df-nmbzm|server-2-prod-567db795df-q6jwr|server-2-prod-567db795df-qcjdb|server-2-prod-567db795df-qng56|server-2-prod-567db795df-r4hp5|server-2-prod-567db795df-rb8nk|server-2-prod-567db795df-smrtr|server-2-prod-567db795df-swnr4|server-2-prod-567db795df-tg65g|server-2-prod-567db795df-v285g|server-2-prod-567db795df-vp87n|server-2-prod-567db795df-wc6nf|server-2-prod-567db795df-wtf5z|server-2-prod-567db795df-wttmp|server-2-prod-567db795df-x596l|server-2-prod-567db795df-x8mw6|server-2-prod-567db795df-zjmmc|server-2-prod-567db795df-2whxj|server-2-prod-567db795df-4njhc|server-2-prod-567db795df-5m5kc|server-2-prod-567db795df-62zgb|server-2-prod-567db795df-6lv7k|server-2-prod-567db795df-785zk|server-2-prod-567db795df-78hgg|server-2-prod-567db795df-7p54j|server-2-prod-567db795df-7ptxm|server-2-prod-567db795df-82tbm|server-2-prod-567db795df-9kslt|server-2-prod-567db795df-clrnm|server-2-prod-567db795df-dld6q|server-2-prod-567db795df-h4tps|server-2-prod-567db795df-lffbp|server-2-prod-567db795df-pksfc|server-2-prod-567db795df-rhgd9|server-2-prod-567db795df-rtsxj|server-2-prod-567db795df-wffv7|server-2-prod-567db795df-xcs66|server-2-prod-567db795df-zhvtd\", container=\"nginx\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:34.459355+03:00",
+          "end_time": "2023-06-29T11:51:34.459355+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"server-2-prod-567db795df-2fmj4|server-2-prod-567db795df-45xfs|server-2-prod-567db795df-599h5|server-2-prod-567db795df-5gzzn|server-2-prod-567db795df-5vcpd|server-2-prod-567db795df-674xk|server-2-prod-567db795df-6bblm|server-2-prod-567db795df-6cppl|server-2-prod-567db795df-6ljjd|server-2-prod-567db795df-72vl9|server-2-prod-567db795df-76k9p|server-2-prod-567db795df-85j4v|server-2-prod-567db795df-8skdz|server-2-prod-567db795df-97z6d|server-2-prod-567db795df-99fmf|server-2-prod-567db795df-9sgfn|server-2-prod-567db795df-b2h8l|server-2-prod-567db795df-b9jmf|server-2-prod-567db795df-bct22|server-2-prod-567db795df-bm7z5|server-2-prod-567db795df-bqxg8|server-2-prod-567db795df-bzxzj|server-2-prod-567db795df-f8cfw|server-2-prod-567db795df-g2kzb|server-2-prod-567db795df-g76n2|server-2-prod-567db795df-gbt25|server-2-prod-567db795df-gclq9|server-2-prod-567db795df-gqz6j|server-2-prod-567db795df-h4bnd|server-2-prod-567db795df-h54fh|server-2-prod-567db795df-h8r86|server-2-prod-567db795df-jwc4p|server-2-prod-567db795df-kc5cd|server-2-prod-567db795df-kjbpl|server-2-prod-567db795df-ktcxm|server-2-prod-567db795df-kxcw5|server-2-prod-567db795df-l24x2|server-2-prod-567db795df-l97ln|server-2-prod-567db795df-lh9jz|server-2-prod-567db795df-lndvc|server-2-prod-567db795df-m8wqx|server-2-prod-567db795df-mqq6f|server-2-prod-567db795df-nmbzm|server-2-prod-567db795df-q6jwr|server-2-prod-567db795df-qcjdb|server-2-prod-567db795df-qng56|server-2-prod-567db795df-r4hp5|server-2-prod-567db795df-rb8nk|server-2-prod-567db795df-smrtr|server-2-prod-567db795df-swnr4|server-2-prod-567db795df-tg65g|server-2-prod-567db795df-v285g|server-2-prod-567db795df-vp87n|server-2-prod-567db795df-wc6nf|server-2-prod-567db795df-wtf5z|server-2-prod-567db795df-wttmp|server-2-prod-567db795df-x596l|server-2-prod-567db795df-x8mw6|server-2-prod-567db795df-zjmmc|server-2-prod-567db795df-2whxj|server-2-prod-567db795df-4njhc|server-2-prod-567db795df-5m5kc|server-2-prod-567db795df-62zgb|server-2-prod-567db795df-6lv7k|server-2-prod-567db795df-785zk|server-2-prod-567db795df-78hgg|server-2-prod-567db795df-7p54j|server-2-prod-567db795df-7ptxm|server-2-prod-567db795df-82tbm|server-2-prod-567db795df-9kslt|server-2-prod-567db795df-clrnm|server-2-prod-567db795df-dld6q|server-2-prod-567db795df-h4tps|server-2-prod-567db795df-lffbp|server-2-prod-567db795df-pksfc|server-2-prod-567db795df-rhgd9|server-2-prod-567db795df-rtsxj|server-2-prod-567db795df-wffv7|server-2-prod-567db795df-xcs66|server-2-prod-567db795df-zhvtd\", container=\"nginx\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:34.710855+03:00",
+          "end_time": "2023-06-29T11:51:34.710855+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "thanos-query",
+        "container": "query",
+        "pods": [
+          {
+            "name": "thanos-query-c5984db64-cqfr9",
+            "deleted": false
+          },
+          {
+            "name": "thanos-query-c5984db64-5ghg6",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "thanos",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 156237824.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 156237824.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"thanos\", pod=~\"thanos-query-c5984db64-cqfr9|thanos-query-c5984db64-5ghg6\", container=\"query\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:33.344035+03:00",
+          "end_time": "2023-06-29T11:51:33.344035+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"thanos\", pod=~\"thanos-query-c5984db64-cqfr9|thanos-query-c5984db64-5ghg6\", container=\"query\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:33.493162+03:00",
+          "end_time": "2023-06-29T11:51:33.493162+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "thanos-query-frontend",
+        "container": "query-frontend",
+        "pods": [
+          {
+            "name": "thanos-query-frontend-788dd96785-dds52",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "thanos",
+        "kind": "Deployment",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 12582912.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 12582912.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"thanos\", pod=~\"thanos-query-frontend-788dd96785-dds52\", container=\"query-frontend\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:33.654729+03:00",
+          "end_time": "2023-06-29T11:51:33.654729+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"thanos\", pod=~\"thanos-query-frontend-788dd96785-dds52\", container=\"query-frontend\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:34.076301+03:00",
+          "end_time": "2023-06-29T11:51:34.076301+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "alertmanager-robusta-kube-prometheus-st-alertmanager",
+        "container": "alertmanager",
+        "pods": [
+          {
+            "name": "alertmanager-robusta-kube-prometheus-st-alertmanager-0",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "StatefulSet",
+        "allocations": {
+          "requests": {
+            "cpu": 0.05,
+            "memory": 209715200.0
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 25165824.0,
+            "severity": "OK"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 25165824.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"alertmanager\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.379484+03:00",
+          "end_time": "2023-06-29T11:51:29.379484+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"alertmanager\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.391965+03:00",
+          "end_time": "2023-06-29T11:51:29.391965+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "alertmanager-robusta-kube-prometheus-st-alertmanager",
+        "container": "config-reloader",
+        "pods": [
+          {
+            "name": "alertmanager-robusta-kube-prometheus-st-alertmanager-0",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "StatefulSet",
+        "allocations": {
+          "requests": {
+            "cpu": 0.2,
+            "memory": 52428800.0
+          },
+          "limits": {
+            "cpu": null,
+            "memory": 52428800.0
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "OK"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "GOOD"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "GOOD"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "OK",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"config-reloader\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.428810+03:00",
+          "end_time": "2023-06-29T11:51:29.428810+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"alertmanager-robusta-kube-prometheus-st-alertmanager-0\", container=\"config-reloader\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.440296+03:00",
+          "end_time": "2023-06-29T11:51:29.440296+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "prometheus-robusta-kube-prometheus-st-prometheus",
+        "container": "prometheus",
+        "pods": [
+          {
+            "name": "prometheus-robusta-kube-prometheus-st-prometheus-0",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "StatefulSet",
+        "allocations": {
+          "requests": {
+            "cpu": 0.05,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.123,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 3964665856.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 3964665856.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"prometheus\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.770618+03:00",
+          "end_time": "2023-06-29T11:51:29.770618+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"prometheus\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.606944+03:00",
+          "end_time": "2023-06-29T11:51:29.606944+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "prometheus-robusta-kube-prometheus-st-prometheus",
+        "container": "config-reloader",
+        "pods": [
+          {
+            "name": "prometheus-robusta-kube-prometheus-st-prometheus-0",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "StatefulSet",
+        "allocations": {
+          "requests": {
+            "cpu": 0.2,
+            "memory": 52428800.0
+          },
+          "limits": {
+            "cpu": null,
+            "memory": 52428800.0
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "OK"
+          },
+          "memory": {
+            "value": 14680064.0,
+            "severity": "GOOD"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 14680064.0,
+            "severity": "GOOD"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "OK",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"config-reloader\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.624080+03:00",
+          "end_time": "2023-06-29T11:51:29.624080+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"config-reloader\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.772657+03:00",
+          "end_time": "2023-06-29T11:51:29.772657+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "prometheus-robusta-kube-prometheus-st-prometheus",
+        "container": "thanos-sidecar",
+        "pods": [
+          {
+            "name": "prometheus-robusta-kube-prometheus-st-prometheus-0",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "StatefulSet",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 41943040.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 41943040.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"thanos-sidecar\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.794421+03:00",
+          "end_time": "2023-06-29T11:51:29.794421+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"prometheus-robusta-kube-prometheus-st-prometheus-0\", container=\"thanos-sidecar\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.795510+03:00",
+          "end_time": "2023-06-29T11:51:29.795510+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "robusta-prometheus-node-exporter",
+        "container": "node-exporter",
+        "pods": [
+          {
+            "name": "robusta-prometheus-node-exporter-7ll2r",
+            "deleted": false
+          },
+          {
+            "name": "robusta-prometheus-node-exporter-7t24v",
+            "deleted": false
+          },
+          {
+            "name": "robusta-prometheus-node-exporter-nwfxd",
+            "deleted": false
+          },
+          {
+            "name": "robusta-prometheus-node-exporter-zzzz6",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "monitoring",
+        "kind": "DaemonSet",
+        "allocations": {
+          "requests": {
+            "cpu": 0.05,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 24117248.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 24117248.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"monitoring\", pod=~\"robusta-prometheus-node-exporter-7ll2r|robusta-prometheus-node-exporter-7t24v|robusta-prometheus-node-exporter-nwfxd|robusta-prometheus-node-exporter-zzzz6\", container=\"node-exporter\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.459127+03:00",
+          "end_time": "2023-06-29T11:51:30.459127+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"monitoring\", pod=~\"robusta-prometheus-node-exporter-7ll2r|robusta-prometheus-node-exporter-7t24v|robusta-prometheus-node-exporter-nwfxd|robusta-prometheus-node-exporter-zzzz6\", container=\"node-exporter\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.504241+03:00",
+          "end_time": "2023-06-29T11:51:30.504241+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "cron-scripts-sweep-clean-28133750",
+        "container": "fail-always",
+        "pods": [
+          {
+            "name": "cron-scripts-sweep-clean-28133750-6qhd7",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133750-6qhd7\", container=\"fail-always\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.960884+03:00",
+          "end_time": "2023-06-29T11:51:29.960884+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133750-6qhd7\", container=\"fail-always\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:29.962063+03:00",
+          "end_time": "2023-06-29T11:51:29.962063+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "cron-scripts-sweep-clean-28133770",
+        "container": "fail-always",
+        "pods": [
+          {
+            "name": "cron-scripts-sweep-clean-28133770-dk6d8",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133770-dk6d8\", container=\"fail-always\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.032966+03:00",
+          "end_time": "2023-06-29T11:51:30.032966+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133770-dk6d8\", container=\"fail-always\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.038271+03:00",
+          "end_time": "2023-06-29T11:51:30.038271+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "cron-scripts-sweep-clean-28133780",
+        "container": "fail-always",
+        "pods": [
+          {
+            "name": "cron-scripts-sweep-clean-28133780-2sjf4",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133780-2sjf4\", container=\"fail-always\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.179404+03:00",
+          "end_time": "2023-06-29T11:51:30.179404+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133780-2sjf4\", container=\"fail-always\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.181849+03:00",
+          "end_time": "2023-06-29T11:51:30.181849+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "cron-scripts-sweep-clean-28133790",
+        "container": "fail-always",
+        "pods": [
+          {
+            "name": "cron-scripts-sweep-clean-28133790-cn5jw",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133790-cn5jw\", container=\"fail-always\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.221938+03:00",
+          "end_time": "2023-06-29T11:51:30.221938+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133790-cn5jw\", container=\"fail-always\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.222205+03:00",
+          "end_time": "2023-06-29T11:51:30.222205+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "cron-scripts-sweep-clean-28133800",
+        "container": "fail-always",
+        "pods": [
+          {
+            "name": "cron-scripts-sweep-clean-28133800-k4rkq",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133800-k4rkq\", container=\"fail-always\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.348005+03:00",
+          "end_time": "2023-06-29T11:51:30.348005+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133800-k4rkq\", container=\"fail-always\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.342635+03:00",
+          "end_time": "2023-06-29T11:51:30.342635+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "cron-scripts-sweep-clean-28133810",
+        "container": "fail-always",
+        "pods": [
+          {
+            "name": "cron-scripts-sweep-clean-28133810-gjks9",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133810-gjks9\", container=\"fail-always\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.458972+03:00",
+          "end_time": "2023-06-29T11:51:30.458972+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"cron-scripts-sweep-clean-28133810-gjks9\", container=\"fail-always\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.459065+03:00",
+          "end_time": "2023-06-29T11:51:30.459065+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "daily-db-backup-28133750",
+        "container": "db-backup",
+        "pods": [
+          {
+            "name": "daily-db-backup-28133750-vzwsh",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133750-vzwsh\", container=\"db-backup\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.509018+03:00",
+          "end_time": "2023-06-29T11:51:30.509018+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133750-vzwsh\", container=\"db-backup\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.516548+03:00",
+          "end_time": "2023-06-29T11:51:30.516548+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "daily-db-backup-28133770",
+        "container": "db-backup",
+        "pods": [
+          {
+            "name": "daily-db-backup-28133770-9gsvv",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133770-9gsvv\", container=\"db-backup\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.637138+03:00",
+          "end_time": "2023-06-29T11:51:30.637138+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133770-9gsvv\", container=\"db-backup\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.637003+03:00",
+          "end_time": "2023-06-29T11:51:30.637003+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "daily-db-backup-28133780",
+        "container": "db-backup",
+        "pods": [
+          {
+            "name": "daily-db-backup-28133780-rcxdt",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133780-rcxdt\", container=\"db-backup\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.628772+03:00",
+          "end_time": "2023-06-29T11:51:30.628772+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133780-rcxdt\", container=\"db-backup\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.672770+03:00",
+          "end_time": "2023-06-29T11:51:30.672770+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "daily-db-backup-28133790",
+        "container": "db-backup",
+        "pods": [
+          {
+            "name": "daily-db-backup-28133790-7ch5f",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133790-7ch5f\", container=\"db-backup\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.672613+03:00",
+          "end_time": "2023-06-29T11:51:30.672613+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133790-7ch5f\", container=\"db-backup\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.691138+03:00",
+          "end_time": "2023-06-29T11:51:30.691138+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "daily-db-backup-28133800",
+        "container": "db-backup",
+        "pods": [
+          {
+            "name": "daily-db-backup-28133800-nk7zk",
+            "deleted": true
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133800-nk7zk\", container=\"db-backup\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.799132+03:00",
+          "end_time": "2023-06-29T11:51:30.799132+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133800-nk7zk\", container=\"db-backup\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.806344+03:00",
+          "end_time": "2023-06-29T11:51:30.806344+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "daily-db-backup-28133810",
+        "container": "db-backup",
+        "pods": [
+          {
+            "name": "daily-db-backup-28133810-ttgc9",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"daily-db-backup-28133810-ttgc9\", container=\"db-backup\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.817123+03:00",
+          "end_time": "2023-06-29T11:51:30.817123+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"daily-db-backup-28133810-ttgc9\", container=\"db-backup\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.851614+03:00",
+          "end_time": "2023-06-29T11:51:30.851614+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "migration-scripts-28133790",
+        "container": "migration-scripts",
+        "pods": [
+          {
+            "name": "migration-scripts-28133790-bq4bw",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133790-gm2hr",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133790-gpj5h",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133790-ltrhd",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133790-nmj4w",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "info": {
+          "cpu": "No data",
+          "memory": "No data"
+        }
+      },
+      "severity": "UNKNOWN",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"migration-scripts-28133790-bq4bw|migration-scripts-28133790-gm2hr|migration-scripts-28133790-gpj5h|migration-scripts-28133790-ltrhd|migration-scripts-28133790-nmj4w\", container=\"migration-scripts\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.851793+03:00",
+          "end_time": "2023-06-29T11:51:30.851793+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133790-bq4bw|migration-scripts-28133790-gm2hr|migration-scripts-28133790-gpj5h|migration-scripts-28133790-ltrhd|migration-scripts-28133790-nmj4w\", container=\"migration-scripts\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.869139+03:00",
+          "end_time": "2023-06-29T11:51:30.869139+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "migration-scripts-28133800",
+        "container": "migration-scripts",
+        "pods": [
+          {
+            "name": "migration-scripts-28133800-dvsht",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133800-ftvdk",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133800-hkn4z",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133800-nfplk",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133800-pqnpg",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "info": {
+          "cpu": "No data",
+          "memory": "No data"
+        }
+      },
+      "severity": "UNKNOWN",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"migration-scripts-28133800-dvsht|migration-scripts-28133800-ftvdk|migration-scripts-28133800-hkn4z|migration-scripts-28133800-nfplk|migration-scripts-28133800-pqnpg\", container=\"migration-scripts\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.970238+03:00",
+          "end_time": "2023-06-29T11:51:30.970238+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133800-dvsht|migration-scripts-28133800-ftvdk|migration-scripts-28133800-hkn4z|migration-scripts-28133800-nfplk|migration-scripts-28133800-pqnpg\", container=\"migration-scripts\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.998692+03:00",
+          "end_time": "2023-06-29T11:51:30.998692+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "migration-scripts-28133810",
+        "container": "migration-scripts",
+        "pods": [
+          {
+            "name": "migration-scripts-28133810-24hql",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133810-nsgjm",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133810-q72hr",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133810-sbtks",
+            "deleted": false
+          },
+          {
+            "name": "migration-scripts-28133810-smt4z",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          },
+          "memory": {
+            "value": "?",
+            "severity": "UNKNOWN"
+          }
+        },
+        "info": {
+          "cpu": "No data",
+          "memory": "No data"
+        }
+      },
+      "severity": "UNKNOWN",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"migration-scripts-28133810-24hql|migration-scripts-28133810-nsgjm|migration-scripts-28133810-q72hr|migration-scripts-28133810-sbtks|migration-scripts-28133810-smt4z\", container=\"migration-scripts\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:30.990849+03:00",
+          "end_time": "2023-06-29T11:51:30.990849+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"migration-scripts-28133810-24hql|migration-scripts-28133810-nsgjm|migration-scripts-28133810-q72hr|migration-scripts-28133810-sbtks|migration-scripts-28133810-smt4z\", container=\"migration-scripts\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.025287+03:00",
+          "end_time": "2023-06-29T11:51:31.025287+03:00",
+          "step": "2m"
+        }
+      }
+    },
+    {
+      "object": {
+        "cluster": "arn:aws:eks:us-east-2:530171408261:cluster/avi-test-cluster-2",
+        "name": "update-services",
+        "container": "run-forever",
+        "pods": [
+          {
+            "name": "update-services-85xzj",
+            "deleted": false
+          }
+        ],
+        "hpa": null,
+        "namespace": "prod",
+        "kind": "Job",
+        "allocations": {
+          "requests": {
+            "cpu": null,
+            "memory": null
+          },
+          "limits": {
+            "cpu": null,
+            "memory": null
+          },
+          "info": {}
+        }
+      },
+      "recommended": {
+        "requests": {
+          "cpu": {
+            "value": 0.005,
+            "severity": "WARNING"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "limits": {
+          "cpu": {
+            "value": null,
+            "severity": "GOOD"
+          },
+          "memory": {
+            "value": 10485760.0,
+            "severity": "WARNING"
+          }
+        },
+        "info": {
+          "cpu": null,
+          "memory": null
+        }
+      },
+      "severity": "WARNING",
+      "metrics": {
+        "cpu": {
+          "query": "sum(irate(container_cpu_usage_seconds_total{namespace=\"prod\", pod=~\"update-services-85xzj\", container=\"run-forever\"}[5m])) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.195788+03:00",
+          "end_time": "2023-06-29T11:51:31.195788+03:00",
+          "step": "2m"
+        },
+        "memory": {
+          "query": "sum(container_memory_working_set_bytes{namespace=\"prod\", pod=~\"update-services-85xzj\", container=\"run-forever\"}) by (container, pod, job)",
+          "start_time": "2023-06-15T11:51:31.208256+03:00",
+          "end_time": "2023-06-29T11:51:31.208256+03:00",
+          "step": "2m"
+        }
+      }
+    }
+  ],
+  "score": 42,
+  "resources": [
+    "cpu",
+    "memory"
+  ],
+  "description": "[b]Simple Strategy[/b]\n\nCPU request: 99.0% percentile, limit: unset\nMemory request: max + 5.0%, limit: max + 5.0%\n\nThis strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).\nIf HPA is defined for CPU or Memory, the strategy will return \"?\" for that resource.\n\nLearn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]",
+  "strategy": {
+    "name": "simple",
+    "settings": {
+      "history_duration": 336.0,
+      "timeframe_duration": 2.0,
+      "cpu_percentile": 99.0,
+      "memory_buffer_percentage": 5.0
+    }
+  }
+}
