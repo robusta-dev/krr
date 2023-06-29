@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import abc
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import TYPE_CHECKING, Callable, Optional, TypeVar
 
 import numpy as np
 
@@ -26,9 +27,16 @@ class BaseMetricLoader(Configurable, abc.ABC):
     Metric loaders are used to load metrics from a specified source (like Prometheus in this case).
     """
 
-    def __init__(self, config: Config, prometheus: CustomPrometheusConnect) -> None:
+    def __init__(
+        self,
+        config: Config,
+        prometheus: CustomPrometheusConnect,
+        executor: Optional[ThreadPoolExecutor] = None,
+    ) -> None:
         super().__init__(config)
         self.prometheus = prometheus
+
+        self.executor = executor
 
     def get_prometheus_cluster_label(self) -> str:
         """
@@ -79,12 +87,15 @@ class BaseMetricLoader(Configurable, abc.ABC):
         list[dict]: A list of dictionary where each dictionary represents metrics for a pod.
         """
 
-        return await asyncio.to_thread(
-            self.prometheus.custom_query_range,
-            query=metric.query,
-            start_time=metric.start_time,
-            end_time=metric.end_time,
-            step=metric.step,
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self.executor,
+            lambda: self.prometheus.custom_query_range(
+                query=metric.query,
+                start_time=metric.start_time,
+                end_time=metric.end_time,
+                step=metric.step,
+            ),
         )
 
     async def load_data(
