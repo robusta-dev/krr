@@ -14,15 +14,16 @@ from robusta_krr.utils.configurable import Configurable
 
 if TYPE_CHECKING:
     from .. import CustomPrometheusConnect
+    MetricsDictionary = dict[str, type[BaseMetricLoader]]
 
 class QueryType(str, enum.Enum):
     Query="query"
     QueryRange="query_range"
 
-MetricsDictionary = dict[str, type[BaseMetricLoader]]
+
 # A registry of metrics that can be used to fetch a corresponding metric loader.
 REGISTERED_METRICS: MetricsDictionary = {}
-STRATEGY_METRICS_OVERRIDES: dict[str,MetricsDictionary]
+STRATEGY_METRICS_OVERRIDES: dict[str,MetricsDictionary] = {}
 
 
 
@@ -172,8 +173,9 @@ class BaseMetricLoader(Configurable, abc.ABC):
         """
 
         try:
-            if strategy and STRATEGY_METRICS_OVERRIDES.has_key(strategy) and STRATEGY_METRICS_OVERRIDES[strategy].has_key(resource):
-                return STRATEGY_METRICS_OVERRIDES[strategy][resource]
+            lower_strategy = strategy.lower()
+            if lower_strategy and lower_strategy in STRATEGY_METRICS_OVERRIDES and resource in STRATEGY_METRICS_OVERRIDES[lower_strategy]:
+                return STRATEGY_METRICS_OVERRIDES[lower_strategy][resource]
             return REGISTERED_METRICS[resource]
         except KeyError as e:
             raise KeyError(f"Resource {resource} was not registered by `@bind_metric(...)`") from e
@@ -212,9 +214,10 @@ def override_metric(strategy: str, resource: str) -> Callable[[type[Self]], type
     """
 
     def decorator(cls: type[Self]) -> type[Self]:
-        if not STRATEGY_METRICS_OVERRIDES.has_key(strategy):
-            STRATEGY_METRICS_OVERRIDES[strategy] = {}
-        STRATEGY_METRICS_OVERRIDES[strategy][resource] = cls
+        lower_strategy = strategy.lower()
+        if lower_strategy not in STRATEGY_METRICS_OVERRIDES:
+            STRATEGY_METRICS_OVERRIDES[lower_strategy] = {}
+        STRATEGY_METRICS_OVERRIDES[lower_strategy][resource] = cls
         return cls
 
     return decorator
