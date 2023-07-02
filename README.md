@@ -6,25 +6,25 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url] -->
-
-<!-- PROJECT LOGO -->
-<br />
+![Product Name Screen Shot][product-screenshot]
 <div align="center">
-  <a href="https://github.com/robusta-dev/krr">
-    <img src="images/logo.png" alt="Logo" width="320" height="320">
-  </a>
-  <h3 align="center">Robusta KRR</h3>
+  <h1 align="center">Robusta KRR</h1>
   <p align="center">
     Prometheus-based Kubernetes Resource Recommendations
     <br />
-    <a href="#getting-started"><strong>Usage docs »</strong></a>
-    <br />
+    <a href="#installation"><strong>Installation</strong></a>
+    .
+    <a href="#usage"><strong>Usage</strong></a>
+    ·
+    <a href="#how-it-works"><strong>How it works</strong></a>
+    .
+    <a href="#slack-integration"><strong>Slack Integration</strong></a>
     <br />
     <a href="https://github.com/robusta-dev/krr/issues">Report Bug</a>
     ·
     <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
     ·
-    <a href="https://robustacommunity.slack.com/archives/C054QUA4NHE">Slack Channel</a>
+    <a href="#support">Support</a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
@@ -56,16 +56,14 @@
 
 ## About The Project
 
-![Product Name Screen Shot][product-screenshot]
-
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
 ### Features
 
--   No Agent Required: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster. (But it can optionally be run in-cluster for weekly Slack reports.)
--   Prometheus Integration: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
--   Extensible Strategies: Easily create and use your own strategies for calculating resource recommendations.
--   Future Support: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
+-   **No Agent Required**: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster. (But it can optionally be run in-cluster for weekly [Slack reports](#slack-integration).)
+-   **Prometheus Integration**: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
+-   **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
+-   **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### Resource Allocation Statistics
 
@@ -76,104 +74,13 @@ According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kub
 
 By right-sizing your containers with KRR, you can save an average of 69% on cloud costs.
 
-### How it works
-
-#### Metrics Gathering
-
-Robusta KRR uses the following Prometheus queries to gather usage data:
-
--   CPU Usage:
-
-    ```
-    sum(irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}}[{step}]))
-    ```
-
--   Memory Usage:
-
-    ```
-    sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
-    ```
-
-[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
-
-#### Algorithm
-
-By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
-
--   For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
-
--   For memory, we take the maximum value over the past week and add a 5% buffer.
-
-#### Prometheus connection
-
-Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-auto-discovery">here</a>.
-
-### Difference with Kubernetes VPA
-
-| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                           |
-| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
-| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
-| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
-| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
-| Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
-| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
-| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
-| Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
-| Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
-
-### Robusta UI integration
-
-If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
-
-More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
-
-![Robusta UI Screen Shot][ui-screenshot]
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- ADVANCED USAGE EXAMPLES -->
-
-### Slack integration
-
-Put cost savings on autopilot. Get notified in Slack about recommendations above X%. Send a weekly global report, or one report per team.
-
-![Slack Screen Shot][slack-screenshot]
-
-#### Prerequisites
-* A Slack workspace
-
-#### Setup
-1. [Install Robusta with Helm to your cluster and configure slack](https://docs.robusta.dev/master/installation.html)
-2. Create your KRR slack playbook by adding the following to `generated_values.yaml`:
-```
-customPlaybooks:
-# Runs a weekly krr scan on the namespace devs-namespace and sends it to the configured slack channel
-customPlaybooks:
-- triggers:
-  - on_schedule:
-      fixed_delay_repeat:
-        repeat: 1 # number of times to run or -1 to run forever
-        seconds_delay: 604800 # 1 week
-  actions:
-  - krr_scan:
-      args: "--namespace devs-namespace" ## KRR args here
-  sinks:
-      - "main_slack_sink" # slack sink you want to send the report to here
-```
-
-3. Do a Helm upgrade to apply the new values: `helm upgrade robusta robusta/robusta --values=generated_values.yaml --set clusterName=<YOUR_CLUSTER_NAME>`
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+Read more about [how KRR works](#how-it-works) and [KRR vs Kubernetes VPA](#difference-with-kubernetes-vpa)
 
 <!-- GETTING STARTED -->
 
-## Getting Started
+## Installation
 
-### Installation
-
-#### Installing with brew (MacOS/Linux):
+### With brew (MacOS/Linux):
 
 1. Add our tap:
 ```sh
@@ -190,12 +97,11 @@ brew install krr
 krr --help
 ```
 
-#### Installing on Windows:
+### On Windows:
 
-We will use chocolatey for easier installing on Windows, but currently it is not yet supported.
-If you want to still run on Windows, you can do that by installing using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or installing manually:
+You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or install manually.
 
-#### Manual
+### Manual Installation
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
 2. Clone the repo:
@@ -220,9 +126,15 @@ python krr.py --help
 Notice that using source code requires you to run as a python script, when installing with brew allows to run `krr`.
 All above examples show running command as `krr ...`, replace it with `python krr.py ...` if you are using a manual installation.
 
-[To use krr with Google Cloud Managed Service for Prometheus, some additional configuration is necessary.](./docs/google-cloud-managed-service-for-prometheus.md)
-
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Other Configuration Methods
+
+* [View KRR Reports in a Web UI](#robusta-ui-integration)
+* [Get a Weekly Message in Slack with KRR Recommendations](#slack-integration) 
+* Setup KRR on [Google Cloud Managed Prometheus
+](./docs/google-cloud-managed-service-for-prometheus.md)
+* Setup KRR for [Azure managed Prometheus](#azure-managed-prometheus)
 
 <!-- USAGE EXAMPLES -->
 
@@ -271,6 +183,103 @@ krr simple --help
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+## How it works
+
+### Metrics Gathering
+
+Robusta KRR uses the following Prometheus queries to gather usage data:
+
+-   CPU Usage:
+
+    ```
+    sum(irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}}[{step}]))
+    ```
+
+-   Memory Usage:
+
+    ```
+    sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
+    ```
+
+[_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
+
+### Algorithm
+
+By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
+
+-   For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
+
+-   For memory, we take the maximum value over the past week and add a 5% buffer.
+
+### Prometheus connection
+
+Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-victoria-metrics-and-thanos-auto-discovery">here</a>.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Difference with Kubernetes VPA
+
+| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                           |
+| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
+| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
+| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
+| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
+| Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
+| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
+| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
+| Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
+| Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
+
+
+
+## Robusta UI integration
+
+If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
+
+More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
+
+![Robusta UI Screen Shot][ui-screenshot]
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ADVANCED USAGE EXAMPLES -->
+
+## Slack integration
+
+Put cost savings on autopilot. Get notified in Slack about recommendations above X%. Send a weekly global report, or one report per team.
+
+![Slack Screen Shot][slack-screenshot]
+
+### Prerequisites
+* A Slack workspace
+
+### Setup
+1. [Install Robusta with Helm to your cluster and configure slack](https://docs.robusta.dev/master/installation.html)
+2. Create your KRR slack playbook by adding the following to `generated_values.yaml`:
+```
+customPlaybooks:
+# Runs a weekly krr scan on the namespace devs-namespace and sends it to the configured slack channel
+customPlaybooks:
+- triggers:
+  - on_schedule:
+      fixed_delay_repeat:
+        repeat: 1 # number of times to run or -1 to run forever
+        seconds_delay: 604800 # 1 week
+  actions:
+  - krr_scan:
+      args: "--namespace devs-namespace" ## KRR args here
+  sinks:
+      - "main_slack_sink" # slack sink you want to send the report to here
+```
+
+3. Do a Helm upgrade to apply the new values: `helm upgrade robusta robusta/robusta --values=generated_values.yaml --set clusterName=<YOUR_CLUSTER_NAME>`
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 <!-- Port-forwarding -->
 
@@ -342,6 +351,24 @@ krr.py simple -p http://my-centralized-prometheus:9090 --prometheus-label env -l
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Azure managed Prometheus
+
+For Azure managed Prometheus you need to generate an access token, which can be done by running the following command:
+
+```sh
+# If you are not logged in to Azure, uncomment out the following line
+# az login
+AZURE_BEARER=$(az account get-access-token --resource=https://prometheus.monitor.azure.com  --query accesssToken --output tsv); echo $AZURE_BEARER 
+```
+
+Than run the following command with PROMETHEUS_URL substituted for your Azure Managed Prometheus URL:
+
+```sh
+python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-header "Bearer $AZURE_BEARER"
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <!-- Formatters -->
 
 ## Available formatters
@@ -365,7 +392,7 @@ krr simple -f json
 
 ## Creating a Custom Strategy/Formatter
 
-Look into the `examples` directory for examples on how to create a custom strategy/formatter.
+Look into the [examples](https://github.com/robusta-dev/krr/tree/main/examples) directory for examples on how to create a custom strategy/formatter.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -419,17 +446,16 @@ Don't forget to give the project a star! Thanks again!
 
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See [LICENSE.txt](https://github.com/robusta-dev/krr/blob/main/LICENSE) for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTACT -->
 
-## Contact
+## Support
 
-If you have any questions, feel free to contact support@robusta.dev
+If you have any questions, feel free to contact **support@robusta.dev** or message us on [robustacommunity.slack.com](https://bit.ly/robusta-slack)
 
-Project Link: [https://github.com/robusta-dev/krr](https://github.com/robusta-dev/krr)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
