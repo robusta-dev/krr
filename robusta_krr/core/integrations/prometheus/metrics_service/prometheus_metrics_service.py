@@ -177,9 +177,7 @@ class PrometheusMetricsService(MetricsService):
         """
         self.debug(f"Gathering data for {object} and {resource}")
 
-        await self.add_historic_pods(object, period)
-
-        MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
+        MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 
