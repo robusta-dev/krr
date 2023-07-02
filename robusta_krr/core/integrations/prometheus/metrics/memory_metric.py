@@ -16,7 +16,7 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
             f'pod=~"{pods_selector}", '
             f'container="{object.container}"'
             f"{cluster_label}"
-            "}) by (container, pod, job)"
+            "}) by (container, pod, job, id)"
         )
 
     def get_query_type(self) -> QueryType:
@@ -38,7 +38,7 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
             f'container="{object.container}"'
             f'{cluster_label}}}'
             f'{resolution_formatted}'
-            f')) by (container, pod, job)'
+            f')) by (container, pod, job, id)'
         )
     
     def get_query_type(self) -> QueryType:

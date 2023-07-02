@@ -133,8 +133,8 @@ class BaseMetricLoader(Configurable, abc.ABC):
         Returns:
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
         """
-
-        query = self.get_query(object, self._step_to_string(period))
+        resolution = f'{self._step_to_string(period)}:{self._step_to_string(step)}'
+        query = self.get_query(object, resolution)
         query_type = self.get_query_type()
         end_time = datetime.datetime.now().astimezone()
         metric = Metric(
