@@ -13,7 +13,7 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
         cluster_label = self.get_prometheus_cluster_label()
         resolution_formatted = f'[{resolution}]' if resolution else ''
         return (
-            f'max(max_over_time(container_memory_max_usage_bytes{{'
+            f'max(max_over_time(container_memory_working_set_bytes{{'
             f'namespace="{object.namespace}", '
             f'pod=~"{pods_selector}", '
             f'container="{object.container}"'
