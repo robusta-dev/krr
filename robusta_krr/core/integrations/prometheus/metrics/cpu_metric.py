@@ -19,6 +19,6 @@ class CPUMetricLoader(BaseFilteredMetricLoader):
             f"{cluster_label}"
             "}[5m])) by (container, pod, job)"
         )
-    
+
     def get_query_type(self) -> QueryType:
         return QueryType.QueryRange

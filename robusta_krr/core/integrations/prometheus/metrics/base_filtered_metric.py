@@ -5,6 +5,7 @@ from .base_metric import BaseMetricLoader, QueryType
 
 PrometheusSeries = Any
 
+
 class BaseFilteredMetricLoader(BaseMetricLoader):
     """
     This is the version of the BasicMetricLoader, that filters out data,

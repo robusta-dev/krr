@@ -5,6 +5,7 @@ from robusta_krr.core.models.objects import K8sObjectData
 from .base_filtered_metric import BaseFilteredMetricLoader
 from .base_metric import bind_metric, QueryType, override_metric
 
+
 @bind_metric(ResourceType.Memory)
 class MemoryMetricLoader(BaseFilteredMetricLoader):
     def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
@@ -22,24 +23,26 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
     def get_query_type(self) -> QueryType:
         return QueryType.QueryRange
 
+
 @override_metric("simple", ResourceType.Memory)
 class MemoryMetricLoader(BaseFilteredMetricLoader):
     """
     A class that overrides the memory metric on the simple strategy.
     """
+
     def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
-        resolution_formatted = f'[{resolution}]' if resolution else ''
+        resolution_formatted = f"[{resolution}]" if resolution else ""
         return (
-            f'max(max_over_time(container_memory_working_set_bytes{{'
+            f"max(max_over_time(container_memory_working_set_bytes{{"
             f'namespace="{object.namespace}", '
             f'pod=~"{pods_selector}", '
             f'container="{object.container}"'
-            f'{cluster_label}}}'
-            f'{resolution_formatted}'
-            f')) by (container, pod, job, id)'
+            f"{cluster_label}}}"
+            f"{resolution_formatted}"
+            f")) by (container, pod, job, id)"
         )
-    
+
     def get_query_type(self) -> QueryType:
         return QueryType.Query

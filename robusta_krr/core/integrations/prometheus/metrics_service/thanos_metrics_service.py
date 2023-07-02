@@ -51,7 +51,11 @@ class ThanosMetricsService(PrometheusMetricsService):
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(
-            config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery, executor=executor
+            config=config,
+            cluster=cluster,
+            api_client=api_client,
+            service_discovery=ThanosMetricsDiscovery,
+            executor=executor,
         )
 
     def check_connection(self):

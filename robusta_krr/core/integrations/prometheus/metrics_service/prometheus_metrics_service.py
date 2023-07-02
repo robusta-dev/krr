@@ -200,7 +200,7 @@ class PrometheusMetricsService(MetricsService):
                 f'owner_name="{object.name}", '
                 f'owner_kind="Deployment", '
                 f'namespace="{object.namespace}"'
-                f'{cluster_label}'
+                f"{cluster_label}"
                 "}"
                 f"[{period_literal}]"
             )
@@ -216,7 +216,7 @@ class PrometheusMetricsService(MetricsService):
             f'owner_name=~"{owners_regex}", '
             f'owner_kind="{pod_owner_kind}", '
             f'namespace="{object.namespace}"'
-            f'{cluster_label}'
+            f"{cluster_label}"
             "}"
             f"[{period_literal}]"
         )

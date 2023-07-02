@@ -14,17 +14,18 @@ from robusta_krr.utils.configurable import Configurable
 
 if TYPE_CHECKING:
     from .. import CustomPrometheusConnect
+
     MetricsDictionary = dict[str, type[BaseMetricLoader]]
 
+
 class QueryType(str, enum.Enum):
-    Query="query"
-    QueryRange="query_range"
+    Query = "query"
+    QueryRange = "query_range"
 
 
 # A registry of metrics that can be used to fetch a corresponding metric loader.
 REGISTERED_METRICS: MetricsDictionary = {}
-STRATEGY_METRICS_OVERRIDES: dict[str,MetricsDictionary] = {}
-
+STRATEGY_METRICS_OVERRIDES: dict[str, MetricsDictionary] = {}
 
 
 class BaseMetricLoader(Configurable, abc.ABC):
@@ -88,20 +89,20 @@ class BaseMetricLoader(Configurable, abc.ABC):
     def query_prometheus_thread(self, metric: Metric, query_type: QueryType) -> list[dict]:
         if query_type == QueryType.QueryRange:
             value = self.prometheus.custom_query_range(
-                    query=metric.query,
-                    start_time=metric.start_time,
-                    end_time=metric.end_time,
-                    step=metric.step,
-                )
+                query=metric.query,
+                start_time=metric.start_time,
+                end_time=metric.end_time,
+                step=metric.step,
+            )
             return value
 
         # regular query, lighter on preformance
-        results =  self.prometheus.custom_query(query=metric.query)
-        #format the results to return the same format as custom_query_range
+        results = self.prometheus.custom_query(query=metric.query)
+        # format the results to return the same format as custom_query_range
         for result in results:
             result["values"] = [result.pop("value")]
         return results
-        
+
     async def query_prometheus(self, metric: Metric, query_type: QueryType) -> list[dict]:
         """
         Asynchronous method that queries Prometheus to fetch metrics.
@@ -116,7 +117,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
-            lambda: self.query_prometheus_thread( metric= metric, query_type=query_type),
+            lambda: self.query_prometheus_thread(metric=metric, query_type=query_type),
         )
 
     async def load_data(
@@ -133,7 +134,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         Returns:
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
         """
-        resolution = f'{self._step_to_string(period)}:{self._step_to_string(step)}'
+        resolution = f"{self._step_to_string(period)}:{self._step_to_string(step)}"
         query = self.get_query(object, resolution)
         query_type = self.get_query_type()
         end_time = datetime.datetime.now().astimezone()
@@ -174,7 +175,11 @@ class BaseMetricLoader(Configurable, abc.ABC):
 
         try:
             lower_strategy = strategy.lower()
-            if lower_strategy and lower_strategy in STRATEGY_METRICS_OVERRIDES and resource in STRATEGY_METRICS_OVERRIDES[lower_strategy]:
+            if (
+                lower_strategy
+                and lower_strategy in STRATEGY_METRICS_OVERRIDES
+                and resource in STRATEGY_METRICS_OVERRIDES[lower_strategy]
+            ):
                 return STRATEGY_METRICS_OVERRIDES[lower_strategy][resource]
             return REGISTERED_METRICS[resource]
         except KeyError as e:
@@ -200,6 +205,7 @@ def bind_metric(resource: str) -> Callable[[type[Self]], type[Self]]:
         return cls
 
     return decorator
+
 
 def override_metric(strategy: str, resource: str) -> Callable[[type[Self]], type[Self]]:
     """
