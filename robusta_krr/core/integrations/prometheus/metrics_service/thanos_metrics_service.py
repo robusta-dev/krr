@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from kubernetes.client import ApiClient
@@ -48,9 +49,14 @@ class ThanosMetricsService(PrometheusMetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(
-            config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery
+            config=config,
+            cluster=cluster,
+            api_client=api_client,
+            service_discovery=ThanosMetricsDiscovery,
+            executor=executor,
         )
 
     def check_connection(self):
