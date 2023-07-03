@@ -89,7 +89,6 @@ def table(result: Result) -> Table:
     if cluster_count > 1:
         table.add_column("Cluster", style="cyan")
     table.add_column("Namespace", style="cyan")
-    table.add_column("Group", style="cyan")
     table.add_column("Name", style="cyan")
     table.add_column("Pods", style="cyan")
     table.add_column("Old Pods", style="cyan")
@@ -114,7 +113,6 @@ def table(result: Result) -> Table:
                 cells.append(item.object.cluster if full_info_row else "")
             cells += [
                 item.object.namespace if full_info_row else "",
-                item.object.labels['group'] if "group" in item.object.labels else "" if full_info_row else "",
                 item.object.name if full_info_row else "",
                 f"{item.object.current_pods_count}" if full_info_row else "",
                 f"{item.object.deleted_pods_count}" if full_info_row else "",
