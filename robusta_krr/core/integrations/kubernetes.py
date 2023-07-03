@@ -24,6 +24,7 @@ from kubernetes.client.models import (
 from robusta_krr.core.models.objects import K8sObjectData, PodData, HPAData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
+from .base_workload_loader import WorkloadLoader
 
 
 AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
@@ -243,7 +244,7 @@ class ClusterLoader(Configurable):
         }
 
 
-class KubernetesLoader(Configurable):
+class KubernetesLoader(WorkloadLoader):
     async def list_clusters(self) -> Optional[list[str]]:
         """List all clusters.
 

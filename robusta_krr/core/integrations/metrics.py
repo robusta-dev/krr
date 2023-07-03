@@ -6,10 +6,10 @@ from collections import defaultdict
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceType, RecommendationValue
-from robusta_krr.utils.configurable import Configurable
 from .prometheus.loader import MetricsLoader
+from .base_workload_loader import WorkloadLoader
 
-class PrometheusLoader(Configurable):    
+class PrometheusLoader(WorkloadLoader):    
     def __init__(self, config: Config):
         super().__init__(config)
         self.metrics_loader = MetricsLoader(config)

@@ -16,6 +16,7 @@ class Config(pd.BaseSettings):
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
+    discovery_method: Union[Literal["api-server"], Literal["prometheus"]] = pd.Field("api-server")
 
     # Value settings
     cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
