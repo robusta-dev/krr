@@ -23,9 +23,9 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
     def get_query_type(self) -> QueryType:
         return QueryType.QueryRange
 
-
+# This is a temporary solutions, metric loaders will be moved to strategy in the future
 @override_metric("simple", ResourceType.Memory)
-class MemoryMetricLoader(BaseFilteredMetricLoader):
+class MemoryMetricLoader(MemoryMetricLoader):
     """
     A class that overrides the memory metric on the simple strategy.
     """
@@ -46,3 +46,6 @@ class MemoryMetricLoader(BaseFilteredMetricLoader):
 
     def get_query_type(self) -> QueryType:
         return QueryType.Query
+
+    def get_graph_query(self, object: K8sObjectData, resolution: Optional[str]) -> str: 
+        return super().get_query(object, resolution)

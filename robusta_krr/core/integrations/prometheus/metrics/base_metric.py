@@ -72,6 +72,19 @@ class BaseMetricLoader(Configurable, abc.ABC):
 
         pass
 
+    def get_graph_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
+        """
+        This method should be implemented by all subclasses to provide a query string in the metadata to produce relevant graphs.
+
+        Args:
+        object (K8sObjectData): The object for which metrics need to be fetched.
+        resolution (Optional[str]): a string for configurable resolution to the query.
+
+        Returns:
+        str: The query string.
+        """
+        return self.get_query(object, resolution)
+
     def _step_to_string(self, step: datetime.timedelta) -> str:
         """
         Converts step in datetime.timedelta format to a string format used by Prometheus.
@@ -145,6 +158,8 @@ class BaseMetricLoader(Configurable, abc.ABC):
             step=self._step_to_string(step),
         )
         result = await self.query_prometheus(metric=metric, query_type=query_type)
+        # adding the query in the results for a graph 
+        metric.query = self.get_graph_query(object, resolution)
 
         if result == []:
             self.warning(f"{service_name} returned no {self.__class__.__name__} metrics for {object}")
@@ -207,6 +222,7 @@ def bind_metric(resource: str) -> Callable[[type[Self]], type[Self]]:
     return decorator
 
 
+# This is a temporary solutions, metric loaders will be moved to strategy in the future
 def override_metric(strategy: str, resource: str) -> Callable[[type[Self]], type[Self]]:
     """
     A decorator that overrides the bound metric on a specific strategy.
