@@ -1,8 +1,7 @@
 from typing import Any, Optional
-
 from robusta_krr.core.abstract.strategies import Metric
 
-from .base_metric import BaseMetricLoader
+from .base_metric import BaseMetricLoader, QueryType
 
 PrometheusSeries = Any
 
@@ -57,6 +56,6 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
             return_list.append(sorted_relevant_series[0])
         return return_list
 
-    async def query_prometheus(self, metric: Metric) -> list[PrometheusSeries]:
-        result = await super().query_prometheus(metric)
+    async def query_prometheus(self, metric: Metric, query_type: QueryType) -> list[PrometheusSeries]:
+        result = await super().query_prometheus(metric, query_type)
         return self.filter_prom_jobs_results(result)

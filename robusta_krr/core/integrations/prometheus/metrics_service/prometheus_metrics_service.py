@@ -177,9 +177,9 @@ class PrometheusMetricsService(MetricsService):
         """
         self.debug(f"Gathering data for {object} and {resource}")
 
+        MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
         await self.add_historic_pods(object, period)
-
-        MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
+        
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 
@@ -202,7 +202,7 @@ class PrometheusMetricsService(MetricsService):
                 f'owner_name="{object.name}", '
                 f'owner_kind="Deployment", '
                 f'namespace="{object.namespace}"'
-                f'{cluster_label}'
+                f"{cluster_label}"
                 "}"
                 f"[{period_literal}]"
             )
@@ -218,7 +218,7 @@ class PrometheusMetricsService(MetricsService):
             f'owner_name=~"{owners_regex}", '
             f'owner_kind="{pod_owner_kind}", '
             f'namespace="{object.namespace}"'
-            f'{cluster_label}'
+            f"{cluster_label}"
             "}"
             f"[{period_literal}]"
         )
