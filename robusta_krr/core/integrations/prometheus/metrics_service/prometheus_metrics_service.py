@@ -1,22 +1,19 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import List, Optional, no_type_check, Type
+from typing import List, Optional, Type
 
-import requests
 from kubernetes.client import ApiClient
-from prometheus_api_client import PrometheusConnect, Retry
-from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceType
-from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.service_discovery import ServiceDiscovery
 
 from ..metrics import BaseMetricLoader
+from ..prometheus_client import CustomPrometheusConnect
 from .base_metric_service import MetricsNotFound, MetricsService
 
 
@@ -49,33 +46,6 @@ class PrometheusNotFound(MetricsNotFound):
     """
 
     pass
-
-
-class ClusterNotSpecifiedException(Exception):
-    """
-    An exception raised when a prometheus requires a cluster label but an invalid one is provided.
-    """
-
-    pass
-
-
-class CustomPrometheusConnect(PrometheusConnect):
-    """
-    Custom PrometheusConnect class to handle retries.
-    """
-
-    @no_type_check
-    def __init__(
-        self,
-        url: str = "http://127.0.0.1:9090",
-        headers: dict = None,
-        disable_ssl: bool = False,
-        retry: Retry = None,
-        auth: tuple = None,
-    ):
-        super().__init__(url, headers, disable_ssl, retry, auth)
-        self._session = requests.Session()
-        self._session.mount(self.url, HTTPAdapter(max_retries=retry, pool_maxsize=10, pool_block=True))
 
 
 class PrometheusMetricsService(MetricsService):
@@ -179,7 +149,7 @@ class PrometheusMetricsService(MetricsService):
 
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
         await self.add_historic_pods(object, period)
-        
+
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 
