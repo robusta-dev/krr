@@ -158,7 +158,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
             step=self._step_to_string(step),
         )
         result = await self.query_prometheus(metric=metric, query_type=query_type)
-        # adding the query in the results for a graph 
+        # adding the query in the results for a graph
         metric.query = self.get_graph_query(object, resolution)
 
         if result == []:

@@ -52,7 +52,7 @@ class ResourceScan(pd.BaseModel):
                 recommended = getattr(recommendation, selector).get(resource_type)
 
                 current_severity = Severity.calculate(current, recommended, resource_type)
-                if object.metadata.get("oomkills", 0) > 0 and resource_type == ResourceType.Memory:
+                if object.oomkilled and resource_type == ResourceType.Memory:
                     current_severity = Severity.CRITICAL
 
                 getattr(recommendation_processed, selector)[resource_type] = Recommendation(

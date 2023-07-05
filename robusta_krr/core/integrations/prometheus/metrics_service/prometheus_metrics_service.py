@@ -156,7 +156,6 @@ class PrometheusMetricsService(MetricsService):
         await self.add_historic_pods(object, period)
         if resource == ResourceType.Memory:
             await self.get_oomkill_count(object)
-        MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 
@@ -178,16 +177,18 @@ class PrometheusMetricsService(MetricsService):
         start_time = end_time - period
         cluster_label = self.get_prometheus_cluster_label()
 
-        query = f'max(increase(kube_pod_container_status_restarts_total{{pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}[1m])/2 * on (pod,container) group_left kube_pod_container_status_last_terminated_reason{{reason="OOMKilled", pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (container, pod) ==1 and max(kube_pod_container_resource_limits{{pod=~"{pods_selector}", container="{object.container}"}} >= {int_bytes_mem_limit} {cluster_label}) by (pod, container)'
-        oom_kill_series = self.prometheus.custom_query_range(
-            query, end_time=end_time, start_time=start_time, step="30s"
-        )
+        query = f""" 
+        max_over_time((max(kube_pod_container_resource_limits{{pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (pod, namespace, container) * max(kube_pod_container_status_last_terminated_reason{{reason="OOMKilled", pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (pod, namespace, container))[14d:2m])
+        """
+
+        oom_kill_series = self.prometheus.custom_query(query)
 
         if oom_kill_series:
-            total_oomkills_all_pods = 0
+            
+            pods_that_had_oomkills = 0
             for series in oom_kill_series:
-                total_oomkills_all_pods += sum([int(data_point[1]) for data_point in series["values"]])
-            object.metadata["oomkills"] = total_oomkills_all_pods
+                pods_that_had_oomkills += 1 if len(series["value"]) > 0 else 0
+            object.oomkilled = pods_that_had_oomkills > 0
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """
