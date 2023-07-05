@@ -65,7 +65,6 @@ class CustomPrometheusConnect(PrometheusConnect):
         params = params or {}
         data = None
         query = str(query)
-        print(self.headers)
         # using the query_range API to get raw data
         response = self._session.post(
             "{0}/api/v1/query_range".format(self.url),
