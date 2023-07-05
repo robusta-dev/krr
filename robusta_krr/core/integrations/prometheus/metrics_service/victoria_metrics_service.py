@@ -1,5 +1,6 @@
-from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
+
 from kubernetes.client import ApiClient
 
 from robusta_krr.core.models.config import Config

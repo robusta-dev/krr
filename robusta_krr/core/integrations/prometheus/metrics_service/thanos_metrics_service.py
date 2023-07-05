@@ -1,7 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from kubernetes.client import ApiClient
-from concurrent.futures import ThreadPoolExecutor
+
 from robusta_krr.core.models.config import Config
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 

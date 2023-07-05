@@ -1,7 +1,7 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import Optional, no_type_check, Type
+from concurrent.futures import ThreadPoolExecutor
+from typing import Optional, Type, no_type_check
 
 import requests
 from kubernetes.client import ApiClient

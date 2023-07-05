@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import abc
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import TYPE_CHECKING, Callable, Optional, TypeVar
 import enum
+from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING, Callable, Optional, TypeVar
+
 import numpy as np
+
 from robusta_krr.core.abstract.strategies import Metric, ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData

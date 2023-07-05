@@ -1,8 +1,7 @@
 import asyncio
 import math
-from typing import Optional, Union
-
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional, Union
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader

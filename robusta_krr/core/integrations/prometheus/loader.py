@@ -1,7 +1,6 @@
 import datetime
-from typing import Optional
-
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
