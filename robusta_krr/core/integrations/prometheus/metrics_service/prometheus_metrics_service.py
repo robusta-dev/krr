@@ -1,7 +1,7 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import List, Optional, no_type_check, Type
+from typing import Optional, no_type_check, Type
 
 import requests
 from kubernetes.client import ApiClient
@@ -13,14 +13,13 @@ from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceType
-from robusta_krr.utils.configurable import Configurable
-from robusta_krr.utils.service_discovery import ServiceDiscovery
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from ..metrics import BaseMetricLoader
 from .base_metric_service import MetricsNotFound, MetricsService
 
 
-class PrometheusDiscovery(ServiceDiscovery):
+class PrometheusDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Prometheus URL using selectors.
@@ -89,7 +88,7 @@ class PrometheusMetricsService(MetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
-        service_discovery: Type[ServiceDiscovery] = PrometheusDiscovery,
+        service_discovery: Type[MetricsServiceDiscovery] = PrometheusDiscovery,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
@@ -116,7 +115,7 @@ class PrometheusMetricsService(MetricsService):
 
         if self.auth_header:
             headers = {"Authorization": self.auth_header}
-        elif not self.config.inside_cluster:
+        elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
         self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
@@ -162,7 +161,9 @@ class PrometheusMetricsService(MetricsService):
                 f"Label {cluster_label} does not exist, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
             )
 
-    def get_cluster_names(self) -> Optional[List[str]]:
+    # Superclass method returns Optional[list[str]], but here we return list[str]
+    # NOTE that this does not break Liskov Substitution Principle
+    def get_cluster_names(self) -> list[str]:
         return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
 
     async def gather_data(
@@ -179,7 +180,7 @@ class PrometheusMetricsService(MetricsService):
 
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
         await self.add_historic_pods(object, period)
-        
+
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 

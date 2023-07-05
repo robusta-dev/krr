@@ -1,4 +1,5 @@
 from typing import Optional
+from abc import ABC, abstractmethod
 
 from cachetools import TTLCache
 from kubernetes import client
@@ -82,3 +83,9 @@ class ServiceDiscovery(Configurable):
                 return ingress_url
 
         return None
+
+
+class MetricsServiceDiscovery(ServiceDiscovery, ABC):
+    @abstractmethod
+    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+        pass

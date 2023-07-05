@@ -17,7 +17,7 @@ multi_line_output = 3
 include_trailing_comma = true
 
 [tool.mypy]
-plugins = "numpy.typing.mypy_plugin"
+plugins = "numpy.typing.mypy_plugin,pydantic.mypy"
 
 [tool.poetry.scripts]
 krr = "robusta_krr.main:run"

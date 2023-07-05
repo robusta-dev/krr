@@ -65,7 +65,7 @@ class Runner(Configurable):
         Formatter = self.config.Formatter
         formatted = result.format(Formatter)
         self.echo("\n", no_prefix=True)
-        self.print_result(formatted, rich=Formatter.__rich_console__)
+        self.print_result(formatted, rich=getattr(Formatter, "__rich_console__", False))
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
@@ -204,5 +204,5 @@ class Runner(Configurable):
             self._process_result(result)
         except ClusterNotSpecifiedException as e:
             self.error(e)
-        except Exception as e:
+        except Exception:
             self.console.print_exception(extra_lines=1, max_frames=10)

@@ -42,7 +42,7 @@ class MetricsService(Configurable, abc.ABC):
         return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
 
     @abc.abstractmethod
-    async def get_cluster_names(self) -> Optional[List[str]]:
+    def get_cluster_names(self) -> Optional[List[str]]:
         ...
 
     @abc.abstractmethod
@@ -51,7 +51,6 @@ class MetricsService(Configurable, abc.ABC):
         object: K8sObjectData,
         resource: ResourceType,
         period: datetime.timedelta,
-        *,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> ResourceHistoryData:
         ...

@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Optional
+from typing import Any
 
 from rich.table import Table
 
