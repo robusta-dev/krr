@@ -4,6 +4,7 @@ import datetime
 from typing import List, Optional, Type
 
 from kubernetes.client import ApiClient
+from prometheus_api_client import PrometheusApiClientException
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
@@ -133,7 +134,11 @@ class PrometheusMetricsService(MetricsService):
             )
 
     def get_cluster_names(self) -> Optional[List[str]]:
-        return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
+        try:
+            return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
+        except PrometheusApiClientException:
+            self.error("Labels api not present on prometheus client")
+            return []
 
     async def gather_data(
         self,
