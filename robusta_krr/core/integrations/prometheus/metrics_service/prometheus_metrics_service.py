@@ -4,7 +4,7 @@ import datetime
 from typing import List, Optional, Type
 
 from kubernetes.client import ApiClient
-from prometheus_api_client import PrometheusConnect, Retry, PrometheusApiClientException
+from prometheus_api_client import PrometheusApiClientException
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
