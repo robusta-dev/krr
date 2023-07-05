@@ -154,9 +154,40 @@ class PrometheusMetricsService(MetricsService):
 
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
         await self.add_historic_pods(object, period)
-
+        if resource == ResourceType.Memory:
+            await self.get_oomkill_count(object)
+        MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
+
+    async def get_oomkill_count(
+        self, object: K8sObjectData, period: datetime.timedelta = datetime.timedelta(days=1)
+    ) -> None:
+        """
+        Counts the relevant (limit related) oomkills in designated period
+        Args:
+            object (K8sObjectData): The Kubernetes object.
+            period (timedelta): The period to query, by default the past day.
+        """
+        # no limit so no oomkill isnt related to limit
+        if not object.allocations.limits[ResourceType.Memory]:
+            return
+        pods_selector = "|".join(pod.name for pod in object.pods)
+        int_bytes_mem_limit = int(object.allocations.limits[ResourceType.Memory])
+        end_time = datetime.datetime.now().astimezone()
+        start_time = end_time - period
+        cluster_label = self.get_prometheus_cluster_label()
+
+        query = f'max(increase(kube_pod_container_status_restarts_total{{pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}[1m])/2 * on (pod,container) group_left kube_pod_container_status_last_terminated_reason{{reason="OOMKilled", pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (container, pod) ==1 and max(kube_pod_container_resource_limits{{pod=~"{pods_selector}", container="{object.container}"}} >= {int_bytes_mem_limit} {cluster_label}) by (pod, container)'
+        oom_kill_series = self.prometheus.custom_query_range(
+            query, end_time=end_time, start_time=start_time, step="30s"
+        )
+
+        if oom_kill_series:
+            total_oomkills_all_pods = 0
+            for series in oom_kill_series:
+                total_oomkills_all_pods += sum([int(data_point[1]) for data_point in series["values"]])
+            object.metadata["oomkills"] = total_oomkills_all_pods
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """

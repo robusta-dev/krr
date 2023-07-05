@@ -18,13 +18,22 @@ class SimpleStrategySettings(StrategySettings):
     memory_buffer_percentage: float = pd.Field(
         5, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
+    oomkill_memory_buffer_percentage: float = pd.Field(
+        20,
+        gt=0,
+        description="The percentage of added buffer to the peak memory usage for memory recommendation when a container has had an oomkill.",
+    )
 
-    def calculate_memory_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:
+    def calculate_memory_proposal(self, data: dict[str, NDArray[np.float64]], object_data: K8sObjectData) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
             return float("NaN")
+        has_oomkill = object_data.metadata.get("oomkills", 0) > 0
+        memory_buffer_percentage = (
+            self.oomkill_memory_buffer_percentage if has_oomkill else self.memory_buffer_percentage
+        )
 
-        return max(data_) * (1 + self.memory_buffer_percentage / 100)
+        return max(data_) * (1 + memory_buffer_percentage / 100)
 
     def calculate_cpu_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:
         if len(data) == 0:

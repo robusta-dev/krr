@@ -32,6 +32,7 @@ class K8sObjectData(pd.BaseModel):
     namespace: str
     kind: str
     allocations: ResourceAllocations
+    metadata: dict[str, str] = {}
 
     def __str__(self) -> str:
         return f"{self.kind} {self.namespace}/{self.name}/{self.container}"
