@@ -35,7 +35,7 @@ class SimpleStrategySettings(StrategySettings):
         # sometimes prometheus isnt able to record the memory spike so we add the current limit to our values to calculate
         if object_data.oomkilled and isinstance(object_data.allocations.limits[ResourceType.Memory], (int, float)):
             data_.append(object_data.allocations.limits[ResourceType.Memory])
-        
+
         return max(data_) * (1 + memory_buffer_percentage / 100)
 
     def calculate_cpu_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:

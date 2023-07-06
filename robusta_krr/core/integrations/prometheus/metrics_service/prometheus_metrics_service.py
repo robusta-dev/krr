@@ -155,12 +155,12 @@ class PrometheusMetricsService(MetricsService):
         MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
         await self.add_historic_pods(object, period)
         if resource == ResourceType.Memory:
-            await self.get_oomkill_count(object)
+            await self.get_oomkill_count(object, period, step)
         metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 
     async def get_oomkill_count(
-        self, object: K8sObjectData, period: datetime.timedelta = datetime.timedelta(days=1)
+        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
     ) -> None:
         """
         Counts the relevant (limit related) oomkills in designated period
@@ -173,22 +173,20 @@ class PrometheusMetricsService(MetricsService):
             return
         pods_selector = "|".join(pod.name for pod in object.pods)
         int_bytes_mem_limit = int(object.allocations.limits[ResourceType.Memory])
-        end_time = datetime.datetime.now().astimezone()
-        start_time = end_time - period
+        resolution = f"[{BaseMetricLoader.step_to_string(period)}:{BaseMetricLoader.step_to_string(step)}]"
         cluster_label = self.get_prometheus_cluster_label()
-
         query = f""" 
-        max_over_time((max(kube_pod_container_resource_limits{{pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (pod, namespace, container) * max(kube_pod_container_status_last_terminated_reason{{reason="OOMKilled", pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (pod, namespace, container))[14d:2m])
+        max_over_time((max(kube_pod_container_resource_limits{{pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (pod, namespace, container) >= {int_bytes_mem_limit} * 
+        max(kube_pod_container_status_last_terminated_reason{{reason="OOMKilled", pod=~"{pods_selector}", container="{object.container}" {cluster_label}}}) by (pod, namespace, container)){resolution})
         """
 
         oom_kill_series = self.prometheus.custom_query(query)
-
         if oom_kill_series:
-            
-            pods_that_had_oomkills = 0
             for series in oom_kill_series:
-                pods_that_had_oomkills += 1 if len(series["value"]) > 0 else 0
-            object.oomkilled = pods_that_had_oomkills > 0
+                # if there is an oomkill the series will be a list in the format [timestamp, mem_limit]
+                if len(series["value"]) >= 2 and int(series["value"][1]) >= int_bytes_mem_limit:
+                    object.oomkilled = True
+                    break
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """

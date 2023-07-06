@@ -85,20 +85,6 @@ class BaseMetricLoader(Configurable, abc.ABC):
         """
         return self.get_query(object, resolution)
 
-    def _step_to_string(self, step: datetime.timedelta) -> str:
-        """
-        Converts step in datetime.timedelta format to a string format used by Prometheus.
-
-        Args:
-        step (datetime.timedelta): Step size in datetime.timedelta format.
-
-        Returns:
-        str: Step size in string format used by Prometheus.
-        """
-        if step.total_seconds() > 60 * 60 * 24:
-            return f"{int(step.total_seconds()) // (60 * 60 * 24)}d"
-        return f"{int(step.total_seconds()) // 60}m"
-
     def query_prometheus_thread(self, metric: Metric, query_type: QueryType) -> list[dict]:
         if query_type == QueryType.QueryRange:
             value = self.prometheus.custom_query_range(
@@ -147,7 +133,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         Returns:
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
         """
-        resolution = f"{self._step_to_string(period)}:{self._step_to_string(step)}"
+        resolution = f"{self.step_to_string(period)}:{self.step_to_string(step)}"
         query = self.get_query(object, resolution)
         query_type = self.get_query_type()
         end_time = datetime.datetime.now().astimezone()
@@ -155,7 +141,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
             query=query,
             start_time=end_time - period,
             end_time=end_time,
-            step=self._step_to_string(step),
+            step=self.step_to_string(step),
         )
         result = await self.query_prometheus(metric=metric, query_type=query_type)
         # adding the query in the results for a graph
@@ -171,6 +157,21 @@ class BaseMetricLoader(Configurable, abc.ABC):
                 pod_result["metric"]["pod"]: np.array(pod_result["values"], dtype=np.float64) for pod_result in result
             },
         )
+
+    @staticmethod
+    def step_to_string(step: datetime.timedelta) -> str:
+        """
+        Converts step in datetime.timedelta format to a string format used by Prometheus.
+
+        Args:
+        step (datetime.timedelta): Step size in datetime.timedelta format.
+
+        Returns:
+        str: Step size in string format used by Prometheus.
+        """
+        if step.total_seconds() > 60 * 60 * 24:
+            return f"{int(step.total_seconds()) // (60 * 60 * 24)}d"
+        return f"{int(step.total_seconds()) // 60}m"
 
     @staticmethod
     def get_by_resource(resource: str, strategy: Optional[str]) -> type[BaseMetricLoader]:
