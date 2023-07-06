@@ -4,6 +4,7 @@ import itertools
 from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
+from kubernetes.client import ApiException  # type: ignore
 from kubernetes.client.models import (
     V1Container,
     V1DaemonSet,
@@ -17,6 +18,7 @@ from kubernetes.client.models import (
     V1Job,
     V1StatefulSet,
     V1StatefulSetList,
+    V1HorizontalPodAutoscalerList,
     V2HorizontalPodAutoscaler,
     V2HorizontalPodAutoscalerList,
 )
@@ -44,7 +46,8 @@ class ClusterLoader(Configurable):
         self.apps = client.AppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
-        self.autoscaling = client.AutoscalingV2Api(api_client=self.api_client)
+        self.autoscaling_v1 = client.AutoscalingV1Api(api_client=self.api_client)
+        self.autoscaling_v2 = client.AutoscalingV2Api(api_client=self.api_client)
 
     async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.
@@ -208,6 +211,25 @@ class ClusterLoader(Configurable):
             *[self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
         )
 
+    async def __list_hpa_v1(self) -> dict[tuple[str, str], HPAData]:
+        loop = asyncio.get_running_loop()
+
+        res: V1HorizontalPodAutoscalerList = await loop.run_in_executor(
+            self.executor, lambda: self.autoscaling_v1.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False)
+        )
+
+        return {
+            (hpa.spec.scale_target_ref.kind, hpa.spec.scale_target_ref.name): HPAData(
+                min_replicas=hpa.spec.min_replicas,
+                max_replicas=hpa.spec.max_replicas,
+                current_replicas=hpa.status.current_replicas,
+                desired_replicas=hpa.status.desired_replicas,
+                target_cpu_utilization_percentage=hpa.spec.target_cpu_utilization_percentage,
+                target_memory_utilization_percentage=None,
+            )
+            for hpa in res.items
+        }
+
     async def __list_hpa(self) -> dict[tuple[str, str], HPAData]:
         """List all HPA objects in the cluster.
 
@@ -216,9 +238,20 @@ class ClusterLoader(Configurable):
         """
 
         loop = asyncio.get_running_loop()
-        res: V2HorizontalPodAutoscalerList = await loop.run_in_executor(
-            self.executor, lambda: self.autoscaling.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False)
-        )
+
+        try:
+            # Try to use V2 API first
+            res: V2HorizontalPodAutoscalerList = await loop.run_in_executor(
+                self.executor,
+                lambda: self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False),
+            )
+        except ApiException as e:
+            if e.status != 404:
+                # If the error is other than not found, then re-raise it.
+                raise
+
+            # If V2 API does not exist, fall back to V1
+            return await self.__list_hpa_v1()
 
         def __get_metric(hpa: V2HorizontalPodAutoscaler, metric_name: str) -> Optional[float]:
             return next(
