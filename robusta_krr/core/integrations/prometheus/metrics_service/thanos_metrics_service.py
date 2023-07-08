@@ -2,7 +2,7 @@ from typing import Optional
 
 from kubernetes.client import ApiClient
 from requests.exceptions import ConnectionError, HTTPError
-
+from concurrent.futures import ThreadPoolExecutor
 from robusta_krr.core.models.config import Config
 from robusta_krr.utils.service_discovery import ServiceDiscovery
 
@@ -48,9 +48,14 @@ class ThanosMetricsService(PrometheusMetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(
-            config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery
+            config=config,
+            cluster=cluster,
+            api_client=api_client,
+            service_discovery=ThanosMetricsDiscovery,
+            executor=executor,
         )
 
     def check_connection(self):
