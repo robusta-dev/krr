@@ -128,6 +128,7 @@ class ClusterLoader(Configurable):
             allocations=ResourceAllocations.from_container(container),
             pods=await self.__list_pods(item),
             hpa=self.__hpa_list.get((kind, name)),
+            metadata={},
         )
 
     async def _list_deployments(self) -> list[K8sObjectData]:
