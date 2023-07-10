@@ -108,8 +108,8 @@ def load_commands() -> None:
                 verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
                 quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
                 log_to_stderr: bool = typer.Option(False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"),
-                file_output: Optional[str] = typer.Option(None, "--fileoutput", help="Print to file", rich_help_panel="Output Settings"),
-                slack_output: Optional[str] = typer.Option(None, "--slackoutput", help="Send to slack", rich_help_panel="Output Settings"),
+                file_output: Optional[str] = typer.Option(None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"),
+                slack_output: Optional[str] = typer.Option(None, "--slackoutput", help="Send to output to a slack channel, must have SLACK_BOT_TOKEN", rich_help_panel="Output Settings"),
                 {strategy_settings},
             ) -> None:
                 '''Run KRR using the `{func_name}` strategy'''
