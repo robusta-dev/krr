@@ -1,12 +1,10 @@
 import asyncio
 import datetime
+from typing import List, Optional, Type
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Type, no_type_check
 
-import requests
 from kubernetes.client import ApiClient
-from prometheus_api_client import PrometheusConnect, Retry
-from requests.adapters import HTTPAdapter
+from prometheus_api_client import PrometheusApiClientException
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
@@ -16,6 +14,7 @@ from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from ..metrics import BaseMetricLoader
+from ..prometheus_client import ClusterNotSpecifiedException, CustomPrometheusConnect
 from .base_metric_service import MetricsNotFound, MetricsService
 
 
@@ -48,33 +47,6 @@ class PrometheusNotFound(MetricsNotFound):
     """
 
     pass
-
-
-class ClusterNotSpecifiedException(Exception):
-    """
-    An exception raised when a prometheus requires a cluster label but an invalid one is provided.
-    """
-
-    pass
-
-
-class CustomPrometheusConnect(PrometheusConnect):
-    """
-    Custom PrometheusConnect class to handle retries.
-    """
-
-    @no_type_check
-    def __init__(
-        self,
-        url: str = "http://127.0.0.1:9090",
-        headers: dict = None,
-        disable_ssl: bool = False,
-        retry: Retry = None,
-        auth: tuple = None,
-    ):
-        super().__init__(url, headers, disable_ssl, retry, auth)
-        self._session = requests.Session()
-        self._session.mount(self.url, HTTPAdapter(max_retries=retry, pool_maxsize=10, pool_block=True))
 
 
 class PrometheusMetricsService(MetricsService):
@@ -161,10 +133,12 @@ class PrometheusMetricsService(MetricsService):
                 f"Label {cluster_label} does not exist, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
             )
 
-    # Superclass method returns Optional[list[str]], but here we return list[str]
-    # NOTE that this does not break Liskov Substitution Principle
-    def get_cluster_names(self) -> list[str]:
-        return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
+    def get_cluster_names(self) -> Optional[List[str]]:
+        try:
+            return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
+        except PrometheusApiClientException:
+            self.error("Labels api not present on prometheus client")
+            return []
 
     async def gather_data(
         self,

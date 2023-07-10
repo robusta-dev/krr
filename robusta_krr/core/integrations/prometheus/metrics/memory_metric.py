@@ -37,13 +37,13 @@ class SimpleMemoryMetricLoader(MemoryMetricLoader):
         cluster_label = self.get_prometheus_cluster_label()
         resolution_formatted = f"[{resolution}]" if resolution else ""
         return (
-            f"max(max_over_time(container_memory_working_set_bytes{{"
+            f"max_over_time(container_memory_working_set_bytes{{"
             f'namespace="{object.namespace}", '
             f'pod=~"{pods_selector}", '
             f'container="{object.container}"'
             f"{cluster_label}}}"
             f"{resolution_formatted}"
-            f")) by (container, pod, job, id)"
+            f")"
         )
 
     def get_query_type(self) -> QueryType:
