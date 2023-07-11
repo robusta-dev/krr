@@ -1,6 +1,6 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import itertools
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
@@ -10,22 +10,21 @@ from kubernetes.client.models import (
     V1DaemonSetList,
     V1Deployment,
     V1DeploymentList,
+    V1Job,
     V1JobList,
     V1LabelSelector,
-    V1PodList,
     V1Pod,
-    V1Job,
+    V1PodList,
     V1StatefulSet,
     V1StatefulSetList,
     V2HorizontalPodAutoscaler,
     V2HorizontalPodAutoscalerList,
 )
 
-from robusta_krr.core.models.objects import K8sObjectData, PodData, HPAData
+from robusta_krr.core.models.objects import HPAData, K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 from .base_workload_loader import WorkloadLoader
-
 
 AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
 

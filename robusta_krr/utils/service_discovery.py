@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Optional
 
 from cachetools import TTLCache
@@ -82,3 +83,9 @@ class ServiceDiscovery(Configurable):
                 return ingress_url
 
         return None
+
+
+class MetricsServiceDiscovery(ServiceDiscovery, ABC):
+    @abstractmethod
+    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+        pass

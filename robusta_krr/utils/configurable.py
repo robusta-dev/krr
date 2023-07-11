@@ -1,6 +1,6 @@
 import abc
 from inspect import getframeinfo, stack
-from typing import Literal
+from typing import Literal, Union
 
 from rich.console import Console
 
@@ -93,9 +93,9 @@ class Configurable(abc.ABC):
 
         self.echo(message, type="WARNING")
 
-    def error(self, message: str = "") -> None:
+    def error(self, message: Union[str, Exception] = "") -> None:
         """
         Echoes an error message to the user
         """
 
-        self.echo(message, type="ERROR")
+        self.echo(str(message), type="ERROR")

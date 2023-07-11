@@ -1,7 +1,7 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import datetime
 from typing import List, Optional, Type
+from concurrent.futures import ThreadPoolExecutor
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
@@ -11,14 +11,14 @@ from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceType
-from robusta_krr.utils.service_discovery import ServiceDiscovery
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from ..metrics import BaseMetricLoader
-from ..prometheus_client import CustomPrometheusConnect
+from ..prometheus_client import ClusterNotSpecifiedException, CustomPrometheusConnect
 from .base_metric_service import MetricsNotFound, MetricsService
 
 
-class PrometheusDiscovery(ServiceDiscovery):
+class PrometheusDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Prometheus URL using selectors.
@@ -60,7 +60,7 @@ class PrometheusMetricsService(MetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
-        service_discovery: Type[ServiceDiscovery] = PrometheusDiscovery,
+        service_discovery: Type[MetricsServiceDiscovery] = PrometheusDiscovery,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
