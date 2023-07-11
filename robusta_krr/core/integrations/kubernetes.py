@@ -92,13 +92,14 @@ class ClusterLoader(Configurable):
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
-        if expression.operator.lower() == "exists":
+        operator = expression.operator.lower()
+        if operator == "exists":
             return expression.key
-        elif expression.operator.lower() == "doesnotexist":
+        elif operator == "doesnotexist":
             return f"!{expression.key}"
 
         values = ",".join(expression.values)
-        return f"{expression.key} {expression.operator} ({values})"
+        return f"{expression.key} {operator} ({values})"
 
     @staticmethod
     def _build_selector_query(selector: V1LabelSelector) -> Union[str, None]:
