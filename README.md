@@ -340,13 +340,7 @@ If your Prometheus monitors multiple clusters we require the label you defined f
 For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"` and your prometheus is at url `http://my-centralized-prometheus:9090`, then run this command:
 
 ```sh
-krr.py simple -p http://my-centralized-prometheus:9090 -l my-cluster-name
-```
-
-If you are using a label for your cluster other than `cluster` for example the label `env: "dev-tests"` you can specify it by running:
-
-```sh
-krr.py simple -p http://my-centralized-prometheus:9090 --prometheus-label env -l dev-tests
+krr.py simple -p http://my-centralized-prometheus:9090 --prometheus-label cluster -l my-cluster-name
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
