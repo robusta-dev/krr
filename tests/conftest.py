@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, PropertyMock, patch
+from unittest.mock import AsyncMock, patch
 
 import numpy as np
 import pytest

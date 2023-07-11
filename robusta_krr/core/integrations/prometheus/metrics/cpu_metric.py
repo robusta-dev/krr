@@ -1,9 +1,10 @@
 from typing import Optional
+
 from robusta_krr.core.models.allocations import ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
 
 from .base_filtered_metric import BaseFilteredMetricLoader
-from .base_metric import bind_metric, QueryType
+from .base_metric import QueryType, bind_metric
 
 
 @bind_metric(ResourceType.CPU)

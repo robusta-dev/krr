@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import abc
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import datetime
-from typing import TYPE_CHECKING, Callable, Optional, TypeVar
 import enum
+from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING, Callable, Optional, TypeVar
+
 import numpy as np
+
 from robusta_krr.core.abstract.strategies import Metric, ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
@@ -15,7 +17,8 @@ from robusta_krr.utils.configurable import Configurable
 if TYPE_CHECKING:
     from .. import CustomPrometheusConnect
 
-    MetricsDictionary = dict[str, type[BaseMetricLoader]]
+
+MetricsDictionary = dict[str, type["BaseMetricLoader"]]
 
 
 class QueryType(str, enum.Enum):
@@ -71,6 +74,9 @@ class BaseMetricLoader(Configurable, abc.ABC):
         """
 
         pass
+
+    def get_query_type(self) -> QueryType:
+        return QueryType.QueryRange
 
     def get_graph_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
         """
@@ -158,7 +164,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
             step=self._step_to_string(step),
         )
         result = await self.query_prometheus(metric=metric, query_type=query_type)
-        # adding the query in the results for a graph 
+        # adding the query in the results for a graph
         metric.query = self.get_graph_query(object, resolution)
 
         if result == []:
@@ -173,7 +179,7 @@ class BaseMetricLoader(Configurable, abc.ABC):
         )
 
     @staticmethod
-    def get_by_resource(resource: str, strategy: Optional[str]) -> type[BaseMetricLoader]:
+    def get_by_resource(resource: str, strategy: str) -> type[BaseMetricLoader]:
         """
         Fetches the metric loader corresponding to the specified resource.
 

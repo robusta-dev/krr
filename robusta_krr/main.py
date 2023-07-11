@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List, Literal, Optional, Union
 from uuid import UUID
 
-
 import typer
 import urllib3
 

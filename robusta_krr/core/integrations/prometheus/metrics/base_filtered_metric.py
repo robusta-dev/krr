@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from robusta_krr.core.abstract.strategies import Metric
 
 from .base_metric import BaseMetricLoader, QueryType

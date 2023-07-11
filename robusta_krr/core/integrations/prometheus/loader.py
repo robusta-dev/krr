@@ -1,8 +1,6 @@
-import asyncio
 import datetime
-from typing import Optional, no_type_check
-
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
@@ -49,9 +47,11 @@ class MetricsLoader(Configurable):
             if cluster is not None
             else None
         )
-        self.loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
-        if not self.loader:
+        loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
+        if loader is None:
             raise PrometheusNotFound("No Prometheus or metrics service found")
+
+        self.loader = loader
 
         self.info(f"{self.loader.name()} connected successfully for {cluster or 'default'} cluster")
 
@@ -68,8 +68,10 @@ class MetricsLoader(Configurable):
                 self.echo(f"{service_name} found")
                 loader.validate_cluster_name()
                 return loader
-            except MetricsNotFound as e:
+            except MetricsNotFound:
                 self.debug(f"{service_name} not found")
+
+        return None
 
     async def gather_data(
         self,
