@@ -25,6 +25,9 @@ from robusta_krr.core.models.objects import HPAData, K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
+
+from .rollout import RolloutAppsV1Api
+
 AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
 
 
@@ -41,6 +44,7 @@ class ClusterLoader(Configurable):
             else None
         )
         self.apps = client.AppsV1Api(api_client=self.api_client)
+        self.rollout = RolloutAppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
         self.autoscaling = client.AutoscalingV2Api(api_client=self.api_client)
@@ -59,10 +63,12 @@ class ClusterLoader(Configurable):
             self.__hpa_list = await self.__list_hpa()
             objects_tuple = await asyncio.gather(
                 self._list_deployments(),
+                self._list_rollouts(),
                 self._list_all_statefulsets(),
                 self._list_all_daemon_set(),
                 self._list_all_jobs(),
             )
+
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
             self.debug_exception()
@@ -136,6 +142,18 @@ class ClusterLoader(Configurable):
             self.executor, lambda: self.apps.list_deployment_for_all_namespaces(watch=False)
         )
         self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
+
+        return await asyncio.gather(
+            *[
+                self.__build_obj(item, container)
+                for item in ret.items
+                for container in item.spec.template.spec.containers
+            ]
+        )
+
+    async def _list_rollouts(self) -> list[K8sObjectData]:
+        ret: V1DeploymentList = await asyncio.to_thread(self.rollout.list_rollout_for_all_namespaces, watch=False)
+        self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
 
         return await asyncio.gather(
             *[
