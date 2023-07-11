@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import math
-from typing import Literal, TypeVar, Union
+from typing import Literal, Optional, TypeVar, Union
 
 import pydantic as pd
 from kubernetes.client.models import V1Container
@@ -29,6 +29,7 @@ Self = TypeVar("Self", bound="ResourceAllocations")
 class ResourceAllocations(pd.BaseModel):
     requests: dict[ResourceType, RecommendationValue]
     limits: dict[ResourceType, RecommendationValue]
+    info: dict[ResourceType, Optional[str]] = {}
 
     @staticmethod
     def __parse_resource_value(value: RecommendationValueRaw) -> RecommendationValue:

@@ -13,12 +13,22 @@ class PodData(pd.BaseModel):
         return hash(self.name)
 
 
+class HPAData(pd.BaseModel):
+    min_replicas: Optional[int]
+    max_replicas: int
+    current_replicas: Optional[int]
+    desired_replicas: int
+    target_cpu_utilization_percentage: Optional[float]
+    target_memory_utilization_percentage: Optional[float]
+
+
 class K8sObjectData(pd.BaseModel):
     # NOTE: Here None means that we are running inside the cluster
     cluster: Optional[str]
     name: str
     container: str
     pods: list[PodData]
+    hpa: Optional[HPAData]
     namespace: str
     kind: str
     allocations: ResourceAllocations
