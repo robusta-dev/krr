@@ -104,6 +104,13 @@ def load_commands() -> None:
                     help="The label in prometheus used to differentiate clusters. (Only relevant for centralized prometheus)",
                     rich_help_panel="Prometheus Settings",
                 ),
+                max_workers: int = typer.Option(
+                    10,
+                    "--max-workers",
+                    "-w",
+                    help="Max workers to use for async requests.",
+                    rich_help_panel="Threading Settings",
+                ),
                 format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
                 verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
                 quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
@@ -123,6 +130,7 @@ def load_commands() -> None:
                     prometheus_ssl_enabled=prometheus_ssl_enabled,
                     prometheus_cluster_label=prometheus_cluster_label,
                     prometheus_label=prometheus_label,
+                    max_workers=max_workers,
                     format=format,
                     verbose=verbose,
                     quiet=quiet,
@@ -133,6 +141,7 @@ def load_commands() -> None:
                     other_args={strategy_args},
                 )
                 runner = Runner(config)
+
                 asyncio.run(runner.run())
             """
         )

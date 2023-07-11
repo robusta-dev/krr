@@ -1,15 +1,15 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from kubernetes.client import ApiClient
-from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.models.config import Config
-from robusta_krr.utils.service_discovery import ServiceDiscovery
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
 
 
-class ThanosMetricsDiscovery(ServiceDiscovery):
+class ThanosMetricsDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Thanos URL using selectors.
@@ -48,9 +48,14 @@ class ThanosMetricsService(PrometheusMetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(
-            config=config, cluster=cluster, api_client=api_client, service_discovery=ThanosMetricsDiscovery
+            config=config,
+            cluster=cluster,
+            api_client=api_client,
+            service_discovery=ThanosMetricsDiscovery,
+            executor=executor,
         )
 
     def check_connection(self):

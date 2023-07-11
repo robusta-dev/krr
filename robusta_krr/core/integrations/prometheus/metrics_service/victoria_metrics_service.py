@@ -1,15 +1,15 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from kubernetes.client import ApiClient
-from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.models.config import Config
-from robusta_krr.utils.service_discovery import ServiceDiscovery
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
 
 
-class VictoriaMetricsDiscovery(ServiceDiscovery):
+class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Victoria Metrics URL using selectors.
@@ -47,9 +47,14 @@ class VictoriaMetricsService(PrometheusMetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(
-            config=config, cluster=cluster, api_client=api_client, service_discovery=VictoriaMetricsDiscovery
+            config=config,
+            cluster=cluster,
+            api_client=api_client,
+            service_discovery=VictoriaMetricsDiscovery,
+            executor=executor,
         )
 
     def check_connection(self):

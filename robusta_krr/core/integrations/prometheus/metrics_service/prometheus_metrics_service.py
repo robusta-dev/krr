@@ -1,25 +1,24 @@
 import asyncio
 import datetime
-from typing import List, Optional, no_type_check
+from typing import List, Optional, Type
+from concurrent.futures import ThreadPoolExecutor
 
-import requests
 from kubernetes.client import ApiClient
-from prometheus_api_client import PrometheusConnect, Retry
-from requests.adapters import HTTPAdapter
+from prometheus_api_client import PrometheusApiClientException
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import ResourceHistoryData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.core.models.result import ResourceType
-from robusta_krr.utils.configurable import Configurable
-from robusta_krr.utils.service_discovery import ServiceDiscovery
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from ..metrics import BaseMetricLoader
+from ..prometheus_client import ClusterNotSpecifiedException, CustomPrometheusConnect
 from .base_metric_service import MetricsNotFound, MetricsService
 
 
-class PrometheusDiscovery(ServiceDiscovery):
+class PrometheusDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Prometheus URL using selectors.
@@ -50,33 +49,6 @@ class PrometheusNotFound(MetricsNotFound):
     pass
 
 
-class ClusterNotSpecifiedException(Exception):
-    """
-    An exception raised when a prometheus requires a cluster label but an invalid one is provided.
-    """
-
-    pass
-
-
-class CustomPrometheusConnect(PrometheusConnect):
-    """
-    Custom PrometheusConnect class to handle retries.
-    """
-
-    @no_type_check
-    def __init__(
-        self,
-        url: str = "http://127.0.0.1:9090",
-        headers: dict = None,
-        disable_ssl: bool = False,
-        retry: Retry = None,
-        auth: tuple = None,
-    ):
-        super().__init__(url, headers, disable_ssl, retry, auth)
-        self._session = requests.Session()
-        self._session.mount(self.url, HTTPAdapter(max_retries=retry, pool_maxsize=10, pool_block=True))
-
-
 class PrometheusMetricsService(MetricsService):
     """
     A class for fetching metrics from Prometheus.
@@ -88,9 +60,10 @@ class PrometheusMetricsService(MetricsService):
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
-        service_discovery: ServiceDiscovery = PrometheusDiscovery,
+        service_discovery: Type[MetricsServiceDiscovery] = PrometheusDiscovery,
+        executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
-        super().__init__(config=config, api_client=api_client, cluster=cluster)
+        super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
 
         self.info(f"Connecting to {self.name()} for {self.cluster} cluster")
 
@@ -114,7 +87,7 @@ class PrometheusMetricsService(MetricsService):
 
         if self.auth_header:
             headers = {"Authorization": self.auth_header}
-        elif not self.config.inside_cluster:
+        elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
         self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
@@ -140,7 +113,8 @@ class PrometheusMetricsService(MetricsService):
             ) from e
 
     async def query(self, query: str) -> dict:
-        return await asyncio.to_thread(self.prometheus.custom_query, query=query)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
 
     def validate_cluster_name(self):
         cluster_label = self.config.prometheus_cluster_label
@@ -160,7 +134,11 @@ class PrometheusMetricsService(MetricsService):
             )
 
     def get_cluster_names(self) -> Optional[List[str]]:
-        return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
+        try:
+            return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
+        except PrometheusApiClientException:
+            self.error("Labels api not present on prometheus client")
+            return []
 
     async def gather_data(
         self,
@@ -174,10 +152,10 @@ class PrometheusMetricsService(MetricsService):
         """
         self.debug(f"Gathering data for {object} and {resource}")
 
+        MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
         await self.add_historic_pods(object, period)
 
-        MetricLoaderType = BaseMetricLoader.get_by_resource(resource)
-        metric_loader = MetricLoaderType(self.config, self.prometheus)
+        metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
         return await metric_loader.load_data(object, period, step, self.name())
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
@@ -192,13 +170,14 @@ class PrometheusMetricsService(MetricsService):
         period_literal = f"{days_literal}d"
         pod_owners: list[str]
         pod_owner_kind: str
-
+        cluster_label = self.get_prometheus_cluster_label()
         if object.kind == "Deployment":
             replicasets = await self.query(
                 "kube_replicaset_owner{"
                 f'owner_name="{object.name}", '
                 f'owner_kind="Deployment", '
                 f'namespace="{object.namespace}"'
+                f"{cluster_label}"
                 "}"
                 f"[{period_literal}]"
             )
@@ -214,6 +193,7 @@ class PrometheusMetricsService(MetricsService):
             f'owner_name=~"{owners_regex}", '
             f'owner_kind="{pod_owner_kind}", '
             f'namespace="{object.namespace}"'
+            f"{cluster_label}"
             "}"
             f"[{period_literal}]"
         )
