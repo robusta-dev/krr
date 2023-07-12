@@ -83,10 +83,10 @@ class PrometheusMetricsService(MetricsService):
 
         self.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 
-        headers = {}
+        headers = self.config.prometheus_other_headers
 
         if self.auth_header:
-            headers = {"Authorization": self.auth_header}
+            headers |= {"Authorization": self.auth_header}
         elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
