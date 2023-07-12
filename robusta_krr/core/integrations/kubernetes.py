@@ -255,7 +255,7 @@ class KubernetesLoader(Configurable):
             return None
 
         try:
-            contexts, current_context = config.list_kube_config_contexts()
+            contexts, current_context = config.list_kube_config_contexts(self.config.kubeconfig)
         except config.ConfigException:
             if self.config.clusters is not None and self.config.clusters != "*":
                 self.warning("Could not load context from kubeconfig.")
