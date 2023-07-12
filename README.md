@@ -152,6 +152,12 @@ If you want only specific namespaces (default and ingress-nginx):
 krr simple -n default -n ingress-nginx
 ```
 
+Filtering by labels (more info [here](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api)):
+
+```sh
+python krr.py simple --selector 'app.kubernetes.io/instance in (robusta, ingress-nginx)'
+```
+
 By default krr will run in the current context. If you want to run it in a different context:
 
 ```sh
