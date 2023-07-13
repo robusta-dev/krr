@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 
 from kubernetes import client, config  # type: ignore
+from kubernetes.client import ApiException
 from kubernetes.client.models import (
     V1Container,
     V1DaemonSet,
@@ -17,6 +18,7 @@ from kubernetes.client.models import (
     V1PodList,
     V1StatefulSet,
     V1StatefulSetList,
+    V1HorizontalPodAutoscalerList,
     V2HorizontalPodAutoscaler,
     V2HorizontalPodAutoscalerList,
 )
@@ -26,7 +28,11 @@ from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 from .base_workload_loader import WorkloadLoader
 
+
+from .rollout import RolloutAppsV1Api
+
 AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
+HPAKey = tuple[str, str, str]
 
 
 class ClusterLoader(Configurable):
@@ -42,9 +48,11 @@ class ClusterLoader(Configurable):
             else None
         )
         self.apps = client.AppsV1Api(api_client=self.api_client)
+        self.rollout = RolloutAppsV1Api(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
-        self.autoscaling = client.AutoscalingV2Api(api_client=self.api_client)
+        self.autoscaling_v1 = client.AutoscalingV1Api(api_client=self.api_client)
+        self.autoscaling_v2 = client.AutoscalingV2Api(api_client=self.api_client)
 
     async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.
@@ -60,10 +68,12 @@ class ClusterLoader(Configurable):
             self.__hpa_list = await self.__list_hpa()
             objects_tuple = await asyncio.gather(
                 self._list_deployments(),
+                self._list_rollouts(),
                 self._list_all_statefulsets(),
                 self._list_all_daemon_set(),
                 self._list_all_jobs(),
             )
+
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
             self.debug_exception()
@@ -127,16 +137,47 @@ class ClusterLoader(Configurable):
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
             pods=await self.__list_pods(item),
-            hpa=self.__hpa_list.get((kind, name)),
+            hpa=self.__hpa_list.get((namespace, kind, name)),
         )
 
     async def _list_deployments(self) -> list[K8sObjectData]:
         self.debug(f"Listing deployments in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1DeploymentList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_deployment_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_deployment_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
+
+        return await asyncio.gather(
+            *[
+                self.__build_obj(item, container)
+                for item in ret.items
+                for container in item.spec.template.spec.containers
+            ]
+        )
+
+    async def _list_rollouts(self) -> list[K8sObjectData]:
+        self.debug(f"Listing ArgoCD rollouts in {self.cluster}")
+        loop = asyncio.get_running_loop()
+        try:
+            ret: V1DeploymentList = await loop.run_in_executor(
+                self.executor,
+                lambda: self.rollout.list_rollout_for_all_namespaces(
+                    watch=False,
+                    label_selector=self.config.selector,
+                ),
+            )
+        except ApiException as e:
+            if e.status == 404:
+                self.debug(f"Rollout API not available in {self.cluster}")
+                return []
+            raise
+
+        self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
 
         return await asyncio.gather(
             *[
@@ -150,7 +191,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing statefulsets in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1StatefulSetList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_stateful_set_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_stateful_set_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} statefulsets in {self.cluster}")
 
@@ -166,7 +211,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing daemonsets in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1DaemonSetList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_daemon_set_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_daemon_set_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} daemonsets in {self.cluster}")
 
@@ -182,7 +231,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing jobs in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1JobList = await loop.run_in_executor(
-            self.executor, lambda: self.batch.list_job_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.batch.list_job_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} jobs in {self.cluster}")
 
@@ -200,7 +253,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing pods in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1PodList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_pod_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_pod_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} pods in {self.cluster}")
 
@@ -208,16 +265,35 @@ class ClusterLoader(Configurable):
             *[self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
         )
 
-    async def __list_hpa(self) -> dict[tuple[str, str], HPAData]:
-        """List all HPA objects in the cluster.
-
-        Returns:
-            dict[tuple[str, str], HPAData]: A dictionary of HPA objects, indexed by scaleTargetRef (kind, name).
-        """
-
+    async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:
         loop = asyncio.get_running_loop()
+
+        res: V1HorizontalPodAutoscalerList = await loop.run_in_executor(
+            self.executor, lambda: self.autoscaling_v1.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False)
+        )
+
+        return {
+            (
+                hpa.metadata.namespace,
+                hpa.spec.scale_target_ref.kind,
+                hpa.spec.scale_target_ref.name,
+            ): HPAData(
+                min_replicas=hpa.spec.min_replicas,
+                max_replicas=hpa.spec.max_replicas,
+                current_replicas=hpa.status.current_replicas,
+                desired_replicas=hpa.status.desired_replicas,
+                target_cpu_utilization_percentage=hpa.spec.target_cpu_utilization_percentage,
+                target_memory_utilization_percentage=None,
+            )
+            for hpa in res.items
+        }
+
+    async def __list_hpa_v2(self) -> dict[HPAKey, HPAData]:
+        loop = asyncio.get_running_loop()
+
         res: V2HorizontalPodAutoscalerList = await loop.run_in_executor(
-            self.executor, lambda: self.autoscaling.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False),
         )
 
         def __get_metric(hpa: V2HorizontalPodAutoscaler, metric_name: str) -> Optional[float]:
@@ -231,7 +307,11 @@ class ClusterLoader(Configurable):
             )
 
         return {
-            (hpa.spec.scale_target_ref.kind, hpa.spec.scale_target_ref.name): HPAData(
+            (
+                hpa.metadata.namespace,
+                hpa.spec.scale_target_ref.kind,
+                hpa.spec.scale_target_ref.name,
+            ): HPAData(
                 min_replicas=hpa.spec.min_replicas,
                 max_replicas=hpa.spec.max_replicas,
                 current_replicas=hpa.status.current_replicas,
@@ -241,6 +321,25 @@ class ClusterLoader(Configurable):
             )
             for hpa in res.items
         }
+
+    # TODO: What should we do in case of other metrics bound to the HPA?
+    async def __list_hpa(self) -> dict[HPAKey, HPAData]:
+        """List all HPA objects in the cluster.
+
+        Returns:
+            dict[tuple[str, str], HPAData]: A dictionary of HPA objects, indexed by scaleTargetRef (kind, name).
+        """
+
+        try:
+            # Try to use V2 API first
+            return await self.__list_hpa_v2()
+        except ApiException as e:
+            if e.status != 404:
+                # If the error is other than not found, then re-raise it.
+                raise
+
+            # If V2 API does not exist, fall back to V1
+            return await self.__list_hpa_v1()
 
 
 class KubernetesLoader(WorkloadLoader):
@@ -256,7 +355,7 @@ class KubernetesLoader(WorkloadLoader):
             return None
 
         try:
-            contexts, current_context = config.list_kube_config_contexts()
+            contexts, current_context = config.list_kube_config_contexts(self.config.kubeconfig)
         except config.ConfigException:
             if self.config.clusters is not None and self.config.clusters != "*":
                 self.warning("Could not load context from kubeconfig.")
