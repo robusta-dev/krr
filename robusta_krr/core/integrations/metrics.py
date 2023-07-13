@@ -75,12 +75,11 @@ class PrometheusLoader(WorkloadLoader):
         return ResourceAllocations(requests=requests_values, limits=limits_values)
         
     
-    async def __build_from_owner(self, namespace: str, app_name: str, containers: List[str], pod_names: List[str], labels: Dict[str, str]) -> List[K8sObjectData]:
+    async def __build_from_owner(self, namespace: str, app_name: str, containers: List[str], pod_names: List[str]) -> List[K8sObjectData]:
         return [
             K8sObjectData(
                 cluster=None,
                 namespace=namespace,
-                labels=labels,
                 name=app_name,
                 kind="Deployment",
                 container=container_name,
@@ -97,7 +96,7 @@ class PrometheusLoader(WorkloadLoader):
                                                "})")
         return [container['metric']['container'] for container in containers]
     
-    async def _list_containers_in_pods(self, app_name: str, pod_owner_kind: str, namespace: str, owner_name: str, labels: Dict[str, str]) -> list[K8sObjectData]:
+    async def _list_containers_in_pods(self, app_name: str, pod_owner_kind: str, namespace: str, owner_name: str) -> list[K8sObjectData]:
         if pod_owner_kind == "ReplicaSet":
             # owner_name is ReplicaSet names
             pods = await self.metrics_loader.loader.query("count by (owner_name, replicaset, pod) (kube_pod_owner{"
@@ -110,23 +109,8 @@ class PrometheusLoader(WorkloadLoader):
             #  {'metric': {'owner_name': 'wbjs-algorithm-base-565b645489', 'pod': 'wbjs-algorithm-base-565b645489-lj9qg'}, 'value': [1685529217, '1']}]
             pod_names = [pod['metric']['pod'] for pod in pods]
             container_names = await self._list_containers(namespace, "|".join(pod_names))
-            return await self.__build_from_owner(namespace, app_name, container_names, pod_names, labels)
+            return await self.__build_from_owner(namespace, app_name, container_names, pod_names)
         return []
-
-    async def _list_labels(self, owner_kind: str, namespace: str, owner_name: str) -> Dict[str, str]:
-        if owner_kind == "Deployment":
-            self.debug(f"{owner_kind} in {namespace}: {owner_name}")
-            labels_metric = await self.metrics_loader.loader.query("kube_deployment_labels{"
-                                               f'namespace="{namespace}", '
-                                               f'deployment="{owner_name}"'
-                                               "}")
-            if len(labels_metric) == 0:
-                return {}
-            labels = {}
-            for key in labels_metric[0]['metric'].keys():
-                if key.startswith('label_'):
-                    labels[key[6:]] = labels_metric[0]['metric'][key]
-            return labels
 
     async def _list_deployments(self) -> list[K8sObjectData]:
         self.debug(f"Listing deployments in namespace({self.config.namespaces}) from Prometheus({self.config.prometheus_url})")
@@ -142,9 +126,7 @@ class PrometheusLoader(WorkloadLoader):
         objects = await asyncio.gather(
             *[
                 self._list_containers_in_pods(replicas[0]['owner_name'], pod_owner_kind, replicas[0]['namespace'], 
-                                              "|".join(list(map(lambda metric: metric['replicaset'], replicas))),
-                                              await self._list_labels("Deployment", replicas[0]['namespace'], replicas[0]['owner_name'])
-                                              )
+                                              "|".join(list(map(lambda metric: metric['replicaset'], replicas))))
                 for replicas in replicaset_dict.values()
             ]
         )
