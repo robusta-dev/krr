@@ -143,7 +143,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing deployments in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1DeploymentList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_deployment_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_deployment_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
 
@@ -156,8 +160,16 @@ class ClusterLoader(Configurable):
         )
 
     async def _list_rollouts(self) -> list[K8sObjectData]:
+        self.debug(f"Listing ArgoCD rollouts in {self.cluster}")
+        loop = asyncio.get_running_loop()
         try:
-            ret: V1DeploymentList = await asyncio.to_thread(self.rollout.list_rollout_for_all_namespaces, watch=False)
+            ret: V1DeploymentList = await loop.run_in_executor(
+                self.executor,
+                lambda: self.rollout.list_rollout_for_all_namespaces(
+                    watch=False,
+                    label_selector=self.config.selector,
+                ),
+            )
         except ApiException as e:
             if e.status == 404:
                 self.debug(f"Rollout API not available in {self.cluster}")
@@ -178,7 +190,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing statefulsets in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1StatefulSetList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_stateful_set_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_stateful_set_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} statefulsets in {self.cluster}")
 
@@ -194,7 +210,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing daemonsets in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1DaemonSetList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_daemon_set_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_daemon_set_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} daemonsets in {self.cluster}")
 
@@ -210,7 +230,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing jobs in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1JobList = await loop.run_in_executor(
-            self.executor, lambda: self.batch.list_job_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.batch.list_job_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} jobs in {self.cluster}")
 
@@ -228,7 +252,11 @@ class ClusterLoader(Configurable):
         self.debug(f"Listing pods in {self.cluster}")
         loop = asyncio.get_running_loop()
         ret: V1PodList = await loop.run_in_executor(
-            self.executor, lambda: self.apps.list_pod_for_all_namespaces(watch=False)
+            self.executor,
+            lambda: self.apps.list_pod_for_all_namespaces(
+                watch=False,
+                label_selector=self.config.selector,
+            ),
         )
         self.debug(f"Found {len(ret.items)} pods in {self.cluster}")
 
@@ -326,7 +354,7 @@ class KubernetesLoader(Configurable):
             return None
 
         try:
-            contexts, current_context = config.list_kube_config_contexts()
+            contexts, current_context = config.list_kube_config_contexts(self.config.kubeconfig)
         except config.ConfigException:
             if self.config.clusters is not None and self.config.clusters != "*":
                 self.warning("Could not load context from kubeconfig.")
