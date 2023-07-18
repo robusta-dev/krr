@@ -117,6 +117,9 @@ class PrometheusMetricsService(MetricsService):
         return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
 
     def validate_cluster_name(self):
+        if not self.config.prometheus_cluster_label and not self.config.prometheus_label:
+            return
+
         cluster_label = self.config.prometheus_cluster_label
         cluster_names = self.get_cluster_names()
 

@@ -28,7 +28,7 @@ class Config(pd.BaseSettings):
     prometheus_other_headers: dict[str, str] = pd.Field(default_factory=dict)
     prometheus_ssl_enabled: bool = pd.Field(False)
     prometheus_cluster_label: Optional[str] = pd.Field(None)
-    prometheus_label: str = pd.Field("cluster")
+    prometheus_label: Optional[str] = pd.Field(None)
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)

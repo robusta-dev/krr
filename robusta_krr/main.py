@@ -113,7 +113,7 @@ def load_commands() -> None:
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_label: str = typer.Option(
-                    'cluster',
+                    None,
                     "--prometheus-label",
                     help="The label in prometheus used to differentiate clusters. (Only relevant for centralized prometheus)",
                     rich_help_panel="Prometheus Settings",
