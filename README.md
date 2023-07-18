@@ -1,3 +1,5 @@
+<!-- @format -->
+
 <a name="readme-top"></a>
 
 <!-- [![Contributors][contributors-shield]][contributors-url]
@@ -6,7 +8,9 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url] -->
+
 ![Product Name Screen Shot][product-screenshot]
+
 <div align="center">
   <h1 align="center">Robusta KRR</h1>
   <p align="center">
@@ -60,17 +64,17 @@ Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resou
 
 ### Features
 
--   **No Agent Required**: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster. (But it can optionally be run in-cluster for weekly [Slack reports](#slack-integration).)
--   **Prometheus Integration**: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
--   **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
--   **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
+- **No Agent Required**: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster. (But it can optionally be run in-cluster for weekly [Slack reports](#slack-integration).)
+- **Prometheus Integration**: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
+- **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
+- **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### Resource Allocation Statistics
 
 According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kubernetes/), on average, Kubernetes clusters have:
 
--   69% unused CPU
--   18% unused memory
+- 69% unused CPU
+- 18% unused memory
 
 By right-sizing your containers with KRR, you can save an average of 69% on cloud costs.
 
@@ -83,16 +87,19 @@ Read more about [how KRR works](#how-it-works) and [KRR vs Kubernetes VPA](#diff
 ### With brew (MacOS/Linux):
 
 1. Add our tap:
+
 ```sh
 brew tap robusta-dev/homebrew-krr
 ```
 
 2. Install KRR:
+
 ```sh
 brew install krr
 ```
 
 3. Check that installation was successfull (First launch might take a little longer):
+
 ```sh
 krr --help
 ```
@@ -130,11 +137,11 @@ All above examples show running command as `krr ...`, replace it with `python kr
 
 ### Other Configuration Methods
 
-* [View KRR Reports in a Web UI](#robusta-ui-integration)
-* [Get a Weekly Message in Slack with KRR Recommendations](#slack-integration) 
-* Setup KRR on [Google Cloud Managed Prometheus
-](./docs/google-cloud-managed-service-for-prometheus.md)
-* Setup KRR for [Azure managed Prometheus](#azure-managed-prometheus)
+- [View KRR Reports in a Web UI](#robusta-ui-integration)
+- [Get a Weekly Message in Slack with KRR Recommendations](#slack-integration)
+- Setup KRR on [Google Cloud Managed Prometheus
+  ](./docs/google-cloud-managed-service-for-prometheus.md)
+- Setup KRR for [Azure managed Prometheus](#azure-managed-prometheus)
 
 <!-- USAGE EXAMPLES -->
 
@@ -190,24 +197,23 @@ krr simple --help
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 ## How it works
 
 ### Metrics Gathering
 
 Robusta KRR uses the following Prometheus queries to gather usage data:
 
--   CPU Usage:
+- CPU Usage:
 
-    ```
-    sum(irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}}[{step}]))
-    ```
+  ```
+  sum(irate(container_cpu_usage_seconds_total{{namespace="{object.namespace}", pod="{pod}", container="{object.container}"}}[{step}]))
+  ```
 
--   Memory Usage:
+- Memory Usage:
 
-    ```
-    sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
-    ```
+  ```
+  sum(container_memory_working_set_bytes{job="kubelet", metrics_path="/metrics/cadvisor", image!="", namespace="{object.namespace}", pod="{pod}", container="{object.container}"})
+  ```
 
 [_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
 
@@ -215,9 +221,9 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
 
 By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
 
--   For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
+- For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
 
--   For memory, we take the maximum value over the past week and add a 5% buffer.
+- For memory, we take the maximum value over the past week and add a 5% buffer.
 
 ### Prometheus connection
 
@@ -240,8 +246,6 @@ Find about how KRR tries to find the default prometheus to connect <a href="#pro
 | Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
 
-
-
 ## Robusta UI integration
 
 If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
@@ -261,11 +265,14 @@ Put cost savings on autopilot. Get notified in Slack about recommendations above
 ![Slack Screen Shot][slack-screenshot]
 
 ### Prerequisites
-* A Slack workspace
+
+- A Slack workspace
 
 ### Setup
+
 1. [Install Robusta with Helm to your cluster and configure slack](https://docs.robusta.dev/master/installation.html)
 2. Create your KRR slack playbook by adding the following to `generated_values.yaml`:
+
 ```
 customPlaybooks:
 # Runs a weekly krr scan on the namespace devs-namespace and sends it to the configured slack channel
@@ -286,13 +293,13 @@ customPlaybooks:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 <!-- Port-forwarding -->
 
 ## Prometheus, Victoria Metrics and Thanos auto-discovery
 
 By default, KRR will try to auto-discover the running Prometheus Victoria Metrics and Thanos.
 For discovering prometheus it scan services for those labels:
+
 ```python
 "app=kube-prometheus-stack-prometheus"
 "app=prometheus,component=server"
@@ -302,14 +309,18 @@ For discovering prometheus it scan services for those labels:
 "app=rancher-monitoring-prometheus"
 "app=prometheus-prometheus"
 ```
+
 For Thanos its these labels:
+
 ```python
 "app.kubernetes.io/component=query,app.kubernetes.io/name=thanos",
 "app.kubernetes.io/name=thanos-query",
 "app=thanos-query",
 "app=thanos-querier",
 ```
+
 And for Victoria Metrics its the following labels:
+
 ```python
 "app.kubernetes.io/name=vmsingle",
 "app.kubernetes.io/name=victoria-metrics-single",
@@ -364,7 +375,7 @@ For Azure managed Prometheus you need to generate an access token, which can be 
 ```sh
 # If you are not logged in to Azure, uncomment out the following line
 # az login
-AZURE_BEARER=$(az account get-access-token --resource=https://prometheus.monitor.azure.com  --query accesssToken --output tsv); echo $AZURE_BEARER 
+AZURE_BEARER=$(az account get-access-token --resource=https://prometheus.monitor.azure.com  --query accessToken --output tsv); echo $AZURE_BEARER
 ```
 
 Than run the following command with PROMETHEUS_URL substituted for your Azure Managed Prometheus URL:
@@ -461,7 +472,6 @@ Distributed under the MIT License. See [LICENSE.txt](https://github.com/robusta-
 ## Support
 
 If you have any questions, feel free to contact **support@robusta.dev** or message us on [robustacommunity.slack.com](https://bit.ly/robusta-slack)
-
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
