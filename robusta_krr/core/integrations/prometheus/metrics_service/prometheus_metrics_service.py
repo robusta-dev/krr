@@ -83,10 +83,10 @@ class PrometheusMetricsService(MetricsService):
 
         self.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 
-        headers = {}
+        headers = self.config.prometheus_other_headers
 
         if self.auth_header:
-            headers = {"Authorization": self.auth_header}
+            headers |= {"Authorization": self.auth_header}
         elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
 
@@ -117,6 +117,9 @@ class PrometheusMetricsService(MetricsService):
         return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
 
     def validate_cluster_name(self):
+        if not self.config.prometheus_cluster_label and not self.config.prometheus_label:
+            return
+
         cluster_label = self.config.prometheus_cluster_label
         cluster_names = self.get_cluster_names()
 

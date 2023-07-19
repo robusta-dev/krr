@@ -16,6 +16,7 @@ class Config(pd.BaseSettings):
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
+    selector: Optional[str] = None
 
     # Value settings
     cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
@@ -24,9 +25,10 @@ class Config(pd.BaseSettings):
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
     prometheus_auth_header: Optional[str] = pd.Field(None)
+    prometheus_other_headers: dict[str, str] = pd.Field(default_factory=dict)
     prometheus_ssl_enabled: bool = pd.Field(False)
     prometheus_cluster_label: Optional[str] = pd.Field(None)
-    prometheus_label: str = pd.Field("cluster")
+    prometheus_label: Optional[str] = pd.Field(None)
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
@@ -53,6 +55,13 @@ class Config(pd.BaseSettings):
     @property
     def Formatter(self) -> formatters.FormatterFunc:
         return formatters.find(self.format)
+
+    @pd.validator("prometheus_other_headers", pre=True)
+    def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
+        if isinstance(headers, dict):
+            return headers
+
+        return {k.strip().lower(): v.strip() for k, v in [header.split(":") for header in headers]}
 
     @pd.validator("namespaces")
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:

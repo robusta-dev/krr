@@ -190,7 +190,7 @@ jobs:
           TAG_NAME=${{ github.ref_name }}
           awk 'NR==6{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-macos-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
           awk 'NR==7{$0="        sha256 \"'$MAC_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
-          awk 'NR==9{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-linux-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==9{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-ubuntu-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
           awk 'NR==10{$0="        sha256 \"'$LINUX_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
       - name: Commit and push changes
         run: |

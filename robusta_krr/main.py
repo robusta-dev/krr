@@ -72,6 +72,13 @@ def load_commands() -> None:
                     help="List of namespaces to run on. By default, will run on all namespaces.",
                     rich_help_panel="Kubernetes Settings"
                 ),
+                selector: Optional[str] = typer.Option(
+                    None,
+                    "--selector",
+                    "-s",
+                    help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -s key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
                 prometheus_url: Optional[str] = typer.Option(
                     None,
                     "--prometheus-url",
@@ -83,6 +90,13 @@ def load_commands() -> None:
                     None,
                     "--prometheus-auth-header",
                     help="Prometheus authentication header.",
+                    rich_help_panel="Prometheus Settings",
+                ),
+                prometheus_other_headers: Optional[List[str]] = typer.Option(
+                    None,
+                    "--prometheus-headers",
+                    "-H",
+                    help="Additional headers to add to Prometheus requests. Format as 'key: value', for example 'X-MyHeader: 123'. Trailing whitespaces will be stripped.",
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_ssl_enabled: bool = typer.Option(
@@ -99,7 +113,7 @@ def load_commands() -> None:
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_label: str = typer.Option(
-                    'cluster',
+                    None,
                     "--prometheus-label",
                     help="The label in prometheus used to differentiate clusters. (Only relevant for centralized prometheus)",
                     rich_help_panel="Prometheus Settings",
@@ -125,8 +139,10 @@ def load_commands() -> None:
                     kubeconfig=kubeconfig,
                     clusters="*" if all_clusters else clusters,
                     namespaces="*" if "*" in namespaces else namespaces,
+                    selector=selector,
                     prometheus_url=prometheus_url,
                     prometheus_auth_header=prometheus_auth_header,
+                    prometheus_other_headers=prometheus_other_headers,
                     prometheus_ssl_enabled=prometheus_ssl_enabled,
                     prometheus_cluster_label=prometheus_cluster_label,
                     prometheus_label=prometheus_label,
