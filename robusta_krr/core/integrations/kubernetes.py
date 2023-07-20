@@ -171,7 +171,7 @@ class ClusterLoader(Configurable):
                 ),
             )
         except ApiException as e:
-            if e.status in [404, 403]:
+            if e.status in [400, 401, 403, 404]:
                 self.debug(f"Rollout API not available in {self.cluster}")
                 return []
             raise
