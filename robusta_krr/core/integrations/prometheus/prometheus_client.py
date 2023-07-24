@@ -27,8 +27,7 @@ class CustomPrometheusConnect(PrometheusConnect):
         retry: Retry = None,
         auth: tuple = None,
     ):
-        super().__init__(url=url, headers=headers, disable_ssl=disable_ssl, retry=retry)
-        self.auth=auth
+        super().__init__(url, headers, disable_ssl, retry, auth)
         self._session = requests.Session()
         self._session.mount(self.url, HTTPAdapter(max_retries=retry, pool_maxsize=10, pool_block=True))
 

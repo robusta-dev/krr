@@ -10,7 +10,10 @@ from .base_metric import QueryType, bind_metric, override_metric
 @bind_metric(ResourceType.Memory)
 class MemoryMetricLoader(BaseFilteredMetricLoader):
     def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        if len(object.pods) < 20:
+            pods_selector = "|".join(pod.name for pod in object.pods)
+        else:
+            pods_selector = "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{5}' for pod in object.pods]))
         cluster_label = self.get_prometheus_cluster_label()
         return (
             "sum(container_memory_working_set_bytes{"
@@ -33,7 +36,10 @@ class SimpleMemoryMetricLoader(MemoryMetricLoader):
     """
 
     def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        if len(object.pods) < 20:
+            pods_selector = "|".join(pod.name for pod in object.pods)
+        else:
+            pods_selector = "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{5}' for pod in object.pods]))
         cluster_label = self.get_prometheus_cluster_label()
         resolution_formatted = f"[{resolution}]" if resolution else ""
         return (
