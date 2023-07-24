@@ -1,20 +1,23 @@
+from __future__ import annotations
+
 import datetime
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
 
-from robusta_krr.core.abstract.strategies import ResourceHistoryData
-from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
 
-from .metrics_service.base_metric_service import MetricsNotFound, MetricsService
+from .metrics_service.base_metric_service import MetricsNotFound
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+
+if TYPE_CHECKING:
+    from robusta_krr.core.abstract.strategies import MetricsPodData, BaseStrategy
+    from robusta_krr.core.models.config import Config
 
 METRICS_SERVICES = {
     "Prometheus": PrometheusMetricsService,
@@ -23,7 +26,7 @@ METRICS_SERVICES = {
 }
 
 
-class MetricsLoader(Configurable):
+class PrometheusMetricsLoader(Configurable):
     def __init__(
         self,
         config: Config,
@@ -53,14 +56,14 @@ class MetricsLoader(Configurable):
 
         self.loader = loader
 
-        self.info(f"{self.loader.name()} connected successfully for {cluster or 'default'} cluster")
+        self.info(f"{self.loader.name} connected successfully for {cluster or 'default'} cluster")
 
     def get_metrics_service(
         self,
         config: Config,
         api_client: Optional[ApiClient] = None,
         cluster: Optional[str] = None,
-    ) -> Optional[MetricsService]:
+    ) -> Optional[PrometheusMetricsService]:
         for service_name, metric_service_class in METRICS_SERVICES.items():
             try:
                 loader = metric_service_class(config, api_client=api_client, cluster=cluster, executor=self.executor)
@@ -76,11 +79,11 @@ class MetricsLoader(Configurable):
     async def gather_data(
         self,
         object: K8sObjectData,
-        resource: ResourceType,
+        strategy: BaseStrategy,
         period: datetime.timedelta,
         *,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> ResourceHistoryData:
+    ) -> MetricsPodData:
         """
         Gathers data from Prometheus for a specified object and resource.
 
@@ -94,4 +97,9 @@ class MetricsLoader(Configurable):
             ResourceHistoryData: The gathered resource history data.
         """
 
-        return await self.loader.gather_data(object, resource, period, step)
+        await self.loader.add_historic_pods(object, period)
+
+        return {
+            MetricLoader: await self.loader.gather_data(object, MetricLoader, period, step)
+            for MetricLoader in strategy.metrics
+        }

@@ -1,16 +1,17 @@
 import numpy as np
 import pydantic as pd
-from numpy.typing import NDArray
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
-    HistoryData,
+    MetricPodData,
+    MetricsPodData,
     K8sObjectData,
     ResourceRecommendation,
     ResourceType,
     RunResult,
     StrategySettings,
 )
+from robusta_krr.core.integrations.prometheus.metrics import MaxCPULoader, MaxMemoryLoader
 
 
 class SimpleStrategySettings(StrategySettings):
@@ -19,14 +20,14 @@ class SimpleStrategySettings(StrategySettings):
         5, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
 
-    def calculate_memory_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:
+    def calculate_memory_proposal(self, data: MetricPodData) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
             return float("NaN")
 
         return max(data_) * (1 + self.memory_buffer_percentage / 100)
 
-    def calculate_cpu_proposal(self, data: dict[str, NDArray[np.float64]]) -> float:
+    def calculate_cpu_proposal(self, data: MetricPodData) -> float:
         if len(data) == 0:
             return float("NaN")
 
@@ -49,32 +50,42 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
     """
 
-    __display_name__ = "simple"
-    __rich_console__ = True
+    display_name = "simple"
+    rich_console = True
+    metrics = [MaxCPULoader, MaxMemoryLoader]
 
-    def __calculate_cpu_proposal(self, history_data: HistoryData, object_data: K8sObjectData) -> ResourceRecommendation:
-        if len(history_data[ResourceType.CPU].data) == 0:
+    def __calculate_cpu_proposal(
+        self, history_data: MetricsPodData, object_data: K8sObjectData
+    ) -> ResourceRecommendation:
+        data = history_data[MaxCPULoader]
+
+        if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
         if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        cpu_usage = self.settings.calculate_cpu_proposal(history_data[ResourceType.CPU].data)
+        cpu_usage = self.settings.calculate_cpu_proposal(data)
         return ResourceRecommendation(request=cpu_usage, limit=None)
 
     def __calculate_memory_proposal(
-        self, history_data: HistoryData, object_data: K8sObjectData
+        self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
-        if len(history_data[ResourceType.Memory].data) == 0:
+        data = history_data[MaxMemoryLoader]
+
+        if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
         if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        memory_usage = self.settings.calculate_memory_proposal(history_data[ResourceType.Memory].data)
+        memory_usage = self.settings.calculate_memory_proposal(data)
         return ResourceRecommendation(request=memory_usage, limit=memory_usage)
 
-    def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
+    def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
+        from pprint import pprint
+
+        pprint(history_data)
         return {
             ResourceType.CPU: self.__calculate_cpu_proposal(history_data, object_data),
             ResourceType.Memory: self.__calculate_memory_proposal(history_data, object_data),

@@ -1,19 +1,18 @@
 import asyncio
 import datetime
-from typing import List, Optional, Type
+from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
 from requests.exceptions import ConnectionError, HTTPError
 
-from robusta_krr.core.abstract.strategies import ResourceHistoryData
+from robusta_krr.core.abstract.strategies import MetricPodData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
-from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
-from ..metrics import BaseMetricLoader
+from ..metrics import PrometheusMetric
 from ..prometheus_client import ClusterNotSpecifiedException, CustomPrometheusConnect
 from .base_metric_service import MetricsNotFound, MetricsService
 
@@ -54,34 +53,35 @@ class PrometheusMetricsService(MetricsService):
     A class for fetching metrics from Prometheus.
     """
 
+    service_discovery: type[MetricsServiceDiscovery] = PrometheusDiscovery
+
     def __init__(
         self,
         config: Config,
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
-        service_discovery: Type[MetricsServiceDiscovery] = PrometheusDiscovery,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
 
-        self.info(f"Connecting to {self.name()} for {self.cluster} cluster")
+        self.info(f"Connecting to {self.name} for {self.cluster} cluster")
 
         self.auth_header = self.config.prometheus_auth_header
         self.ssl_enabled = self.config.prometheus_ssl_enabled
 
-        self.prometheus_discovery = service_discovery(config=self.config, api_client=self.api_client)
+        self.prometheus_discovery = self.service_discovery(config=self.config, api_client=self.api_client)
 
         self.url = self.config.prometheus_url
         self.url = self.url or self.prometheus_discovery.find_metrics_url()
 
         if not self.url:
             raise PrometheusNotFound(
-                f"{self.name()} instance could not be found while scanning in {self.cluster} cluster.\n"
+                f"{self.name} instance could not be found while scanning in {self.cluster} cluster.\n"
                 "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
             )
 
-        self.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
+        self.info(f"Using {self.name} at {self.url} for cluster {cluster or 'default'}")
 
         headers = self.config.prometheus_other_headers
 
@@ -146,20 +146,17 @@ class PrometheusMetricsService(MetricsService):
     async def gather_data(
         self,
         object: K8sObjectData,
-        resource: ResourceType,
+        LoaderClass: type[PrometheusMetric],
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> ResourceHistoryData:
+    ) -> MetricPodData:
         """
         ResourceHistoryData: The gathered resource history data.
         """
-        self.debug(f"Gathering data for {object} and {resource}")
+        self.debug(f"Gathering data for {object} and {LoaderClass}")
 
-        MetricLoaderType = BaseMetricLoader.get_by_resource(resource, self.config.strategy)
-        await self.add_historic_pods(object, period)
-
-        metric_loader = MetricLoaderType(self.config, self.prometheus, self.executor)
-        return await metric_loader.load_data(object, period, step, self.name())
+        metric_loader = LoaderClass(self.config, self.prometheus, self.name, self.executor)
+        return await metric_loader.load_data(object, period, step)
 
     async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """

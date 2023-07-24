@@ -1,3 +1,3 @@
-from .base_metric import BaseMetricLoader, bind_metric
-from .cpu_metric import CPUMetricLoader
-from .memory_metric import MemoryMetricLoader
+from .cpu import CPULoader, MaxCPULoader
+from .memory import MemoryLoader, MaxMemoryLoader
+from .base import PrometheusMetric

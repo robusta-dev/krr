@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 import numpy as np
 import pytest
 
-from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, ResourceHistoryData
+from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, MetricPodData
 
 TEST_OBJECT = K8sObjectData(
     cluster="mock-cluster",
@@ -59,15 +59,7 @@ def mock_prometheus_loader():
     with patch(
         "robusta_krr.core.integrations.prometheus.loader.MetricsLoader.gather_data",
         new=AsyncMock(
-            return_value=ResourceHistoryData(
-                data={pod.name: metric_points_data for pod in TEST_OBJECT.pods},
-                metric={  # type: ignore
-                    "query": f"example_promql_metric{{pod_name=~\"{'|'.join(pod.name for pod in TEST_OBJECT.pods)}\"}}",
-                    "start_time": start,
-                    "end_time": now,
-                    "step": "30s",
-                },
-            )
+            return_value={pod.name: metric_points_data for pod in TEST_OBJECT.pods},
         ),
     ) as mock_prometheus_loader:
         mock_prometheus_loader

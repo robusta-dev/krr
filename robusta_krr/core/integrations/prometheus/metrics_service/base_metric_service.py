@@ -5,11 +5,12 @@ from typing import List, Optional
 
 from kubernetes.client.api_client import ApiClient
 
-from robusta_krr.core.abstract.strategies import ResourceHistoryData
+from robusta_krr.core.abstract.strategies import MetricPodData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
+
+from ..metrics import PrometheusMetric
 
 
 class MetricsNotFound(Exception):
@@ -37,6 +38,7 @@ class MetricsService(Configurable, abc.ABC):
     def check_connection(self):
         ...
 
+    @property
     def name(self) -> str:
         classname = self.__class__.__name__
         return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
@@ -49,10 +51,10 @@ class MetricsService(Configurable, abc.ABC):
     async def gather_data(
         self,
         object: K8sObjectData,
-        resource: ResourceType,
+        LoaderClass: type[PrometheusMetric],
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> ResourceHistoryData:
+    ) -> MetricPodData:
         ...
 
     def get_prometheus_cluster_label(self) -> str:
