@@ -83,9 +83,6 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         return ResourceRecommendation(request=memory_usage, limit=memory_usage)
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
-        from pprint import pprint
-
-        pprint(history_data)
         return {
             ResourceType.CPU: self.__calculate_cpu_proposal(history_data, object_data),
             ResourceType.Memory: self.__calculate_memory_proposal(history_data, object_data),
