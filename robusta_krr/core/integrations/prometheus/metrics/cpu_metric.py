@@ -10,10 +10,7 @@ from .base_metric import QueryType, bind_metric
 @bind_metric(ResourceType.CPU)
 class CPUMetricLoader(BaseFilteredMetricLoader):
     def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
-        if len(object.pods) < 20:
-            pods_selector = "|".join(pod.name for pod in object.pods)
-        else:
-            pods_selector = "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{5}' for pod in object.pods]))
+        pods_selector = self.get_pods_selector(object)
         cluster_label = self.get_prometheus_cluster_label()
         return (
             "sum(irate(container_cpu_usage_seconds_total{"

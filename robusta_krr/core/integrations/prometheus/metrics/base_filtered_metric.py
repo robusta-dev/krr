@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from robusta_krr.core.abstract.strategies import Metric
-
+from robusta_krr.core.models.objects import K8sObjectData
 from .base_metric import BaseMetricLoader, QueryType
 
 PrometheusSeries = Any
@@ -22,6 +22,13 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
                 return series["metric"][label]
         return None
 
+    @staticmethod
+    def get_pods_selector(object: K8sObjectData) -> Optional[str]:
+        if len(object.pods) < 20:
+            return "|".join(pod.name for pod in object.pods)
+        else:
+            return "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{5}' for pod in object.pods]))
+    
     @staticmethod
     def filter_prom_jobs_results(
         series_list_result: list[PrometheusSeries],
