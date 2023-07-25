@@ -23,7 +23,7 @@ from kubernetes.client.models import (
     V2HorizontalPodAutoscalerList,
 )
 
-from robusta_krr.core.models.objects import HPAData, K8sObjectData, PodData
+from robusta_krr.core.models.objects import HPAData, K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 

@@ -120,8 +120,6 @@ class Runner(Configurable):
             step=self._strategy.settings.timeframe_timedelta,
         )
 
-        # self.__progressbar.progress()
-
         self.debug(f"Calculating recommendations for {object} with {len(metrics)} metrics")
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
@@ -132,6 +130,8 @@ class Runner(Configurable):
 
     async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> ResourceScan:
         recommendation = await self._calculate_object_recommendations(k8s_object)
+
+        self.__progressbar.progress()
 
         return ResourceScan.calculate(
             k8s_object,
@@ -153,13 +153,13 @@ class Runner(Configurable):
 
         self.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
 
-        # with ProgressBar(self.config, total=len(objects), title="Calculating Recommendation") as self.__progressbar:
-        scans_tasks = [
-            asyncio.create_task(self._gather_object_allocations(k8s_object))
-            async for k8s_object in self._k8s_loader.list_scannable_objects(clusters)
-        ]
+        with ProgressBar(self.config, title="Calculating Recommendation") as self.__progressbar:
+            scans_tasks = [
+                asyncio.create_task(self._gather_object_allocations(k8s_object))
+                async for k8s_object in self._k8s_loader.list_scannable_objects(clusters)
+            ]
 
-        scans = await asyncio.gather(*scans_tasks)
+            scans = await asyncio.gather(*scans_tasks)
 
         if len(scans) == 0:
             self.warning("Current filters resulted in no objects available to scan.")
