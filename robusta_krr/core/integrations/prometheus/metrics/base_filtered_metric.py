@@ -27,7 +27,7 @@ class BaseFilteredMetricLoader(BaseMetricLoader):
         if len(object.pods) < 20:
             return "|".join(pod.name for pod in object.pods)
         else:
-            return "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{5}' for pod in object.pods]))
+            return "|".join(set([pod.name[:pod.name.rfind('-')] + '-[0-9a-z]{0,5}' for pod in object.pods]))
     
     @staticmethod
     def filter_prom_jobs_results(
