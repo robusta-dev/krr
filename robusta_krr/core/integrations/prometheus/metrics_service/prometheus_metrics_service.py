@@ -158,9 +158,9 @@ class PrometheusMetricsService(MetricsService):
         metric_loader = LoaderClass(self.config, self.prometheus, self.name, self.executor)
         return await metric_loader.load_data(object, period, step)
 
-    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
+    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """
-        Finds pods that have been deleted but still have some metrics in Prometheus.
+        List pods related to the object and add them to the object's pods list.
         Args:
             object (K8sObjectData): The Kubernetes object.
             period (datetime.timedelta): The time period for which to gather data.
@@ -200,10 +200,11 @@ class PrometheusMetricsService(MetricsService):
             f"[{period_literal}]"
         )
 
-        current_pods = {p.name for p in object.pods}
+        if related_pods == []:
+            self.debug(f"No pods found for {object}")
+            return
 
+        last_timestamp: float = max([pod["values"][-1][0] for pod in related_pods])
         object.pods += [
-            PodData(name=pod["metric"]["pod"], deleted=True)
-            for pod in related_pods
-            if pod["metric"]["pod"] not in current_pods
+            PodData(name=pod["metric"]["pod"], deleted=pod["values"][-1][0] != last_timestamp) for pod in related_pods
         ]
