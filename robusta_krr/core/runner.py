@@ -120,7 +120,9 @@ class Runner(Configurable):
             step=self._strategy.settings.timeframe_timedelta,
         )
 
-        self.__progressbar.progress()
+        # self.__progressbar.progress()
+
+        self.debug(f"Calculating recommendations for {object} with {len(metrics)} metrics")
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
@@ -128,21 +130,17 @@ class Runner(Configurable):
         result = await loop.run_in_executor(self._executor, self._strategy.run, metrics, object)
         return self._format_result(result)
 
-    async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
-        recommendations: list[RunResult] = await asyncio.gather(
-            *[self._calculate_object_recommendations(object) for object in objects]
-        )
+    async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> ResourceScan:
+        recommendation = await self._calculate_object_recommendations(k8s_object)
 
-        return [
-            (
-                ResourceAllocations(
-                    requests={resource: recommendation[resource].request for resource in ResourceType},
-                    limits={resource: recommendation[resource].limit for resource in ResourceType},
-                    info={resource: recommendation[resource].info for resource in ResourceType},
-                )
-            )
-            for recommendation in recommendations
-        ]
+        return ResourceScan.calculate(
+            k8s_object,
+            ResourceAllocations(
+                requests={resource: recommendation[resource].request for resource in ResourceType},
+                limits={resource: recommendation[resource].limit for resource in ResourceType},
+                info={resource: recommendation[resource].info for resource in ResourceType},
+            ),
+        )
 
     async def _collect_result(self) -> Result:
         clusters = await self._k8s_loader.list_clusters()
@@ -154,9 +152,16 @@ class Runner(Configurable):
             )
 
         self.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
-        objects = await self._k8s_loader.list_scannable_objects(clusters)
 
-        if len(objects) == 0:
+        # with ProgressBar(self.config, total=len(objects), title="Calculating Recommendation") as self.__progressbar:
+        scans_tasks = [
+            asyncio.create_task(self._gather_object_allocations(k8s_object))
+            async for k8s_object in self._k8s_loader.list_scannable_objects(clusters)
+        ]
+
+        scans = await asyncio.gather(*scans_tasks)
+
+        if len(scans) == 0:
             self.warning("Current filters resulted in no objects available to scan.")
             self.warning("Try to change the filters or check if there is anything available.")
             if self.config.namespaces == "*":
@@ -166,13 +171,8 @@ class Runner(Configurable):
                 strategy=StrategyData(name=str(self._strategy).lower(), settings=self._strategy.settings.dict()),
             )
 
-        with ProgressBar(self.config, total=len(objects), title="Calculating Recommendation") as self.__progressbar:
-            resource_recommendations = await self._gather_objects_recommendations(objects)
-
         return Result(
-            scans=[
-                ResourceScan.calculate(obj, recommended) for obj, recommended in zip(objects, resource_recommendations)
-            ],
+            scans=scans,
             description=self._strategy.description,
             strategy=StrategyData(
                 name=str(self._strategy).lower(),

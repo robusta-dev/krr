@@ -1,7 +1,7 @@
 import asyncio
-import itertools
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Union
+from typing import AsyncGenerator, Optional, Union
+import aiostream
 
 from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException
@@ -53,7 +53,7 @@ class ClusterLoader(Configurable):
         self.autoscaling_v1 = client.AutoscalingV1Api(api_client=self.api_client)
         self.autoscaling_v2 = client.AutoscalingV2Api(api_client=self.api_client)
 
-    async def list_scannable_objects(self) -> list[K8sObjectData]:
+    async def list_scannable_objects(self) -> AsyncGenerator[K8sObjectData, None]:
         """List all scannable objects.
 
         Returns:
@@ -65,30 +65,27 @@ class ClusterLoader(Configurable):
 
         try:
             self.__hpa_list = await self.__list_hpa()
-            objects_tuple = await asyncio.gather(
+            tasks = [
                 self._list_deployments(),
                 self._list_rollouts(),
                 self._list_all_statefulsets(),
                 self._list_all_daemon_set(),
                 self._list_all_jobs(),
-            )
+            ]
+
+            for fut in asyncio.as_completed(tasks):
+                object_list = await fut
+                for object in object_list:
+                    if self.config.namespaces == "*" and object.namespace == "kube-system":
+                        continue
+                    elif self.config.namespaces != "*" and object.namespace not in self.config.namespaces:
+                        continue
+                    yield object
 
         except Exception as e:
             self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
             self.debug_exception()
-            return []
-
-        objects = itertools.chain(*objects_tuple)
-        if self.config.namespaces == "*":
-            # NOTE: We are not scanning kube-system namespace by default
-            result = [obj for obj in objects if obj.namespace != "kube-system"]
-        else:
-            result = [obj for obj in objects if obj.namespace in self.config.namespaces]
-
-        namespaces = {obj.namespace for obj in result}
-        self.info(f"Found {len(result)} objects across {len(namespaces)} namespaces in {self.cluster}")
-
-        return result
+            return
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
@@ -389,13 +386,12 @@ class KubernetesLoader(Configurable):
             self.error(f"Could not load cluster {cluster} and will skip it: {e}")
             return None
 
-    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> list[K8sObjectData]:
+    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> AsyncGenerator[K8sObjectData, None]:
         """List all scannable objects.
 
-        Returns:
-            A list of scannable objects.
+        Yields:
+            Each scannable object as it is loaded.
         """
-
         if clusters is None:
             _cluster_loaders = [self._try_create_cluster_loader(None)]
         else:
@@ -404,7 +400,14 @@ class KubernetesLoader(Configurable):
         cluster_loaders = [cl for cl in _cluster_loaders if cl is not None]
         if cluster_loaders == []:
             self.error("Could not load any cluster.")
-            return []
+            return
 
-        objects = await asyncio.gather(*[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders])
-        return list(itertools.chain(*objects))
+        # https://stackoverflow.com/questions/55299564/join-multiple-async-generators-in-python
+        # This will merge all the streams from all the cluster loaders into a single stream
+        objects_combined = aiostream.stream.merge(
+            *[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders]
+        )
+
+        async with objects_combined.stream() as streamer:
+            async for object in streamer:
+                yield object
