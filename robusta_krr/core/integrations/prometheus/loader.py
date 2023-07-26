@@ -10,9 +10,9 @@ from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.configurable import Configurable
-
-from .metrics_service.base_metric_service import MetricsNotFound, MetricsService
-from .metrics_service.prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
+from robusta_krr.common.prometheus.exceptions import PrometheusNotFound, MetricsNotFound
+from .metrics_service.base_metric_service import MetricsService
+from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 

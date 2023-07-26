@@ -6,8 +6,9 @@ from kubernetes.client import ApiClient
 from robusta_krr.core.models.config import Config
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
-from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
+from .prometheus_metrics_service import PrometheusMetricsService
 
+from robusta_krr.common.prometheus.exceptions import MetricsNotFound, ThanosMetricsNotFound
 
 class ThanosMetricsDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
@@ -28,13 +29,6 @@ class ThanosMetricsDiscovery(MetricsServiceDiscovery):
             ]
         )
 
-
-class ThanosMetricsNotFound(MetricsNotFound):
-    """
-    An exception raised when Thanos is not found.
-    """
-
-    pass
 
 
 class ThanosMetricsService(PrometheusMetricsService):

@@ -6,8 +6,9 @@ from kubernetes.client import ApiClient
 from robusta_krr.core.models.config import Config
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
-from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
+from .prometheus_metrics_service import PrometheusMetricsService
 
+from robusta_krr.common.prometheus.exceptions import MetricsNotFound, VictoriaMetricsNotFound
 
 class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
@@ -26,14 +27,6 @@ class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
                 "app=vmselect",
             ]
         )
-
-
-class VictoriaMetricsNotFound(MetricsNotFound):
-    """
-    An exception raised when Victoria Metrics is not found.
-    """
-
-    pass
 
 
 class VictoriaMetricsService(PrometheusMetricsService):
@@ -55,6 +48,7 @@ class VictoriaMetricsService(PrometheusMetricsService):
             api_client=api_client,
             service_discovery=VictoriaMetricsDiscovery,
             executor=executor,
+            is_victoria_metrics=True
         )
 
     def check_connection(self):

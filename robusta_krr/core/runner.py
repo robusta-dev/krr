@@ -5,7 +5,8 @@ from typing import Optional, Union
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
-from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
+from robusta_krr.common.prometheus.exceptions import PrometheusNotFound
+from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import (
@@ -109,7 +110,6 @@ class Runner(Configurable):
 
         if prometheus_loader is None:
             return {resource: ResourceRecommendation.undefined() for resource in ResourceType}, {}
-
         data_tuple = await asyncio.gather(
             *[
                 prometheus_loader.gather_data(
