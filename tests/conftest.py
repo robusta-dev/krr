@@ -1,11 +1,12 @@
 import random
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 
 import numpy as np
 import pytest
 
-from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, MetricPodData
+from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations
+from robusta_krr.strategies import SimpleStrategy
 
 TEST_OBJECT = K8sObjectData(
     cluster="mock-cluster",
@@ -25,6 +26,15 @@ TEST_OBJECT = K8sObjectData(
 )
 
 
+class AsyncIter:
+    def __init__(self, items):
+        self.items = items
+
+    async def __aiter__(self):
+        for item in self.items:
+            yield item
+
+
 @pytest.fixture(autouse=True, scope="session")
 def mock_list_clusters():
     with patch(
@@ -38,7 +48,7 @@ def mock_list_clusters():
 def mock_list_scannable_objects():
     with patch(
         "robusta_krr.core.integrations.kubernetes.KubernetesLoader.list_scannable_objects",
-        new=AsyncMock(return_value=[TEST_OBJECT]),
+        new=MagicMock(return_value=AsyncIter([TEST_OBJECT])),
     ):
         yield
 
@@ -57,9 +67,11 @@ def mock_prometheus_loader():
     metric_points_data = np.array([(t, random.randrange(0, 100)) for t in np.linspace(start_ts, now_ts, 3600)])
 
     with patch(
-        "robusta_krr.core.integrations.prometheus.loader.MetricsLoader.gather_data",
+        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.gather_data",
         new=AsyncMock(
-            return_value={pod.name: metric_points_data for pod in TEST_OBJECT.pods},
+            return_value={
+                metric: {pod.name: metric_points_data for pod in TEST_OBJECT.pods} for metric in SimpleStrategy.metrics
+            },
         ),
     ) as mock_prometheus_loader:
         mock_prometheus_loader
@@ -68,5 +80,5 @@ def mock_prometheus_loader():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_prometheus_init():
-    with patch("robusta_krr.core.integrations.prometheus.loader.MetricsLoader.__init__", return_value=None):
+    with patch("robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.__init__", return_value=None):
         yield
