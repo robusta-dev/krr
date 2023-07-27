@@ -96,6 +96,13 @@ def load_commands() -> None:
                     help="Prometheus authentication header.",
                     rich_help_panel="Prometheus Settings",
                 ),
+                prometheus_other_headers: Optional[List[str]] = typer.Option(
+                    None,
+                    "--prometheus-headers",
+                    "-H",
+                    help="Additional headers to add to Prometheus requests. Format as 'key: value', for example 'X-MyHeader: 123'. Trailing whitespaces will be stripped.",
+                    rich_help_panel="Prometheus Settings",
+                ),
                 prometheus_ssl_enabled: bool = typer.Option(
                     False,
                     "--prometheus-ssl-enabled",
@@ -110,7 +117,7 @@ def load_commands() -> None:
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_label: str = typer.Option(
-                    'cluster',
+                    None,
                     "--prometheus-label",
                     help="The label in prometheus used to differentiate clusters. (Only relevant for centralized prometheus)",
                     rich_help_panel="Prometheus Settings",
@@ -138,6 +145,7 @@ def load_commands() -> None:
                     selector=selector,
                     prometheus_url=prometheus_url,
                     prometheus_auth_header=prometheus_auth_header,
+                    prometheus_other_headers=prometheus_other_headers,
                     prometheus_ssl_enabled=prometheus_ssl_enabled,
                     prometheus_cluster_label=prometheus_cluster_label,
                     prometheus_label=prometheus_label,
