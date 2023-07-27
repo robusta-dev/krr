@@ -16,6 +16,7 @@ class Config(pd.BaseSettings):
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
+    discovery_method: Literal["api-server", "prometheus"] = pd.Field("api-server")
     selector: Optional[str] = None
 
     # Value settings

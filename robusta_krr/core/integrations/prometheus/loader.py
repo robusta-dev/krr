@@ -24,6 +24,8 @@ METRICS_SERVICES = {
 
 
 class MetricsLoader(Configurable):
+    loader: MetricsService
+    
     def __init__(
         self,
         config: Config,
@@ -48,11 +50,11 @@ class MetricsLoader(Configurable):
             else None
         )
         loader = self.get_metrics_service(config, api_client=self.api_client, cluster=cluster)
+        
         if loader is None:
             raise PrometheusNotFound("No Prometheus or metrics service found")
 
         self.loader = loader
-
         self.info(f"{self.loader.name()} connected successfully for {cluster or 'default'} cluster")
 
     def get_metrics_service(
