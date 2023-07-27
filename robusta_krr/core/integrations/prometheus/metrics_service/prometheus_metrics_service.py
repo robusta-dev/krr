@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import time
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor
 
@@ -185,26 +186,47 @@ class PrometheusMetricsService(MetricsService):
             )
             pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
             pod_owner_kind = "ReplicaSet"
+
+            del replicasets
         else:
             pod_owners = [object.name]
             pod_owner_kind = object.kind
 
         owners_regex = "|".join(pod_owners)
         related_pods = await self.query(
-            "kube_pod_owner{"
-            f'owner_name=~"{owners_regex}", '
-            f'owner_kind="{pod_owner_kind}", '
-            f'namespace="{object.namespace}"'
-            f"{cluster_label}"
-            "}"
-            f"[{period_literal}]"
+            f"""
+                last_over_time(
+                    kube_pod_owner{{
+                        owner_name=~"{owners_regex}",
+                        owner_kind="{pod_owner_kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                )
+            """
         )
 
         if related_pods == []:
             self.debug(f"No pods found for {object}")
             return
 
-        last_timestamp: float = max([pod["values"][-1][0] for pod in related_pods])
+        current_pods = await self.query(
+            f"""
+                present_over_time(
+                    kube_pod_owner{{
+                        owner_name=~"{owners_regex}",
+                        owner_kind="{pod_owner_kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[1m]
+                )
+            """
+        )
+
+        current_pods_set = {pod["metric"]["pod"] for pod in current_pods}
+        del current_pods
+
         object.pods += [
-            PodData(name=pod["metric"]["pod"], deleted=pod["values"][-1][0] != last_timestamp) for pod in related_pods
+            PodData(name=pod["metric"]["pod"], deleted=pod["metric"]["pod"] not in current_pods_set)
+            for pod in related_pods
         ]
