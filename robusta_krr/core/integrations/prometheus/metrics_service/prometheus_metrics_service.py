@@ -95,13 +95,8 @@ class PrometheusMetricsService(MetricsService):
         Raises:
             PrometheusNotFound: If the connection to Prometheus cannot be established.
         """
-        try:
-            self.prometheus.custom_query(query="example")
-        except (ConnectionError, HTTPError) as e:
-            raise PrometheusNotFound(
-                f"Couldn't connect to Prometheus found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"
-            ) from e
-
+        self.prometheus.check_prometheus_connection()
+         
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
