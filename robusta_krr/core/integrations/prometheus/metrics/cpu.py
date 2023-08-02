@@ -26,7 +26,7 @@ class MaxCPULoader(QueryMetric, FilterMetric):
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
-            sum(
+            max_over_time(
                 irate(
                     container_cpu_usage_seconds_total{{
                         namespace="{object.namespace}",
