@@ -33,3 +33,23 @@ class MaxMemoryLoader(QueryMetric, FilterMetric):
                 }}[{resolution}]
             )
         """
+
+
+def PercentileMemoryLoader(percentile: float) -> type[QueryMetric]:
+    class PercentileMemoryLoader(QueryMetric, FilterMetric):
+        def get_query(self, object: K8sObjectData, resolution: str) -> str:
+            pods_selector = "|".join(pod.name for pod in object.pods)
+            cluster_label = self.get_prometheus_cluster_label()
+            return f"""
+                quantile_over_time(
+                    {round(percentile / 100, 2)},
+                    container_memory_working_set_bytes{{
+                        namespace="{object.namespace}",
+                        pod=~"{pods_selector}",
+                        container="{object.container}"
+                        {cluster_label}
+                    }}[{resolution}]
+                )
+            """
+
+    return PercentileMemoryLoader

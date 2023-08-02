@@ -1,3 +1,4 @@
+from typing import Sequence
 import numpy as np
 import pydantic as pd
 
@@ -11,7 +12,8 @@ from robusta_krr.core.abstract.strategies import (
     RunResult,
     StrategySettings,
 )
-from robusta_krr.core.integrations.prometheus.metrics import MaxCPULoader, MaxMemoryLoader
+from robusta_krr.core.abstract.metrics import BaseMetric
+from robusta_krr.core.integrations.prometheus.metrics import PercentileCPULoader, MaxMemoryLoader, PrometheusMetric
 
 
 class SimpleStrategySettings(StrategySettings):
@@ -52,12 +54,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     display_name = "simple"
     rich_console = True
-    metrics = [MaxCPULoader, MaxMemoryLoader]
+
+    @property
+    def metrics(self) -> list[type[PrometheusMetric]]:
+        return [PercentileCPULoader(self.settings.cpu_percentile), MaxMemoryLoader]
 
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
-        data = history_data[MaxCPULoader]
+        data = history_data["PercentileCPULoader"]
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
@@ -71,7 +76,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     def __calculate_memory_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
-        data = history_data[MaxMemoryLoader]
+        data = history_data["MaxMemoryLoader"]
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")

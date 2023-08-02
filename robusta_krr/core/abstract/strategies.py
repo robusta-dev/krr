@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import datetime
 from textwrap import dedent
-from typing import Annotated, Generic, Literal, Optional, TypeVar, get_args, TYPE_CHECKING
+from typing import Annotated, Generic, Literal, Optional, TypeVar, get_args, TYPE_CHECKING, Sequence
 
 import numpy as np
 import pydantic as pd
@@ -65,7 +65,7 @@ ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
 
 
 PodsTimeData = dict[str, ArrayNx2]  # Mapping: pod -> [(time, value)]
-MetricsPodData = dict[type["BaseMetric"], PodsTimeData]
+MetricsPodData = dict[str, PodsTimeData]
 
 RunResult = dict[ResourceType, ResourceRecommendation]
 
@@ -95,8 +95,12 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
 
     display_name: str
     rich_console: bool = False
-    # TODO: this should be BaseMetricLoader, but currently we only support Prometheus
-    metrics: list[type[PrometheusMetric]] = []
+
+    # TODO: this should be BaseMetric, but currently we only support Prometheus
+    @property
+    @abc.abstractmethod
+    def metrics(self) -> Sequence[type[PrometheusMetric]]:
+        pass
 
     def __init__(self, settings: _StrategySettings):
         self.settings = settings
@@ -106,7 +110,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
 
     @property
     def _display_name(self) -> str:
-        return getattr(self, "__display_name__", self.__class__.__name__.lower().removeprefix("strategy"))
+        return getattr(self, "display_name", self.__class__.__name__.lower().removeprefix("strategy"))
 
     @property
     def description(self) -> Optional[str]:
