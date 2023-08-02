@@ -1,9 +1,7 @@
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from kubernetes.client import ApiClient
 
-from robusta_krr.core.models.config import Config
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
@@ -42,21 +40,7 @@ class ThanosMetricsService(PrometheusMetricsService):
     A class for fetching metrics from Thanos.
     """
 
-    def __init__(
-        self,
-        config: Config,
-        *,
-        cluster: Optional[str] = None,
-        api_client: Optional[ApiClient] = None,
-        executor: Optional[ThreadPoolExecutor] = None,
-    ) -> None:
-        super().__init__(
-            config=config,
-            cluster=cluster,
-            api_client=api_client,
-            service_discovery=ThanosMetricsDiscovery,
-            executor=executor,
-        )
+    service_discovery = ThanosMetricsDiscovery
 
     def check_connection(self):
         """

@@ -8,11 +8,14 @@ import warnings
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
-from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, MetricsLoader, PrometheusNotFound
+from robusta_krr.core.integrations.prometheus import (
+    ClusterNotSpecifiedException,
+    PrometheusMetricsLoader,
+    PrometheusNotFound,
+)
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import (
-    MetricsData,
     ResourceAllocations,
     ResourceScan,
     ResourceType,
@@ -31,17 +34,17 @@ class Runner(Configurable):
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self._k8s_loader = KubernetesLoader(self.config)
-        self._metrics_service_loaders: dict[Optional[str], Union[MetricsLoader, Exception]] = {}
+        self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
 
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(self.config.max_workers)
 
-    def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[MetricsLoader]:
+    def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[PrometheusMetricsLoader]:
         if cluster not in self._metrics_service_loaders:
             try:
-                self._metrics_service_loaders[cluster] = MetricsLoader(self.config, cluster=cluster)
+                self._metrics_service_loaders[cluster] = PrometheusMetricsLoader(self.config, cluster=cluster)
             except Exception as e:
                 self._metrics_service_loaders[cluster] = e
 
@@ -127,38 +130,29 @@ class Runner(Configurable):
             for resource, recommendation in result.items()
         }
 
-    async def _calculate_object_recommendations(self, object: K8sObjectData) -> tuple[RunResult, MetricsData]:
+    async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
-            return {resource: ResourceRecommendation.undefined() for resource in ResourceType}, {}
+            return {resource: ResourceRecommendation.undefined() for resource in ResourceType}
 
-        data_tuple = await asyncio.gather(
-            *[
-                prometheus_loader.gather_data(
-                    object,
-                    resource,
-                    self._strategy.settings.history_timedelta,
-                    step=self._strategy.settings.timeframe_timedelta,
-                )
-                for resource in ResourceType
-            ]
+        metrics = await prometheus_loader.gather_data(
+            object,
+            self._strategy,
+            self._strategy.settings.history_timedelta,
+            step=self._strategy.settings.timeframe_timedelta,
         )
-        data = dict(zip(ResourceType, data_tuple))
-        metrics = {resource: data[resource].metric for resource in ResourceType}
 
         self.__progressbar.progress()
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(self._executor, self._strategy.run, data, object)
-        return self._format_result(result), metrics
+        result = await loop.run_in_executor(self._executor, self._strategy.run, metrics, object)
+        return self._format_result(result)
 
-    async def _gather_objects_recommendations(
-        self, objects: list[K8sObjectData]
-    ) -> list[tuple[ResourceAllocations, MetricsData]]:
-        recommendations: list[tuple[RunResult, MetricsData]] = await asyncio.gather(
+    async def _gather_objects_recommendations(self, objects: list[K8sObjectData]) -> list[ResourceAllocations]:
+        recommendations: list[RunResult] = await asyncio.gather(
             *[self._calculate_object_recommendations(object) for object in objects]
         )
 
@@ -168,10 +162,9 @@ class Runner(Configurable):
                     requests={resource: recommendation[resource].request for resource in ResourceType},
                     limits={resource: recommendation[resource].limit for resource in ResourceType},
                     info={resource: recommendation[resource].info for resource in ResourceType},
-                ),
-                metric,
+                )
             )
-            for recommendation, metric in recommendations
+            for recommendation in recommendations
         ]
 
     async def _collect_result(self) -> Result:
@@ -201,8 +194,7 @@ class Runner(Configurable):
 
         return Result(
             scans=[
-                ResourceScan.calculate(obj, recommended, metrics)
-                for obj, (recommended, metrics) in zip(objects, resource_recommendations)
+                ResourceScan.calculate(obj, recommended) for obj, recommended in zip(objects, resource_recommendations)
             ],
             description=self._strategy.description,
             strategy=StrategyData(

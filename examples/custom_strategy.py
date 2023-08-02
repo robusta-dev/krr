@@ -3,8 +3,9 @@
 import pydantic as pd
 
 import robusta_krr
-from robusta_krr.api.models import HistoryData, K8sObjectData, ResourceRecommendation, ResourceType, RunResult
+from robusta_krr.api.models import MetricsPodData, K8sObjectData, ResourceRecommendation, ResourceType, RunResult
 from robusta_krr.api.strategies import BaseStrategy, StrategySettings
+from robusta_krr.core.integrations.prometheus.metrics import MaxCPULoader, MaxMemoryLoader
 
 
 # Providing description to the settings will make it available in the CLI help
@@ -19,7 +20,11 @@ class CustomStrategy(BaseStrategy[CustomStrategySettings]):
     Made only in order to demonstrate how to create a custom strategy.
     """
 
-    def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
+    display_name = "custom"  # The name of the strategy
+    rich_console = True  # Whether to use rich console for the CLI
+    metrics = [MaxCPULoader, MaxMemoryLoader]  # The metrics to use for the strategy
+
+    def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
         return {
             ResourceType.CPU: ResourceRecommendation(request=self.settings.param_1, limit=None),
             ResourceType.Memory: ResourceRecommendation(request=self.settings.param_2, limit=self.settings.param_2),

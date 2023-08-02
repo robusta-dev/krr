@@ -19,6 +19,7 @@ class CustomPrometheusConnect(PrometheusConnect):
     Custom PrometheusConnect class to handle retries.
     """
 
+    @no_type_check
     def __init__(
         self,
         url: str = "http://127.0.0.1:9090",
@@ -31,6 +32,7 @@ class CustomPrometheusConnect(PrometheusConnect):
         self._session = requests.Session()
         self._session.mount(self.url, HTTPAdapter(max_retries=retry, pool_maxsize=10, pool_block=True))
 
+    @no_type_check
     def custom_query(self, query: str, params: dict = None):
         params = params or {}
         data = None
@@ -52,6 +54,7 @@ class CustomPrometheusConnect(PrometheusConnect):
 
         return data
 
+    @no_type_check
     def custom_query_range(
         self,
         query: str,

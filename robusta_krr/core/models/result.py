@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Optional, Union
 
 import pydantic as pd
@@ -22,26 +21,13 @@ class ResourceRecommendation(pd.BaseModel):
     info: dict[ResourceType, Optional[str]]
 
 
-class Metric(pd.BaseModel):
-    query: str
-    start_time: datetime
-    end_time: datetime
-    step: str
-
-
-MetricsData = dict[ResourceType, Metric]
-
-
 class ResourceScan(pd.BaseModel):
     object: K8sObjectData
     recommended: ResourceRecommendation
     severity: Severity
-    metrics: MetricsData
 
     @classmethod
-    def calculate(
-        cls, object: K8sObjectData, recommendation: ResourceAllocations, metrics: MetricsData
-    ) -> ResourceScan:
+    def calculate(cls, object: K8sObjectData, recommendation: ResourceAllocations) -> ResourceScan:
         recommendation_processed = ResourceRecommendation(requests={}, limits={}, info={})
 
         for resource_type in ResourceType:
@@ -61,11 +47,9 @@ class ResourceScan(pd.BaseModel):
             for selector in ["requests", "limits"]:
                 for recommendation_request in getattr(recommendation_processed, selector).values():
                     if recommendation_request.severity == severity:
-                        return cls(
-                            object=object, recommended=recommendation_processed, severity=severity, metrics=metrics
-                        )
+                        return cls(object=object, recommended=recommendation_processed, severity=severity)
 
-        return cls(object=object, recommended=recommendation_processed, severity=Severity.UNKNOWN, metrics=metrics)
+        return cls(object=object, recommended=recommendation_processed, severity=Severity.UNKNOWN)
 
 
 class StrategyData(pd.BaseModel):

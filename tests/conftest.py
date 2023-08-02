@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock, patch
 import numpy as np
 import pytest
 
-from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, ResourceHistoryData
+from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations
+from robusta_krr.strategies.simple import SimpleStrategy, SimpleStrategySettings
 
 TEST_OBJECT = K8sObjectData(
     cluster="mock-cluster",
@@ -56,18 +57,16 @@ def mock_prometheus_loader():
     now_ts, start_ts = now.timestamp(), start.timestamp()
     metric_points_data = np.array([(t, random.randrange(0, 100)) for t in np.linspace(start_ts, now_ts, 3600)])
 
+    settings = SimpleStrategySettings()
+    strategy = SimpleStrategy(settings)
+
     with patch(
-        "robusta_krr.core.integrations.prometheus.loader.MetricsLoader.gather_data",
+        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.gather_data",
         new=AsyncMock(
-            return_value=ResourceHistoryData(
-                data={pod.name: metric_points_data for pod in TEST_OBJECT.pods},
-                metric={  # type: ignore
-                    "query": f"example_promql_metric{{pod_name=~\"{'|'.join(pod.name for pod in TEST_OBJECT.pods)}\"}}",
-                    "start_time": start,
-                    "end_time": now,
-                    "step": "30s",
-                },
-            )
+            return_value={
+                metric.__name__: {pod.name: metric_points_data for pod in TEST_OBJECT.pods}
+                for metric in strategy.metrics
+            },
         ),
     ) as mock_prometheus_loader:
         mock_prometheus_loader
@@ -76,5 +75,5 @@ def mock_prometheus_loader():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_prometheus_init():
-    with patch("robusta_krr.core.integrations.prometheus.loader.MetricsLoader.__init__", return_value=None):
+    with patch("robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.__init__", return_value=None):
         yield

@@ -3,14 +3,17 @@ from __future__ import annotations
 import abc
 import datetime
 from textwrap import dedent
-from typing import Annotated, Generic, Literal, Optional, TypeVar, get_args
+from typing import Annotated, Generic, Literal, Optional, TypeVar, get_args, TYPE_CHECKING, Sequence
 
 import numpy as np
 import pydantic as pd
 from numpy.typing import NDArray
 
-from robusta_krr.core.models.result import K8sObjectData, Metric, ResourceType
-from robusta_krr.utils.display_name import display_name_property
+from robusta_krr.core.models.result import K8sObjectData, ResourceType
+
+if TYPE_CHECKING:
+    from robusta_krr.core.integrations.prometheus.metrics import PrometheusMetric
+    from robusta_krr.core.abstract.metrics import BaseMetric  # noqa: F401
 
 SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
 
@@ -61,21 +64,9 @@ class StrategySettings(pd.BaseModel):
 ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
 
 
-class ResourceHistoryData(pd.BaseModel):
-    """A class to represent resource history data.
+PodsTimeData = dict[str, ArrayNx2]  # Mapping: pod -> [(time, value)]
+MetricsPodData = dict[str, PodsTimeData]
 
-    metric is the metric information used to gather the history data.
-    data is a mapping from pod to a numpy array of time and value.
-    """
-
-    metric: Metric
-    data: dict[str, ArrayNx2]  # Mapping: pod -> [(time, value)]
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-HistoryData = dict[ResourceType, ResourceHistoryData]
 RunResult = dict[ResourceType, ResourceRecommendation]
 
 SelfBS = TypeVar("SelfBS", bound="BaseStrategy")
@@ -85,7 +76,6 @@ _StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
 # An abstract base class for strategy implementation.
 # This class requires implementation of a 'run' method for calculating recommendation.
 # Make a subclass if you want to create a concrete strategy.
-@display_name_property(suffix="Strategy")
 class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     """An abstract base class for strategy implementation.
 
@@ -98,20 +88,29 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     Description property uses the docstring of the strategy class and the settings of the strategy.
 
     The name of the strategy is the name of the class in lowercase, without the 'Strategy' suffix, if exists.
-    If you want to change the name of the strategy, you can change the __display_name__ attribute.
+    If you want to change the name of the strategy, you can change the display_name class attribute.
 
     The strategy will automatically be registered in the strategy registry using __subclasses__ mechanism.
     """
 
-    __display_name__: str
+    display_name: str
+    rich_console: bool = False
 
-    settings: _StrategySettings
+    # TODO: this should be BaseMetric, but currently we only support Prometheus
+    @property
+    @abc.abstractmethod
+    def metrics(self) -> Sequence[type[PrometheusMetric]]:
+        pass
 
     def __init__(self, settings: _StrategySettings):
         self.settings = settings
 
     def __str__(self) -> str:
-        return self.__display_name__.title()
+        return self._display_name.title()
+
+    @property
+    def _display_name(self) -> str:
+        return getattr(self, "display_name", self.__class__.__name__.lower().removeprefix("strategy"))
 
     @property
     def description(self) -> Optional[str]:
@@ -129,7 +128,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     # Abstract method that needs to be implemented by subclass.
     # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
     @abc.abstractmethod
-    def run(self, history_data: HistoryData, object_data: K8sObjectData) -> RunResult:
+    def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
         pass
 
     # This method is intended to return a strategy by its name.
@@ -146,7 +145,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     def get_all(cls: type[SelfBS]) -> dict[str, type[SelfBS]]:
         from robusta_krr import strategies as _  # noqa: F401
 
-        return {sub_cls.__display_name__.lower(): sub_cls for sub_cls in cls.__subclasses__()}
+        return {sub_cls.display_name.lower(): sub_cls for sub_cls in cls.__subclasses__()}
 
     # This method is intended to return the type of settings used in strategy.
     @classmethod
@@ -161,7 +160,8 @@ __all__ = [
     "AnyStrategy",
     "BaseStrategy",
     "StrategySettings",
-    "HistoryData",
+    "PodsTimeData",
+    "MetricsPodData",
     "K8sObjectData",
     "ResourceType",
 ]
