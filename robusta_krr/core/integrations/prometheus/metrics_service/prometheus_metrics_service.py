@@ -14,8 +14,9 @@ from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from ..metrics import PrometheusMetric
-from ..prometheus_client import ClusterNotSpecifiedException, CustomPrometheusConnect
-from .base_metric_service import MetricsNotFound, MetricsService
+from prometrix import get_custom_prometheus_connect, PrometheusNotFound
+from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
+from .base_metric_service import MetricsService
 
 
 class PrometheusDiscovery(MetricsServiceDiscovery):
@@ -41,12 +42,7 @@ class PrometheusDiscovery(MetricsServiceDiscovery):
         )
 
 
-class PrometheusNotFound(MetricsNotFound):
-    """
-    An exception raised when Prometheus is not found.
-    """
 
-    pass
 
 
 class PrometheusMetricsService(MetricsService):
@@ -63,6 +59,7 @@ class PrometheusMetricsService(MetricsService):
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
         executor: Optional[ThreadPoolExecutor] = None,
+        is_victoria_metrics: bool = False,
     ) -> None:
         super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
 
@@ -90,8 +87,8 @@ class PrometheusMetricsService(MetricsService):
             headers |= {"Authorization": self.auth_header}
         elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
-
-        self.prometheus = CustomPrometheusConnect(url=self.url, disable_ssl=not self.ssl_enabled, headers=headers)
+        self.prom_config = generate_prometheus_config(config, url=self.url, headers=headers, is_victoria_metrics=is_victoria_metrics)
+        self.prometheus = get_custom_prometheus_connect(self.prom_config)
 
     def check_connection(self):
         """
@@ -100,14 +97,7 @@ class PrometheusMetricsService(MetricsService):
             PrometheusNotFound: If the connection to Prometheus cannot be established.
         """
         try:
-            response = self.prometheus._session.get(
-                f"{self.prometheus.url}/api/v1/query",
-                verify=self.prometheus.ssl_verification,
-                headers=self.prometheus.headers,
-                # This query should return empty results, but is correct
-                params={"query": "example"},
-            )
-            response.raise_for_status()
+            self.prometheus.custom_query(query="example")
         except (ConnectionError, HTTPError) as e:
             raise PrometheusNotFound(
                 f"Couldn't connect to Prometheus found under {self.prometheus.url}\nCaused by {e.__class__.__name__}: {e})"

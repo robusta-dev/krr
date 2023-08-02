@@ -377,6 +377,38 @@ Than run the following command with PROMETHEUS_URL substituted for your Azure Ma
 ```sh
 python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-header "Bearer $AZURE_BEARER"
 ```
+<p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## EKS managed Prometheus
+
+For EKS managed Prometheus you need to add your prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials 
+
+```sh
+python krr.py simple -p "https://aps-workspaces.REGION.amazonaws.com/workspaces/..." --eks-managed-prom
+```
+Additional optional parameters are:
+```sh
+--eks-profile-name PROFILE_NAME_HERE # to specify the profile to use from your config
+--eks-access-key ACCESS_KEY # to specify your access key
+--eks-secret-key SECRET_KEY # to specify your secret key
+--eks-service-name SERVICE_NAME # to use a specific service name in the signature
+--eks-managed-prom-region REGION_NAME # to specify the region the prometheus is in
+```
+<p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Coralogix managed Prometheus
+
+For Coralogix managed Prometheus you need to specify your prometheus link and add the flag coralogix_token with your Logs Query Key
+
+```sh
+python krr.py simple -p "https://prom-api.coralogix..." --coralogix_token
+```
+
+<p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
