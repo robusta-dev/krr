@@ -65,7 +65,7 @@ class Configurable(abc.ABC):
             caller = getframeinfo(stack()[1][0])
             self.console.print(
                 self.__add_prefix(
-                    message + f"\t\t({caller.filename}:{caller.lineno})",
+                    message,
                     "[bold green][DEBUG][/bold green]",
                     no_prefix=False,
                 )

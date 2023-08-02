@@ -1,7 +1,7 @@
 import asyncio
-import itertools
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Union
+from typing import AsyncGenerator, Optional, Union
+import aiostream
 
 from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException
@@ -23,7 +23,7 @@ from kubernetes.client.models import (
     V2HorizontalPodAutoscalerList,
 )
 
-from robusta_krr.core.models.objects import HPAData, K8sObjectData, PodData
+from robusta_krr.core.models.objects import HPAData, K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
@@ -53,7 +53,7 @@ class ClusterLoader(Configurable):
         self.autoscaling_v1 = client.AutoscalingV1Api(api_client=self.api_client)
         self.autoscaling_v2 = client.AutoscalingV2Api(api_client=self.api_client)
 
-    async def list_scannable_objects(self) -> list[K8sObjectData]:
+    async def list_scannable_objects(self) -> AsyncGenerator[K8sObjectData, None]:
         """List all scannable objects.
 
         Returns:
@@ -63,32 +63,31 @@ class ClusterLoader(Configurable):
         self.info(f"Listing scannable objects in {self.cluster}")
         self.debug(f"Namespaces: {self.config.namespaces}")
 
-        try:
-            self.__hpa_list = await self.__list_hpa()
-            objects_tuple = await asyncio.gather(
-                self._list_deployments(),
-                self._list_rollouts(),
-                self._list_all_statefulsets(),
-                self._list_all_daemon_set(),
-                self._list_all_jobs(),
-            )
+        self.__hpa_list = await self._try_list_hpa()
 
-        except Exception as e:
-            self.error(f"Error trying to list pods in cluster {self.cluster}: {e}")
-            self.debug_exception()
-            return []
+        tasks = [
+            self._list_deployments(),
+            self._list_rollouts(),
+            self._list_all_statefulsets(),
+            self._list_all_daemon_set(),
+            self._list_all_jobs(),
+        ]
 
-        objects = itertools.chain(*objects_tuple)
-        if self.config.namespaces == "*":
-            # NOTE: We are not scanning kube-system namespace by default
-            result = [obj for obj in objects if obj.namespace != "kube-system"]
-        else:
-            result = [obj for obj in objects if obj.namespace in self.config.namespaces]
+        for fut in asyncio.as_completed(tasks):
+            try:
+                object_list = await fut
+            except Exception as e:
+                self.error(f"Error {e.__class__.__name__} listing objects in cluster {self.cluster}: {e}")
+                self.debug_exception()
+                self.error("Will skip this object type and continue.")
+                continue
 
-        namespaces = {obj.namespace for obj in result}
-        self.info(f"Found {len(result)} objects across {len(namespaces)} namespaces in {self.cluster}")
-
-        return result
+            for object in object_list:
+                if self.config.namespaces == "*" and object.namespace == "kube-system":
+                    continue
+                elif self.config.namespaces != "*" and object.namespace not in self.config.namespaces:
+                    continue
+                yield object
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
@@ -111,22 +110,12 @@ class ClusterLoader(Configurable):
 
         return ",".join(label_filters)
 
-    async def __list_pods(self, resource: Union[V1Deployment, V1DaemonSet, V1StatefulSet]) -> list[PodData]:
-        selector = self._build_selector_query(resource.spec.selector)
-        if selector is None:
-            return []
-
-        loop = asyncio.get_running_loop()
-        ret: V1PodList = await loop.run_in_executor(
-            self.executor,
-            lambda: self.core.list_namespaced_pod(namespace=resource.metadata.namespace, label_selector=selector),
-        )
-        return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
-
-    async def __build_obj(self, item: AnyKubernetesAPIObject, container: V1Container) -> K8sObjectData:
+    def __build_obj(
+        self, item: AnyKubernetesAPIObject, container: V1Container, kind: Optional[str] = None
+    ) -> K8sObjectData:
         name = item.metadata.name
         namespace = item.metadata.namespace
-        kind = item.__class__.__name__[2:]
+        kind = kind or item.__class__.__name__[2:]
 
         return K8sObjectData(
             cluster=self.cluster,
@@ -135,7 +124,6 @@ class ClusterLoader(Configurable):
             kind=kind,
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
-            pods=await self.__list_pods(item),
             hpa=self.__hpa_list.get((namespace, kind, name)),
         )
 
@@ -151,13 +139,9 @@ class ClusterLoader(Configurable):
         )
         self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
 
-        return await asyncio.gather(
-            *[
-                self.__build_obj(item, container)
-                for item in ret.items
-                for container in item.spec.template.spec.containers
-            ]
-        )
+        return [
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
+        ]
 
     async def _list_rollouts(self) -> list[K8sObjectData]:
         self.debug(f"Listing ArgoCD rollouts in {self.cluster}")
@@ -178,13 +162,9 @@ class ClusterLoader(Configurable):
 
         self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
 
-        return await asyncio.gather(
-            *[
-                self.__build_obj(item, container)
-                for item in ret.items
-                for container in item.spec.template.spec.containers
-            ]
-        )
+        return [
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
+        ]
 
     async def _list_all_statefulsets(self) -> list[K8sObjectData]:
         self.debug(f"Listing statefulsets in {self.cluster}")
@@ -198,13 +178,9 @@ class ClusterLoader(Configurable):
         )
         self.debug(f"Found {len(ret.items)} statefulsets in {self.cluster}")
 
-        return await asyncio.gather(
-            *[
-                self.__build_obj(item, container)
-                for item in ret.items
-                for container in item.spec.template.spec.containers
-            ]
-        )
+        return [
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
+        ]
 
     async def _list_all_daemon_set(self) -> list[K8sObjectData]:
         self.debug(f"Listing daemonsets in {self.cluster}")
@@ -218,13 +194,9 @@ class ClusterLoader(Configurable):
         )
         self.debug(f"Found {len(ret.items)} daemonsets in {self.cluster}")
 
-        return await asyncio.gather(
-            *[
-                self.__build_obj(item, container)
-                for item in ret.items
-                for container in item.spec.template.spec.containers
-            ]
-        )
+        return [
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
+        ]
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
         self.debug(f"Listing jobs in {self.cluster}")
@@ -238,13 +210,9 @@ class ClusterLoader(Configurable):
         )
         self.debug(f"Found {len(ret.items)} jobs in {self.cluster}")
 
-        return await asyncio.gather(
-            *[
-                self.__build_obj(item, container)
-                for item in ret.items
-                for container in item.spec.template.spec.containers
-            ]
-        )
+        return [
+            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
+        ]
 
     async def _list_pods(self) -> list[K8sObjectData]:
         """For future use, not supported yet."""
@@ -260,9 +228,7 @@ class ClusterLoader(Configurable):
         )
         self.debug(f"Found {len(ret.items)} pods in {self.cluster}")
 
-        return await asyncio.gather(
-            *[self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
-        )
+        return [self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
 
     async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:
         loop = asyncio.get_running_loop()
@@ -340,6 +306,18 @@ class ClusterLoader(Configurable):
             # If V2 API does not exist, fall back to V1
             return await self.__list_hpa_v1()
 
+    async def _try_list_hpa(self) -> dict[HPAKey, HPAData]:
+        try:
+            return await self.__list_hpa()
+        except Exception as e:
+            self.error(f"Error trying to list hpa in cluster {self.cluster}: {e}")
+            self.debug_exception()
+            self.error(
+                "Will assume that there are no HPA. "
+                "Be careful as this may lead to inaccurate results if object actually has HPA."
+            )
+            return {}
+
 
 class KubernetesLoader(Configurable):
     async def list_clusters(self) -> Optional[list[str]]:
@@ -389,13 +367,12 @@ class KubernetesLoader(Configurable):
             self.error(f"Could not load cluster {cluster} and will skip it: {e}")
             return None
 
-    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> list[K8sObjectData]:
+    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> AsyncGenerator[K8sObjectData, None]:
         """List all scannable objects.
 
-        Returns:
-            A list of scannable objects.
+        Yields:
+            Each scannable object as it is loaded.
         """
-
         if clusters is None:
             _cluster_loaders = [self._try_create_cluster_loader(None)]
         else:
@@ -404,7 +381,14 @@ class KubernetesLoader(Configurable):
         cluster_loaders = [cl for cl in _cluster_loaders if cl is not None]
         if cluster_loaders == []:
             self.error("Could not load any cluster.")
-            return []
+            return
 
-        objects = await asyncio.gather(*[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders])
-        return list(itertools.chain(*objects))
+        # https://stackoverflow.com/questions/55299564/join-multiple-async-generators-in-python
+        # This will merge all the streams from all the cluster loaders into a single stream
+        objects_combined = aiostream.stream.merge(
+            *[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders]
+        )
+
+        async with objects_combined.stream() as streamer:
+            async for object in streamer:
+                yield object

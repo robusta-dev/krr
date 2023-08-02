@@ -27,7 +27,7 @@ class K8sObjectData(pd.BaseModel):
     cluster: Optional[str]
     name: str
     container: str
-    pods: list[PodData]
+    pods: list[PodData] = []
     hpa: Optional[HPAData]
     namespace: str
     kind: str

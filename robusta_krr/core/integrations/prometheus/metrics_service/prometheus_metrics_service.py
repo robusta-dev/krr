@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import time
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor
 
@@ -123,7 +124,7 @@ class PrometheusMetricsService(MetricsService):
         cluster_label = self.config.prometheus_cluster_label
         cluster_names = self.get_cluster_names()
 
-        if len(cluster_names) <= 1:
+        if cluster_names is None or len(cluster_names) <= 1:
             # there is only one cluster of metrics in this prometheus
             return
 
@@ -153,18 +154,20 @@ class PrometheusMetricsService(MetricsService):
         """
         ResourceHistoryData: The gathered resource history data.
         """
-        self.debug(f"Gathering data for {object} and {LoaderClass}")
+        self.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
 
         metric_loader = LoaderClass(self.config, self.prometheus, self.name, self.executor)
         return await metric_loader.load_data(object, period, step)
 
-    async def add_historic_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
+    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """
-        Finds pods that have been deleted but still have some metrics in Prometheus.
+        List pods related to the object and add them to the object's pods list.
         Args:
             object (K8sObjectData): The Kubernetes object.
             period (datetime.timedelta): The time period for which to gather data.
         """
+
+        self.debug(f"Adding historic pods for {object}")
 
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"
@@ -183,25 +186,47 @@ class PrometheusMetricsService(MetricsService):
             )
             pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
             pod_owner_kind = "ReplicaSet"
+
+            del replicasets
         else:
             pod_owners = [object.name]
             pod_owner_kind = object.kind
 
         owners_regex = "|".join(pod_owners)
         related_pods = await self.query(
-            "kube_pod_owner{"
-            f'owner_name=~"{owners_regex}", '
-            f'owner_kind="{pod_owner_kind}", '
-            f'namespace="{object.namespace}"'
-            f"{cluster_label}"
-            "}"
-            f"[{period_literal}]"
+            f"""
+                last_over_time(
+                    kube_pod_owner{{
+                        owner_name=~"{owners_regex}",
+                        owner_kind="{pod_owner_kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                )
+            """
         )
 
-        current_pods = {p.name for p in object.pods}
+        if related_pods == []:
+            self.debug(f"No pods found for {object}")
+            return
+
+        current_pods = await self.query(
+            f"""
+                present_over_time(
+                    kube_pod_owner{{
+                        owner_name=~"{owners_regex}",
+                        owner_kind="{pod_owner_kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[1m]
+                )
+            """
+        )
+
+        current_pods_set = {pod["metric"]["pod"] for pod in current_pods}
+        del current_pods
 
         object.pods += [
-            PodData(name=pod["metric"]["pod"], deleted=True)
+            PodData(name=pod["metric"]["pod"], deleted=pod["metric"]["pod"] not in current_pods_set)
             for pod in related_pods
-            if pod["metric"]["pod"] not in current_pods
         ]

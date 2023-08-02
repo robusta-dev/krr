@@ -97,7 +97,7 @@ class PrometheusMetricsLoader(Configurable):
             ResourceHistoryData: The gathered resource history data.
         """
 
-        await self.loader.add_historic_pods(object, period)
+        await self.loader.load_pods(object, period)
 
         return {
             MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, step)
