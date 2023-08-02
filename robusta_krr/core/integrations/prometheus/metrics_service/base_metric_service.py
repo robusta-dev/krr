@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from kubernetes.client.api_client import ApiClient
 
-from robusta_krr.core.abstract.strategies import MetricPodData
+from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
@@ -54,7 +54,7 @@ class MetricsService(Configurable, abc.ABC):
         LoaderClass: type[PrometheusMetric],
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> MetricPodData:
+    ) -> PodsTimeData:
         ...
 
     def get_prometheus_cluster_label(self) -> str:

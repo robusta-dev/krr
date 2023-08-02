@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 import numpy as np
 import pytest
 
-from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations, MetricPodData
+from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations
 
 TEST_OBJECT = K8sObjectData(
     cluster="mock-cluster",

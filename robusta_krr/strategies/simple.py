@@ -3,7 +3,7 @@ import pydantic as pd
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
-    MetricPodData,
+    PodsTimeData,
     MetricsPodData,
     K8sObjectData,
     ResourceRecommendation,
@@ -20,14 +20,14 @@ class SimpleStrategySettings(StrategySettings):
         5, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
 
-    def calculate_memory_proposal(self, data: MetricPodData) -> float:
+    def calculate_memory_proposal(self, data: PodsTimeData) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
             return float("NaN")
 
         return max(data_) * (1 + self.memory_buffer_percentage / 100)
 
-    def calculate_cpu_proposal(self, data: MetricPodData) -> float:
+    def calculate_cpu_proposal(self, data: PodsTimeData) -> float:
         if len(data) == 0:
             return float("NaN")
 

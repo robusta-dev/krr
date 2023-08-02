@@ -7,7 +7,7 @@ from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
 from requests.exceptions import ConnectionError, HTTPError
 
-from robusta_krr.core.abstract.strategies import MetricPodData
+from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
@@ -149,7 +149,7 @@ class PrometheusMetricsService(MetricsService):
         LoaderClass: type[PrometheusMetric],
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> MetricPodData:
+    ) -> PodsTimeData:
         """
         ResourceHistoryData: The gathered resource history data.
         """

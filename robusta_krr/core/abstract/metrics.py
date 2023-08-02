@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import datetime
 
-from robusta_krr.core.abstract.strategies import MetricPodData
+from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.objects import K8sObjectData
 
 
@@ -17,5 +17,5 @@ class BaseMetric(ABC):
     @abstractmethod
     async def load_data(
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
-    ) -> MetricPodData:
+    ) -> PodsTimeData:
         ...

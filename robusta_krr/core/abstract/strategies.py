@@ -64,8 +64,8 @@ class StrategySettings(pd.BaseModel):
 ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
 
 
-MetricPodData = dict[str, ArrayNx2]  # Mapping: pod -> [(time, value)]
-MetricsPodData = dict[type["BaseMetric"], MetricPodData]
+PodsTimeData = dict[str, ArrayNx2]  # Mapping: pod -> [(time, value)]
+MetricsPodData = dict[type["BaseMetric"], PodsTimeData]
 
 RunResult = dict[ResourceType, ResourceRecommendation]
 
@@ -156,7 +156,7 @@ __all__ = [
     "AnyStrategy",
     "BaseStrategy",
     "StrategySettings",
-    "MetricPodData",
+    "PodsTimeData",
     "MetricsPodData",
     "K8sObjectData",
     "ResourceType",
