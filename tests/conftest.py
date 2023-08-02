@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations
-from robusta_krr.strategies import SimpleStrategy
+from robusta_krr.strategies.simple import SimpleStrategy, SimpleStrategySettings
 
 TEST_OBJECT = K8sObjectData(
     cluster="mock-cluster",
@@ -57,11 +57,15 @@ def mock_prometheus_loader():
     now_ts, start_ts = now.timestamp(), start.timestamp()
     metric_points_data = np.array([(t, random.randrange(0, 100)) for t in np.linspace(start_ts, now_ts, 3600)])
 
+    settings = SimpleStrategySettings()
+    strategy = SimpleStrategy(settings)
+
     with patch(
         "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.gather_data",
         new=AsyncMock(
             return_value={
-                metric: {pod.name: metric_points_data for pod in TEST_OBJECT.pods} for metric in SimpleStrategy.metrics
+                metric.__name__: {pod.name: metric_points_data for pod in TEST_OBJECT.pods}
+                for metric in strategy.metrics
             },
         ),
     ) as mock_prometheus_loader:
