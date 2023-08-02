@@ -33,7 +33,8 @@ class VictoriaMetricsService(PrometheusMetricsService):
     """
 
     service_discovery = VictoriaMetricsDiscovery
-
+    is_victoria_metrics: bool = True
+    
     def check_connection(self):
         """
         Checks the connection to Prometheus.
