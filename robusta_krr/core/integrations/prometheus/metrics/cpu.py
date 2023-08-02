@@ -1,6 +1,6 @@
 from robusta_krr.core.models.objects import K8sObjectData
 
-from .base import QueryMetric, QueryRangeMetric, FilterMetric
+from .base import FilterMetric, QueryMetric, QueryRangeMetric
 
 
 class CPULoader(QueryRangeMetric, FilterMetric):

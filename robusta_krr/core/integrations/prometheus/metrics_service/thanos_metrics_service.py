@@ -1,12 +1,12 @@
 from typing import Optional
 
 from kubernetes.client import ApiClient
+from prometrix import MetricsNotFound, ThanosMetricsNotFound
 
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from .prometheus_metrics_service import PrometheusMetricsService
 
-from prometrix import MetricsNotFound, ThanosMetricsNotFound
 
 class ThanosMetricsDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
@@ -26,7 +26,6 @@ class ThanosMetricsDiscovery(MetricsServiceDiscovery):
                 "app=thanos-querier",
             ]
         )
-
 
 
 class ThanosMetricsService(PrometheusMetricsService):

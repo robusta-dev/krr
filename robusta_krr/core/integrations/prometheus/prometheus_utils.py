@@ -1,6 +1,8 @@
-from prometrix import PrometheusConfig, CoralogixPrometheusConfig, AWSPrometheusConfig, VictoriaMetricsPrometheusConfig
-from robusta_krr.core.models.config import Config
 import boto3
+from prometrix import AWSPrometheusConfig, CoralogixPrometheusConfig, PrometheusConfig, VictoriaMetricsPrometheusConfig
+
+from robusta_krr.core.models.config import Config
+
 
 class ClusterNotSpecifiedException(Exception):
     """
@@ -9,7 +11,10 @@ class ClusterNotSpecifiedException(Exception):
 
     pass
 
-def generate_prometheus_config(config: Config, url: str, headers: dict[str, str], is_victoria_metrics: bool = False) -> PrometheusConfig:
+
+def generate_prometheus_config(
+    config: Config, url: str, headers: dict[str, str], is_victoria_metrics: bool = False
+) -> PrometheusConfig:
     baseconfig = {
         "url": url,
         "disable_ssl": not config.prometheus_ssl_enabled,
@@ -31,7 +36,7 @@ def generate_prometheus_config(config: Config, url: str, headers: dict[str, str]
         return AWSPrometheusConfig(
             access_key=access_key,
             secret_access_key=secret_key,
-            aws_region= region,
+            aws_region=region,
             service_name=service_name,
             **baseconfig,
         )

@@ -1,12 +1,12 @@
 from typing import Optional
 
 from kubernetes.client import ApiClient
+from prometrix import MetricsNotFound, VictoriaMetricsNotFound
 
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from .prometheus_metrics_service import PrometheusMetricsService
 
-from prometrix import MetricsNotFound, VictoriaMetricsNotFound
 
 class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
@@ -34,7 +34,7 @@ class VictoriaMetricsService(PrometheusMetricsService):
 
     service_discovery = VictoriaMetricsDiscovery
     is_victoria_metrics: bool = True
-    
+
     def check_connection(self):
         """
         Checks the connection to Prometheus.

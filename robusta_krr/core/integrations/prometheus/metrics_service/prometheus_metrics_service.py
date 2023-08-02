@@ -1,11 +1,12 @@
 import asyncio
 import datetime
 import time
-from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
+from prometrix import PrometheusNotFound, get_custom_prometheus_connect
 from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
@@ -14,7 +15,6 @@ from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from ..metrics import PrometheusMetric
-from prometrix import get_custom_prometheus_connect, PrometheusNotFound
 from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
 from .base_metric_service import MetricsService
 
@@ -40,9 +40,6 @@ class PrometheusDiscovery(MetricsServiceDiscovery):
                 "app=prometheus-prometheus",
             ]
         )
-
-
-
 
 
 class PrometheusMetricsService(MetricsService):
@@ -87,7 +84,9 @@ class PrometheusMetricsService(MetricsService):
             headers |= {"Authorization": self.auth_header}
         elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
-        self.prom_config = generate_prometheus_config(config, url=self.url, headers=headers, is_victoria_metrics=self.is_victoria_metrics)
+        self.prom_config = generate_prometheus_config(
+            config, url=self.url, headers=headers, is_victoria_metrics=self.is_victoria_metrics
+        )
         self.prometheus = get_custom_prometheus_connect(self.prom_config)
 
     def check_connection(self):
