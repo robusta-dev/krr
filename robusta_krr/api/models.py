@@ -1,5 +1,5 @@
 from robusta_krr.core.abstract.strategies import (
-    MetricPodData,
+    PodsTimeData,
     MetricsPodData,
     ResourceRecommendation,
     RunResult,
@@ -20,7 +20,7 @@ __all__ = [
     "register_severity_calculator",
     "ResourceScan",
     "ResourceRecommendation",
-    "MetricPodData",
+    "PodsTimeData",
     "MetricsPodData",
     "RunResult",
 ]

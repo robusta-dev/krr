@@ -100,6 +100,6 @@ class PrometheusMetricsLoader(Configurable):
         await self.loader.load_pods(object, period)
 
         return {
-            MetricLoader: await self.loader.gather_data(object, MetricLoader, period, step)
+            MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, step)
             for MetricLoader in strategy.metrics
         }

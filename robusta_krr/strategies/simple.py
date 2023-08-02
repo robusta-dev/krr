@@ -1,9 +1,10 @@
+from typing import Sequence
 import numpy as np
 import pydantic as pd
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
-    MetricPodData,
+    PodsTimeData,
     MetricsPodData,
     K8sObjectData,
     ResourceRecommendation,
@@ -11,7 +12,8 @@ from robusta_krr.core.abstract.strategies import (
     RunResult,
     StrategySettings,
 )
-from robusta_krr.core.integrations.prometheus.metrics import MaxCPULoader, MaxMemoryLoader
+from robusta_krr.core.abstract.metrics import BaseMetric
+from robusta_krr.core.integrations.prometheus.metrics import PercentileCPULoader, MaxMemoryLoader, PrometheusMetric
 
 
 class SimpleStrategySettings(StrategySettings):
@@ -20,14 +22,14 @@ class SimpleStrategySettings(StrategySettings):
         5, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
 
-    def calculate_memory_proposal(self, data: MetricPodData) -> float:
+    def calculate_memory_proposal(self, data: PodsTimeData) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
             return float("NaN")
 
         return max(data_) * (1 + self.memory_buffer_percentage / 100)
 
-    def calculate_cpu_proposal(self, data: MetricPodData) -> float:
+    def calculate_cpu_proposal(self, data: PodsTimeData) -> float:
         if len(data) == 0:
             return float("NaN")
 
@@ -52,12 +54,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     display_name = "simple"
     rich_console = True
-    metrics = [MaxCPULoader, MaxMemoryLoader]
+
+    @property
+    def metrics(self) -> list[type[PrometheusMetric]]:
+        return [PercentileCPULoader(self.settings.cpu_percentile), MaxMemoryLoader]
 
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
-        data = history_data[MaxCPULoader]
+        data = history_data["PercentileCPULoader"]
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
@@ -71,7 +76,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     def __calculate_memory_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
-        data = history_data[MaxMemoryLoader]
+        data = history_data["MaxMemoryLoader"]
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")

@@ -11,7 +11,7 @@ import numpy as np
 import pydantic as pd
 
 from robusta_krr.core.abstract.metrics import BaseMetric
-from robusta_krr.core.abstract.strategies import MetricPodData
+from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
@@ -67,7 +67,7 @@ class PrometheusMetric(BaseMetric, Configurable):
         return f', {self.config.prometheus_label}="{self.config.prometheus_cluster_label}"'
 
     @abc.abstractmethod
-    def get_query(self, object: K8sObjectData, resolution: Optional[str]) -> str:
+    def get_query(self, object: K8sObjectData, resolution: str) -> str:
         """
         This method should be implemented by all subclasses to provide a query string to fetch metrics.
 
@@ -128,7 +128,7 @@ class PrometheusMetric(BaseMetric, Configurable):
 
     async def load_data(
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
-    ) -> MetricPodData:
+    ) -> PodsTimeData:
         """
         Asynchronous method that loads metric data for a specific object.
 
