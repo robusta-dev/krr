@@ -157,7 +157,14 @@ class PrometheusMetricsService(MetricsService):
         self.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
 
         metric_loader = LoaderClass(self.config, self.prometheus, self.name, self.executor)
-        return await metric_loader.load_data(object, period, step)
+        data = await metric_loader.load_data(object, period, step)
+
+        if len(data) == 0:
+            self.warning(
+                f"{metric_loader.service_name} returned no {metric_loader.__class__.__name__} metrics for {object}"
+            )
+
+        return data
 
     async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
         """
@@ -176,13 +183,14 @@ class PrometheusMetricsService(MetricsService):
         cluster_label = self.get_prometheus_cluster_label()
         if object.kind == "Deployment":
             replicasets = await self.query(
-                "kube_replicaset_owner{"
-                f'owner_name="{object.name}", '
-                f'owner_kind="Deployment", '
-                f'namespace="{object.namespace}"'
-                f"{cluster_label}"
-                "}"
-                f"[{period_literal}]"
+                f"""
+                kube_replicaset_owner{{
+                    owner_name="{object.name}",
+                    owner_kind="Deployment",
+                    namespace="{object.namespace}"
+                    {cluster_label}
+                }}[{period_literal}]
+                """
             )
             pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
             pod_owner_kind = "ReplicaSet"

@@ -1,4 +1,3 @@
-from typing import Sequence
 import numpy as np
 import pydantic as pd
 
@@ -12,7 +11,6 @@ from robusta_krr.core.abstract.strategies import (
     RunResult,
     StrategySettings,
 )
-from robusta_krr.core.abstract.metrics import BaseMetric
 from robusta_krr.core.integrations.prometheus.metrics import PercentileCPULoader, MaxMemoryLoader, PrometheusMetric
 
 
@@ -27,7 +25,7 @@ class SimpleStrategySettings(StrategySettings):
         if len(data_) == 0:
             return float("NaN")
 
-        return max(data_) * (1 + self.memory_buffer_percentage / 100)
+        return np.max(data_) * (1 + self.memory_buffer_percentage / 100)
 
     def calculate_cpu_proposal(self, data: PodsTimeData) -> float:
         if len(data) == 0:
@@ -38,7 +36,7 @@ class SimpleStrategySettings(StrategySettings):
         else:
             data_ = list(data.values())[0][:, 1]
 
-        return np.percentile(data_, self.cpu_percentile)
+        return np.max(data_)
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
