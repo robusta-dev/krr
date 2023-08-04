@@ -72,6 +72,13 @@ def load_commands() -> None:
                     help="List of namespaces to run on. By default, will run on all namespaces.",
                     rich_help_panel="Kubernetes Settings"
                 ),
+                resources: List[str] = typer.Option(
+                    None,
+                    "--resource",
+                    "-r",
+                    help="List of resources to run on (Deployment, StatefullSet, DaemonSet, Job, Rollout). By default, will run on all resources. Case insensitive.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
                 selector: Optional[str] = typer.Option(
                     None,
                     "--selector",
@@ -139,6 +146,7 @@ def load_commands() -> None:
                     kubeconfig=kubeconfig,
                     clusters="*" if all_clusters else clusters,
                     namespaces="*" if "*" in namespaces else namespaces,
+                    resources="*" if "*" in resources else resources,
                     selector=selector,
                     prometheus_url=prometheus_url,
                     prometheus_auth_header=prometheus_auth_header,

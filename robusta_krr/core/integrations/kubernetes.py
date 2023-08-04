@@ -63,6 +63,7 @@ class ClusterLoader(Configurable):
 
         self.info(f"Listing scannable objects in {self.cluster}")
         self.debug(f"Namespaces: {self.config.namespaces}")
+        self.debug(f"Resources: {self.config.resources}")
 
         self.__hpa_list = await self._try_list_hpa()
 
@@ -121,10 +122,19 @@ class ClusterLoader(Configurable):
             hpa=self.__hpa_list.get((namespace, kind, name)),
         )
 
+    def _should_list_resource(self, resource: str):
+        if self.config.resources == "*":
+            return True
+        return resource.lower() in self.config.resources
+
     async def _list_workflows(
         self, kind: str, all_namespaces_request: Callable, namespaced_request: Callable
     ) -> AsyncIterator[K8sObjectData]:
-        self.debug(f"Listing {kind} in {self.cluster}")
+        if not self._should_list_resource(kind):
+            self.debug(f"Skipping {kind}s in {self.cluster}")
+            return
+
+        self.debug(f"Listing {kind}s in {self.cluster}")
         loop = asyncio.get_running_loop()
 
         try:
@@ -169,7 +179,7 @@ class ClusterLoader(Configurable):
 
     def _list_deployments(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="deployments",
+            kind="deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_deployment,
         )
@@ -178,7 +188,7 @@ class ClusterLoader(Configurable):
         # TODO: Mutlitple errors will throw here, we should catch them all
         try:
             async for rollout in self._list_workflows(
-                kind="ArgoCD Rollout",
+                kind="rollout",
                 all_namespaces_request=self.rollout.list_rollout_for_all_namespaces,
                 namespaced_request=self.rollout.list_namespaced_rollout,
             ):
@@ -191,21 +201,21 @@ class ClusterLoader(Configurable):
 
     def _list_all_statefulsets(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="statefulsets",
+            kind="statefulset",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_stateful_set,
         )
 
     def _list_all_daemon_set(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="daemonsets",
+            kind="daemonset",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_daemon_set,
         )
 
     def _list_all_jobs(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="jobs",
+            kind="job",
             all_namespaces_request=self.batch.list_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_job,
         )
