@@ -1,6 +1,7 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import AsyncGenerator, Optional, Union
+from typing import AsyncGenerator, Optional, Union, Callable, AsyncIterator
+from functools import wraps
 import aiostream
 
 from kubernetes import client, config  # type: ignore
@@ -65,27 +66,20 @@ class ClusterLoader(Configurable):
 
         self.__hpa_list = await self._try_list_hpa()
 
-        tasks = [
+        # https://stackoverflow.com/questions/55299564/join-multiple-async-generators-in-python
+        # This will merge all the streams from all the cluster loaders into a single stream
+        objects_combined = aiostream.stream.merge(
             self._list_deployments(),
             self._list_rollouts(),
             self._list_all_statefulsets(),
             self._list_all_daemon_set(),
             self._list_all_jobs(),
-        ]
+        )
 
-        for fut in asyncio.as_completed(tasks):
-            try:
-                object_list = await fut
-            except Exception as e:
-                self.error(f"Error {e.__class__.__name__} listing objects in cluster {self.cluster}: {e}")
-                self.debug_exception()
-                self.error("Will skip this object type and continue.")
-                continue
-
-            for object in object_list:
+        async with objects_combined.stream() as streamer:
+            async for object in streamer:
+                # NOTE: By default we will filter out kube-system namespace
                 if self.config.namespaces == "*" and object.namespace == "kube-system":
-                    continue
-                elif self.config.namespaces != "*" and object.namespace not in self.config.namespaces:
                     continue
                 yield object
 
@@ -127,108 +121,94 @@ class ClusterLoader(Configurable):
             hpa=self.__hpa_list.get((namespace, kind, name)),
         )
 
-    async def _list_deployments(self) -> list[K8sObjectData]:
-        self.debug(f"Listing deployments in {self.cluster}")
+    async def _list_workflows(
+        self, kind: str, all_namespaces_request: Callable, namespaced_request: Callable
+    ) -> AsyncIterator[K8sObjectData]:
+        self.debug(f"Listing {kind} in {self.cluster}")
         loop = asyncio.get_running_loop()
-        ret: V1DeploymentList = await loop.run_in_executor(
-            self.executor,
-            lambda: self.apps.list_deployment_for_all_namespaces(
-                watch=False,
-                label_selector=self.config.selector,
-            ),
-        )
-        self.debug(f"Found {len(ret.items)} deployments in {self.cluster}")
 
-        return [
-            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
-        ]
-
-    async def _list_rollouts(self) -> list[K8sObjectData]:
-        self.debug(f"Listing ArgoCD rollouts in {self.cluster}")
-        loop = asyncio.get_running_loop()
         try:
-            ret: V1DeploymentList = await loop.run_in_executor(
-                self.executor,
-                lambda: self.rollout.list_rollout_for_all_namespaces(
-                    watch=False,
-                    label_selector=self.config.selector,
-                ),
-            )
+            if self.config.namespaces == "*":
+                ret_multi = await loop.run_in_executor(
+                    self.executor,
+                    lambda: all_namespaces_request(
+                        watch=False,
+                        label_selector=self.config.selector,
+                    ),
+                )
+                self.debug(f"Found {len(ret_multi.items)} {kind} in {self.cluster}")
+                for item in ret_multi.items:
+                    for container in item.spec.template.spec.containers:
+                        yield self.__build_obj(item, container)
+            else:
+                tasks = [
+                    loop.run_in_executor(
+                        self.executor,
+                        lambda: namespaced_request(
+                            namespace=namespace,
+                            watch=False,
+                            label_selector=self.config.selector,
+                        ),
+                    )
+                    for namespace in self.config.namespaces
+                ]
+
+                total_items = 0
+                for task in asyncio.as_completed(tasks):
+                    ret_single = await task
+                    total_items += len(ret_single.items)
+                    for item in ret_single.items:
+                        for container in item.spec.template.spec.containers:
+                            yield self.__build_obj(item, container)
+
+                self.debug(f"Found {total_items} {kind} in {self.cluster}")
+        except ApiException as e:
+            self.error(f"Error {e.status} listing {kind} in cluster {self.cluster}: {e.reason}")
+            self.debug_exception()
+            self.error("Will skip this object type and continue.")
+
+    def _list_deployments(self) -> AsyncIterator[K8sObjectData]:
+        return self._list_workflows(
+            kind="deployments",
+            all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
+            namespaced_request=self.apps.list_namespaced_deployment,
+        )
+
+    async def _list_rollouts(self) -> AsyncIterator[K8sObjectData]:
+        # TODO: Mutlitple errors will throw here, we should catch them all
+        try:
+            async for rollout in self._list_workflows(
+                kind="ArgoCD Rollout",
+                all_namespaces_request=self.rollout.list_rollout_for_all_namespaces,
+                namespaced_request=self.rollout.list_namespaced_rollout,
+            ):
+                yield rollout
         except ApiException as e:
             if e.status in [400, 401, 403, 404]:
                 self.debug(f"Rollout API not available in {self.cluster}")
-                return []
-            raise
+            else:
+                raise
 
-        self.debug(f"Found {len(ret.items)} rollouts in {self.cluster}")
-
-        return [
-            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
-        ]
-
-    async def _list_all_statefulsets(self) -> list[K8sObjectData]:
-        self.debug(f"Listing statefulsets in {self.cluster}")
-        loop = asyncio.get_running_loop()
-        ret: V1StatefulSetList = await loop.run_in_executor(
-            self.executor,
-            lambda: self.apps.list_stateful_set_for_all_namespaces(
-                watch=False,
-                label_selector=self.config.selector,
-            ),
+    def _list_all_statefulsets(self) -> AsyncIterator[K8sObjectData]:
+        return self._list_workflows(
+            kind="statefulsets",
+            all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
+            namespaced_request=self.apps.list_namespaced_stateful_set,
         )
-        self.debug(f"Found {len(ret.items)} statefulsets in {self.cluster}")
 
-        return [
-            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
-        ]
-
-    async def _list_all_daemon_set(self) -> list[K8sObjectData]:
-        self.debug(f"Listing daemonsets in {self.cluster}")
-        loop = asyncio.get_running_loop()
-        ret: V1DaemonSetList = await loop.run_in_executor(
-            self.executor,
-            lambda: self.apps.list_daemon_set_for_all_namespaces(
-                watch=False,
-                label_selector=self.config.selector,
-            ),
+    def _list_all_daemon_set(self) -> AsyncIterator[K8sObjectData]:
+        return self._list_workflows(
+            kind="daemonsets",
+            all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
+            namespaced_request=self.apps.list_namespaced_daemon_set,
         )
-        self.debug(f"Found {len(ret.items)} daemonsets in {self.cluster}")
 
-        return [
-            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
-        ]
-
-    async def _list_all_jobs(self) -> list[K8sObjectData]:
-        self.debug(f"Listing jobs in {self.cluster}")
-        loop = asyncio.get_running_loop()
-        ret: V1JobList = await loop.run_in_executor(
-            self.executor,
-            lambda: self.batch.list_job_for_all_namespaces(
-                watch=False,
-                label_selector=self.config.selector,
-            ),
+    def _list_all_jobs(self) -> AsyncIterator[K8sObjectData]:
+        return self._list_workflows(
+            kind="jobs",
+            all_namespaces_request=self.batch.list_job_for_all_namespaces,
+            namespaced_request=self.batch.list_namespaced_job,
         )
-        self.debug(f"Found {len(ret.items)} jobs in {self.cluster}")
-
-        return [
-            self.__build_obj(item, container) for item in ret.items for container in item.spec.template.spec.containers
-        ]
-
-    async def _list_pods(self) -> list[K8sObjectData]:
-        """For future use, not supported yet."""
-
-        self.debug(f"Listing pods in {self.cluster}")
-        loop = asyncio.get_running_loop()
-        ret: V1PodList = await loop.run_in_executor(
-            self.executor,
-            lambda: self.apps.list_pod_for_all_namespaces(
-                watch=False,
-                label_selector=self.config.selector,
-            ),
-        )
-        self.debug(f"Found {len(ret.items)} pods in {self.cluster}")
-
-        return [self.__build_obj(item, container) for item in ret.items for container in item.spec.containers]
 
     async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:
         loop = asyncio.get_running_loop()
@@ -367,7 +347,7 @@ class KubernetesLoader(Configurable):
             self.error(f"Could not load cluster {cluster} and will skip it: {e}")
             return None
 
-    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> AsyncGenerator[K8sObjectData, None]:
+    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> AsyncIterator[K8sObjectData]:
         """List all scannable objects.
 
         Yields:
