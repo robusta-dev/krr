@@ -13,8 +13,10 @@ class ClusterNotSpecifiedException(Exception):
 
 
 def generate_prometheus_config(
-    config: Config, url: str, headers: dict[str, str], is_victoria_metrics: bool = False
+    config: Config, url: str, headers: dict[str, str], metrics_service: "PrometheusMetricsService"
 ) -> PrometheusConfig:
+    from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+    
     baseconfig = {
         "url": url,
         "disable_ssl": not config.prometheus_ssl_enabled,
@@ -43,6 +45,6 @@ def generate_prometheus_config(
     # coralogix config
     if config.coralogix_token:
         return CoralogixPrometheusConfig(**baseconfig, prometheus_token=config.coralogix_token)
-    if is_victoria_metrics:
+    if isinstance(metrics_service, VictoriaMetricsService):
         return VictoriaMetricsPrometheusConfig(**baseconfig)
     return PrometheusConfig(**baseconfig)

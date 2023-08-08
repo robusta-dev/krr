@@ -48,7 +48,6 @@ class PrometheusMetricsService(MetricsService):
     """
 
     service_discovery: type[MetricsServiceDiscovery] = PrometheusDiscovery
-    is_victoria_metrics: bool = False
 
     def __init__(
         self,
@@ -85,7 +84,7 @@ class PrometheusMetricsService(MetricsService):
         elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
         self.prom_config = generate_prometheus_config(
-            config, url=self.url, headers=headers, is_victoria_metrics=self.is_victoria_metrics
+            config, url=self.url, headers=headers, metrics_service=self
         )
         self.prometheus = get_custom_prometheus_connect(self.prom_config)
 
