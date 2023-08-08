@@ -12,6 +12,17 @@ files = [
 ]
 
 [[package]]
+name = "aiostream"
+version = "0.4.5"
+description = "Generator-based operators for asynchronous iteration"
+optional = false
+python-versions = "*"
+files = [
+    {file = "aiostream-0.4.5-py3-none-any.whl", hash = "sha256:25b7c2d9c83570d78c0ef5a20e949b7d0b8ea3b0b0a4f22c49d3f721105a6057"},
+    {file = "aiostream-0.4.5.tar.gz", hash = "sha256:3ecbf87085230fbcd9605c32ca20c4fb41af02c71d076eab246ea22e35947d88"},
+]
+
+[[package]]
 name = "alive-progress"
 version = "3.1.2"
 description = "A new kind of Progress Bar, with real-time throughput, ETA, and very cool animations!"
@@ -1821,4 +1832,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "565c267f52058f15496e44568be7fa8e95d3743153a70a1383888e90fcfadd1d"
+content-hash = "a5969c788da44c85261987bb04c84e1204b484edf4c463f492d1f7b3507913a2"

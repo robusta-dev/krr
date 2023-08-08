@@ -32,6 +32,7 @@ numpy = "^1.24.2"
 alive-progress = "^3.1.2"
 prometrix = "^0.1.10"
 slack-sdk = "^3.21.3"
+aiostream = "^0.4.5"
 
 
 [tool.poetry.group.dev.dependencies]
