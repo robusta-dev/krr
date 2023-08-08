@@ -13,14 +13,6 @@ from robusta_krr.utils.configurable import Configurable
 from ..metrics import PrometheusMetric
 
 
-class MetricsNotFound(Exception):
-    """
-    An exception raised when Metrics service is not found.
-    """
-
-    pass
-
-
 class MetricsService(Configurable, abc.ABC):
     def __init__(
         self,

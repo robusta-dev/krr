@@ -9,10 +9,10 @@ import warnings
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import (
-    ClusterNotSpecifiedException,
     PrometheusMetricsLoader,
-    PrometheusNotFound,
+    ClusterNotSpecifiedException,
 )
+from prometrix import PrometheusNotFound
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import (

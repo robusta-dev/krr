@@ -1,10 +1,11 @@
 from typing import Optional
 
 from kubernetes.client import ApiClient
+from prometrix import MetricsNotFound, ThanosMetricsNotFound
 
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
-from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
+from .prometheus_metrics_service import PrometheusMetricsService
 
 
 class ThanosMetricsDiscovery(MetricsServiceDiscovery):
@@ -25,14 +26,6 @@ class ThanosMetricsDiscovery(MetricsServiceDiscovery):
                 "app=thanos-querier",
             ]
         )
-
-
-class ThanosMetricsNotFound(MetricsNotFound):
-    """
-    An exception raised when Thanos is not found.
-    """
-
-    pass
 
 
 class ThanosMetricsService(PrometheusMetricsService):
