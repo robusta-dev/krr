@@ -1,5 +1,5 @@
-from abc import ABC, abstractmethod
 import datetime
+from abc import ABC, abstractmethod
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.objects import K8sObjectData

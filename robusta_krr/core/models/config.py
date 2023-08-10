@@ -7,7 +7,6 @@ from rich.console import Console
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
-
 from robusta_krr.core.models.objects import KindLiteral
 
 

@@ -11,7 +11,7 @@ from prometrix import MetricsNotFound, PrometheusNotFound
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
 
-from .metrics_service.prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
+from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 

@@ -5,11 +5,11 @@ import textwrap
 from datetime import datetime
 from typing import List, Literal, Optional, Union
 from uuid import UUID
-from pydantic import ValidationError  # noqa: F401
-from rich import print  # noqa: F401
 
 import typer
 import urllib3
+from pydantic import ValidationError  # noqa: F401
+from rich import print  # noqa: F401
 
 from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
@@ -185,7 +185,7 @@ def load_commands() -> None:
                 {strategy_settings},
             ) -> None:
                 '''Run KRR using the `{func_name}` strategy'''
-                
+
                 try:
                     config = Config(
                         kubeconfig=kubeconfig,

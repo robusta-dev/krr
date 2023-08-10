@@ -1,13 +1,11 @@
 import asyncio
 import datetime
-import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
 from prometrix import PrometheusNotFound, get_custom_prometheus_connect
-from requests.exceptions import ConnectionError, HTTPError
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
@@ -83,9 +81,7 @@ class PrometheusMetricsService(MetricsService):
             headers |= {"Authorization": self.auth_header}
         elif not self.config.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
-        self.prom_config = generate_prometheus_config(
-            config, url=self.url, headers=headers, metrics_service=self
-        )
+        self.prom_config = generate_prometheus_config(config, url=self.url, headers=headers, metrics_service=self)
         self.prometheus = get_custom_prometheus_connect(self.prom_config)
 
     def check_connection(self):
@@ -95,7 +91,7 @@ class PrometheusMetricsService(MetricsService):
             PrometheusNotFound: If the connection to Prometheus cannot be established.
         """
         self.prometheus.check_prometheus_connection()
-         
+
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
@@ -217,7 +213,9 @@ class PrometheusMetricsService(MetricsService):
         current_pods_set = {pod["metric"]["pod"] for pod in current_pods}
         del current_pods
 
-        object.pods += set([
-            PodData(name=pod["metric"]["pod"], deleted=pod["metric"]["pod"] not in current_pods_set)
-            for pod in related_pods
-        ])
+        object.pods += set(
+            [
+                PodData(name=pod["metric"]["pod"], deleted=pod["metric"]["pod"] not in current_pods_set)
+                for pod in related_pods
+            ]
+        )

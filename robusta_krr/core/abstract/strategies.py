@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import datetime
 from textwrap import dedent
-from typing import Annotated, Generic, Literal, Optional, TypeVar, get_args, TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Annotated, Generic, Literal, Optional, Sequence, TypeVar, get_args
 
 import numpy as np
 import pydantic as pd
@@ -12,8 +12,8 @@ from numpy.typing import NDArray
 from robusta_krr.core.models.result import K8sObjectData, ResourceType
 
 if TYPE_CHECKING:
-    from robusta_krr.core.integrations.prometheus.metrics import PrometheusMetric
     from robusta_krr.core.abstract.metrics import BaseMetric  # noqa: F401
+    from robusta_krr.core.integrations.prometheus.metrics import PrometheusMetric
 
 SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
 

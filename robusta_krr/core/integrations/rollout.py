@@ -1,6 +1,5 @@
-from kubernetes import client
 import six
-
+from kubernetes import client
 from kubernetes.client.exceptions import ApiTypeError, ApiValueError
 
 

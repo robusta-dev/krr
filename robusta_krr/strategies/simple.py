@@ -3,15 +3,15 @@ import pydantic as pd
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
-    PodsTimeData,
-    MetricsPodData,
     K8sObjectData,
+    MetricsPodData,
+    PodsTimeData,
     ResourceRecommendation,
     ResourceType,
     RunResult,
     StrategySettings,
 )
-from robusta_krr.core.integrations.prometheus.metrics import PercentileCPULoader, MaxMemoryLoader, PrometheusMetric
+from robusta_krr.core.integrations.prometheus.metrics import MaxMemoryLoader, PercentileCPULoader, PrometheusMetric
 
 
 class SimpleStrategySettings(StrategySettings):

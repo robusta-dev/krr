@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "robusta-krr"
-version = "1.4.1-dev"
+version = "1.5.0-dev"
 description = "Robusta's Resource Recommendation engine for Kubernetes"
 authors = ["Pavel Zhukov <33721692+LeaveMyYard@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "robusta_krr"}]
+packages = [{ include = "robusta_krr" }]
 
 [tool.black]
 line-length = 120
@@ -24,7 +24,7 @@ krr = "robusta_krr.main:run"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
-typer = {extras = ["all"], version = "^0.7.0"}
+typer = { extras = ["all"], version = "^0.7.0" }
 pydantic = "1.10.7"
 kubernetes = "^26.1.0"
 prometheus-api-client = "^0.5.3"

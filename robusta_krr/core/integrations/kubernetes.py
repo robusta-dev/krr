@@ -1,19 +1,19 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import AsyncGenerator, Optional, Union, Callable, AsyncIterator
-import aiostream
+from typing import AsyncGenerator, AsyncIterator, Callable, Optional, Union
 
+import aiostream
 from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException
 from kubernetes.client.models import (
     V1Container,
     V1DaemonSet,
     V1Deployment,
+    V1HorizontalPodAutoscalerList,
     V1Job,
     V1LabelSelector,
     V1Pod,
     V1StatefulSet,
-    V1HorizontalPodAutoscalerList,
     V2HorizontalPodAutoscaler,
     V2HorizontalPodAutoscalerList,
 )
@@ -21,7 +21,6 @@ from kubernetes.client.models import (
 from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
-
 
 from .rollout import RolloutAppsV1Api
 

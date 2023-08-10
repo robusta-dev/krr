@@ -3,7 +3,7 @@
 import pydantic as pd
 
 import robusta_krr
-from robusta_krr.api.models import MetricsPodData, K8sObjectData, ResourceRecommendation, ResourceType, RunResult
+from robusta_krr.api.models import K8sObjectData, MetricsPodData, ResourceRecommendation, ResourceType, RunResult
 from robusta_krr.api.strategies import BaseStrategy, StrategySettings
 from robusta_krr.core.integrations.prometheus.metrics import MaxCPULoader, MaxMemoryLoader
 

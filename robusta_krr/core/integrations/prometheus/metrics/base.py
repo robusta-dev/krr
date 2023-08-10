@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import abc
 import asyncio
+import copy
 import datetime
 import enum
-import copy
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, TYPE_CHECKING, Optional
 from functools import reduce
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import pydantic as pd

@@ -1,8 +1,6 @@
-from robusta_krr.core.abstract.strategies import PodsTimeData
-
 from robusta_krr.core.models.objects import K8sObjectData
 
-from .base import QueryMetric, QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin
+from .base import BatchedRequestMixin, FilterJobsMixin, QueryMetric, QueryRangeMetric
 
 
 class MemoryLoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):

@@ -1,7 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import boto3
 from prometrix import AWSPrometheusConfig, CoralogixPrometheusConfig, PrometheusConfig, VictoriaMetricsPrometheusConfig
 
 from robusta_krr.core.models.config import Config
+
+if TYPE_CHECKING:
+    from robusta_krr.core.integrations.prometheus.metrics_service.prometheus_metrics_service import (
+        PrometheusMetricsService,
+    )
 
 
 class ClusterNotSpecifiedException(Exception):
@@ -13,10 +22,10 @@ class ClusterNotSpecifiedException(Exception):
 
 
 def generate_prometheus_config(
-    config: Config, url: str, headers: dict[str, str], metrics_service: "PrometheusMetricsService"
+    config: Config, url: str, headers: dict[str, str], metrics_service: PrometheusMetricsService
 ) -> PrometheusConfig:
     from .metrics_service.victoria_metrics_service import VictoriaMetricsService
-    
+
     baseconfig = {
         "url": url,
         "disable_ssl": not config.prometheus_ssl_enabled,

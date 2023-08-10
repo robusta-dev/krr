@@ -1,5 +1,4 @@
 import abc
-from inspect import getframeinfo, stack
 from typing import Literal, Union
 
 from rich.console import Console
@@ -62,7 +61,6 @@ class Configurable(abc.ABC):
         """
 
         if self.debug_active:
-            caller = getframeinfo(stack()[1][0])
             self.console.print(
                 self.__add_prefix(
                     message,

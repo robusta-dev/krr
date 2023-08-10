@@ -1,27 +1,20 @@
 import asyncio
 import math
+import os
+import sys
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
-import sys, os
+
+from prometrix import PrometheusNotFound
 from slack_sdk import WebClient
-import warnings
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
-from robusta_krr.core.integrations.prometheus import (
-    PrometheusMetricsLoader,
-    ClusterNotSpecifiedException,
-)
-from prometrix import PrometheusNotFound
+from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import (
-    ResourceAllocations,
-    ResourceScan,
-    ResourceType,
-    Result,
-    StrategyData,
-)
+from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
 from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
 from robusta_krr.utils.progress_bar import ProgressBar
@@ -76,21 +69,20 @@ class Runner(Configurable):
                 file_name = self.config.file_output
             elif self.config.slack_output:
                 file_name = self.config.slack_output
-            with open(file_name, 'w') as target_file:
+            with open(file_name, "w") as target_file:
                 sys.stdout = target_file
                 self.print_result(formatted, rich=getattr(Formatter, "__rich_console__", False))
                 sys.stdout = sys.stdout
-            if (self.config.slack_output):
+            if self.config.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)
                 client.files_upload(
-                    channels=f'#{self.config.slack_output}',
+                    channels=f"#{self.config.slack_output}",
                     title="KRR Report",
-                    file=f'./{file_name}',
-                    initial_comment=f'Kubernetes Resource Report for {(" ".join(self.config.namespaces))}'
+                    file=f"./{file_name}",
+                    initial_comment=f'Kubernetes Resource Report for {(" ".join(self.config.namespaces))}',
                 )
                 os.remove(file_name)
-
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
