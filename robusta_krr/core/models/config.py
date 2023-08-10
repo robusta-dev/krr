@@ -8,6 +8,8 @@ from rich.console import Console
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 
+from robusta_krr.core.models.objects import KindLiteral
+
 
 class Config(pd.BaseSettings):
     quiet: bool = pd.Field(False)
@@ -16,7 +18,7 @@ class Config(pd.BaseSettings):
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
-    resources: Union[list[str], Literal["*"]] = pd.Field("*")
+    resources: Union[list[KindLiteral], Literal["*"]] = pd.Field("*")
     selector: Optional[str] = None
 
     # Value settings
@@ -71,12 +73,12 @@ class Config(pd.BaseSettings):
 
         return [val.lower() for val in v]
 
-    @pd.validator("resources")
+    @pd.validator("resources", pre=True)
     def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
             return "*"
 
-        return v
+        return [val.lower() for val in v]
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)

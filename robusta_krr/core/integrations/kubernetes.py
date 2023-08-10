@@ -1,6 +1,6 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import AsyncGenerator, Optional, Union, Callable, AsyncIterator, Literal
+from typing import AsyncGenerator, Optional, Union, Callable, AsyncIterator
 import aiostream
 
 from kubernetes import client, config  # type: ignore
@@ -18,7 +18,7 @@ from kubernetes.client.models import (
     V2HorizontalPodAutoscalerList,
 )
 
-from robusta_krr.core.models.objects import HPAData, K8sObjectData
+from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
@@ -27,8 +27,6 @@ from .rollout import RolloutAppsV1Api
 
 AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
 HPAKey = tuple[str, str, str]
-
-KindLiteral = Literal["deployment", "daemonset", "statefulset", "job", "rollout"]
 
 
 class ClusterLoader(Configurable):
