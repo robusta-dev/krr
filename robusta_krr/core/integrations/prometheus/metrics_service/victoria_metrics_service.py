@@ -1,10 +1,11 @@
 from typing import Optional
 
 from kubernetes.client import ApiClient
+from prometrix import MetricsNotFound, VictoriaMetricsNotFound
 
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
-from .prometheus_metrics_service import MetricsNotFound, PrometheusMetricsService
+from .prometheus_metrics_service import PrometheusMetricsService
 
 
 class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
@@ -24,14 +25,6 @@ class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
                 "app=vmselect",
             ]
         )
-
-
-class VictoriaMetricsNotFound(MetricsNotFound):
-    """
-    An exception raised when Victoria Metrics is not found.
-    """
-
-    pass
 
 
 class VictoriaMetricsService(PrometheusMetricsService):

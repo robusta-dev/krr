@@ -1,8 +1,11 @@
-from typing import Optional
+from typing import Optional, Literal
 
 import pydantic as pd
 
 from robusta_krr.core.models.allocations import ResourceAllocations
+
+
+KindLiteral = Literal["deployment", "daemonset", "statefulset", "job", "rollout"]
 
 
 class PodData(pd.BaseModel):

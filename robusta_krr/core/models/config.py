@@ -8,6 +8,8 @@ from rich.console import Console
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 
+from robusta_krr.core.models.objects import KindLiteral
+
 
 class Config(pd.BaseSettings):
     quiet: bool = pd.Field(False)
@@ -16,11 +18,12 @@ class Config(pd.BaseSettings):
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
+    resources: Union[list[KindLiteral], Literal["*"]] = pd.Field("*")
     selector: Optional[str] = None
 
     # Value settings
-    cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
-    memory_min_value: int = pd.Field(10, ge=0)  # in megabytes
+    cpu_min_value: int = pd.Field(100, ge=0)  # in millicores
+    memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
@@ -29,6 +32,13 @@ class Config(pd.BaseSettings):
     prometheus_ssl_enabled: bool = pd.Field(False)
     prometheus_cluster_label: Optional[str] = pd.Field(None)
     prometheus_label: Optional[str] = pd.Field(None)
+    eks_managed_prom: bool = pd.Field(False)
+    eks_managed_prom_profile_name: Optional[str] = pd.Field(None)
+    eks_access_key: Optional[str] = pd.Field(None)
+    eks_secret_key: Optional[str] = pd.Field(None)
+    eks_service_name: Optional[str] = pd.Field(None)
+    eks_managed_prom_region: Optional[str] = pd.Field(None)
+    coralogix_token: Optional[str] = pd.Field(None)
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
@@ -68,7 +78,14 @@ class Config(pd.BaseSettings):
         if v == []:
             return "*"
 
-        return v
+        return [val.lower() for val in v]
+
+    @pd.validator("resources", pre=True)
+    def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
+        if v == []:
+            return "*"
+
+        return [val.lower() for val in v]
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
