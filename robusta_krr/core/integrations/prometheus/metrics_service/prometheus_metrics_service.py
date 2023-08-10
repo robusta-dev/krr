@@ -209,7 +209,7 @@ class PrometheusMetricsService(MetricsService):
         current_pods_set = {pod["metric"]["pod"] for pod in current_pods}
         del current_pods
 
-        object.pods += [
+        object.pods += set([
             PodData(name=pod["metric"]["pod"], deleted=pod["metric"]["pod"] not in current_pods_set)
             for pod in related_pods
-        ]
+        ])
