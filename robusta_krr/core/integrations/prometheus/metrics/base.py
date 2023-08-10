@@ -4,8 +4,10 @@ import abc
 import asyncio
 import datetime
 import enum
+import copy
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, TYPE_CHECKING, Optional
+from functools import reduce
 
 import numpy as np
 import pydantic as pd
@@ -156,7 +158,6 @@ class PrometheusMetric(BaseMetric, Configurable):
         )
 
         if result == []:
-            self.warning(f"{self.service_name} returned no {self.__class__.__name__} metrics for {object}")
             return {}
 
         return {pod_result["metric"]["pod"]: np.array(pod_result["values"], dtype=np.float64) for pod_result in result}
@@ -177,7 +178,7 @@ class QueryMetric(PrometheusMetric):
 PrometheusSeries = Any
 
 
-class FilterMetric(PrometheusMetric):
+class FilterJobsMixin(PrometheusMetric):
     """
     This is the version of the BasicMetricLoader, that filters out data,
     if multiple metrics with the same name were found.
@@ -206,16 +207,16 @@ class FilterMetric(PrometheusMetric):
             return series_list_result
 
         target_names = {
-            FilterMetric.get_target_name(series)
+            FilterJobsMixin.get_target_name(series)
             for series in series_list_result
-            if FilterMetric.get_target_name(series)
+            if FilterJobsMixin.get_target_name(series)
         }
         return_list: list[PrometheusSeries] = []
 
         # takes kubelet job if exists, return first job alphabetically if it doesn't
         for target_name in target_names:
             relevant_series = [
-                series for series in series_list_result if FilterMetric.get_target_name(series) == target_name
+                series for series in series_list_result if FilterJobsMixin.get_target_name(series) == target_name
             ]
             relevant_kubelet_metric = [series for series in relevant_series if series["metric"].get("job") == "kubelet"]
             if len(relevant_kubelet_metric) == 1:
@@ -228,3 +229,68 @@ class FilterMetric(PrometheusMetric):
     async def query_prometheus(self, data: PrometheusMetricData) -> list[PrometheusSeries]:
         result = await super().query_prometheus(data)
         return self.filter_prom_jobs_results(result)
+
+
+class BatchedRequestMixin(PrometheusMetric):
+    """
+    This type of PrometheusMetric is used to split the query into multiple queries,
+    each querying a subset of the pods of the object.
+
+    The results of the queries are then combined into a single result.
+
+    This is useful when the number of pods is too large for a single query.
+    """
+
+    pods_batch_size = 50
+
+    def combine_batches(self, results: list[PodsTimeData]) -> PodsTimeData:
+        """
+        Combines the results of multiple queries into a single result.
+
+        Args:
+        results (list[MetricPodData]): A list of query results.
+
+        Returns:
+        MetricPodData: A combined result.
+        """
+
+        return reduce(lambda x, y: x | y, results, {})
+
+    @staticmethod
+    def _slice_object(object: K8sObjectData, s: slice) -> K8sObjectData:
+        obj_copy = copy.deepcopy(object)
+        obj_copy.pods = object.pods[s]
+        return obj_copy
+
+    @staticmethod
+    def _split_objects(object: K8sObjectData, max_pods: int) -> list[K8sObjectData]:
+        """
+        Splits the object into multiple objects, each containing at most max_pods pods.
+
+        Args:
+        object (K8sObjectData): The object to split.
+
+        Returns:
+        list[K8sObjectData]: A list of objects.
+        """
+        return [
+            BatchedRequestMixin._slice_object(object, slice(i, i + max_pods))
+            for i in range(0, len(object.pods), max_pods)
+        ]
+
+    async def load_data(
+        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
+    ) -> PodsTimeData:
+        splitted_objects = self._split_objects(object, self.pods_batch_size)
+
+        # If we do not exceed the batch size, we can use the regular load_data method.
+        if len(splitted_objects) <= 1:
+            return await super().load_data(object, period, step)
+
+        results = await asyncio.gather(
+            *[
+                super(BatchedRequestMixin, self).load_data(splitted_object, period, step)
+                for splitted_object in splitted_objects
+            ]
+        )
+        return self.combine_batches(results)

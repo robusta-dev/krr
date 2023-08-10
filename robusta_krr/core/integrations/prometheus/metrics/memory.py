@@ -1,9 +1,11 @@
+from robusta_krr.core.abstract.strategies import PodsTimeData
+
 from robusta_krr.core.models.objects import K8sObjectData
 
-from .base import FilterMetric, QueryMetric, QueryRangeMetric
+from .base import QueryMetric, QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin
 
 
-class MemoryLoader(QueryRangeMetric, FilterMetric):
+class MemoryLoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):
     def get_query(self, object: K8sObjectData, resolution: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
@@ -19,7 +21,7 @@ class MemoryLoader(QueryRangeMetric, FilterMetric):
         """
 
 
-class MaxMemoryLoader(QueryMetric, FilterMetric):
+class MaxMemoryLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
     def get_query(self, object: K8sObjectData, resolution: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
@@ -36,7 +38,7 @@ class MaxMemoryLoader(QueryMetric, FilterMetric):
 
 
 def PercentileMemoryLoader(percentile: float) -> type[QueryMetric]:
-    class PercentileMemoryLoader(QueryMetric, FilterMetric):
+    class PercentileMemoryLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
         def get_query(self, object: K8sObjectData, resolution: str) -> str:
             pods_selector = "|".join(pod.name for pod in object.pods)
             cluster_label = self.get_prometheus_cluster_label()
