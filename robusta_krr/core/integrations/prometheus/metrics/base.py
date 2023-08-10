@@ -5,7 +5,7 @@ import asyncio
 import datetime
 import enum
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import pydantic as pd

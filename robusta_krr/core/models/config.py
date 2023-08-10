@@ -22,8 +22,8 @@ class Config(pd.BaseSettings):
     selector: Optional[str] = None
 
     # Value settings
-    cpu_min_value: int = pd.Field(5, ge=0)  # in millicores
-    memory_min_value: int = pd.Field(10, ge=0)  # in megabytes
+    cpu_min_value: int = pd.Field(100, ge=0)  # in millicores
+    memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
@@ -32,6 +32,13 @@ class Config(pd.BaseSettings):
     prometheus_ssl_enabled: bool = pd.Field(False)
     prometheus_cluster_label: Optional[str] = pd.Field(None)
     prometheus_label: Optional[str] = pd.Field(None)
+    eks_managed_prom: bool = pd.Field(False)
+    eks_managed_prom_profile_name: Optional[str] = pd.Field(None)
+    eks_access_key: Optional[str] = pd.Field(None)
+    eks_secret_key: Optional[str] = pd.Field(None)
+    eks_service_name: Optional[str] = pd.Field(None)
+    eks_managed_prom_region: Optional[str] = pd.Field(None)
+    coralogix_token: Optional[str] = pd.Field(None)
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)

@@ -2,21 +2,21 @@ from __future__ import annotations
 
 import datetime
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
+from prometrix import MetricsNotFound, PrometheusNotFound
 
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
 
-from .metrics_service.base_metric_service import MetricsNotFound
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService, PrometheusNotFound
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 
 if TYPE_CHECKING:
-    from robusta_krr.core.abstract.strategies import MetricsPodData, BaseStrategy
+    from robusta_krr.core.abstract.strategies import BaseStrategy, MetricsPodData
     from robusta_krr.core.models.config import Config
 
 METRICS_SERVICES = {
