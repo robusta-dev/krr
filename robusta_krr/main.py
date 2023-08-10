@@ -5,6 +5,8 @@ import textwrap
 from datetime import datetime
 from typing import List, Literal, Optional, Union
 from uuid import UUID
+from pydantic import ValidationError  # noqa: F401
+from rich import print  # noqa: F401
 
 import typer
 import urllib3
@@ -70,6 +72,13 @@ def load_commands() -> None:
                     "--namespace",
                     "-n",
                     help="List of namespaces to run on. By default, will run on all namespaces.",
+                    rich_help_panel="Kubernetes Settings"
+                ),
+                resources: List[str] = typer.Option(
+                    None,
+                    "--resource",
+                    "-r",
+                    help="List of resources to run on (Deployment, StatefullSet, DaemonSet, Job, Rollout). By default, will run on all resources. Case insensitive.",
                     rich_help_panel="Kubernetes Settings"
                 ),
                 selector: Optional[str] = typer.Option(
@@ -176,38 +185,42 @@ def load_commands() -> None:
                 {strategy_settings},
             ) -> None:
                 '''Run KRR using the `{func_name}` strategy'''
-
-                config = Config(
-                    kubeconfig=kubeconfig,
-                    clusters="*" if all_clusters else clusters,
-                    namespaces="*" if "*" in namespaces else namespaces,
-                    selector=selector,
-                    prometheus_url=prometheus_url,
-                    prometheus_auth_header=prometheus_auth_header,
-                    prometheus_other_headers=prometheus_other_headers,
-                    prometheus_ssl_enabled=prometheus_ssl_enabled,
-                    prometheus_cluster_label=prometheus_cluster_label,
-                    prometheus_label=prometheus_label,
-                    eks_managed_prom=eks_managed_prom,
-                    eks_managed_prom_region=eks_managed_prom_region,
-                    eks_managed_prom_profile_name=eks_managed_prom_profile_name,
-                    eks_access_key=eks_access_key,
-                    eks_secret_key=eks_secret_key,
-                    eks_service_name=eks_service_name,
-                    coralogix_token=coralogix_token,
-                    max_workers=max_workers,
-                    format=format,
-                    verbose=verbose,
-                    quiet=quiet,
-                    log_to_stderr=log_to_stderr,
-                    file_output=file_output,
-                    slack_output=slack_output,
-                    strategy="{func_name}",
-                    other_args={strategy_args},
-                )
-                runner = Runner(config)
-
-                asyncio.run(runner.run())
+                
+                try:
+                    config = Config(
+                        kubeconfig=kubeconfig,
+                        clusters="*" if all_clusters else clusters,
+                        namespaces="*" if "*" in namespaces else namespaces,
+                        resources="*" if "*" in resources else resources,
+                        selector=selector,
+                        prometheus_url=prometheus_url,
+                        prometheus_auth_header=prometheus_auth_header,
+                        prometheus_other_headers=prometheus_other_headers,
+                        prometheus_ssl_enabled=prometheus_ssl_enabled,
+                        prometheus_cluster_label=prometheus_cluster_label,
+                        prometheus_label=prometheus_label,
+                        eks_managed_prom=eks_managed_prom,
+                        eks_managed_prom_region=eks_managed_prom_region,
+                        eks_managed_prom_profile_name=eks_managed_prom_profile_name,
+                        eks_access_key=eks_access_key,
+                        eks_secret_key=eks_secret_key,
+                        eks_service_name=eks_service_name,
+                        coralogix_token=coralogix_token,
+                        max_workers=max_workers,
+                        format=format,
+                        verbose=verbose,
+                        quiet=quiet,
+                        log_to_stderr=log_to_stderr,
+                        file_output=file_output,
+                        slack_output=slack_output,
+                        strategy="{func_name}",
+                        other_args={strategy_args},
+                    )
+                except ValidationError as e:
+                    print(str(e))
+                else:
+                    runner = Runner(config)
+                    asyncio.run(runner.run())
             """
         )
 
