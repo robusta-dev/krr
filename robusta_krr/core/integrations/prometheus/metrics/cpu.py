@@ -15,7 +15,7 @@ class CPULoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):
                         pod=~"{pods_selector}",
                         container="{object.container}"
                         {cluster_label}
-                    }}[5m]
+                    }}[{resolution}]
                 )
             ) by (container, pod, job)
         """
@@ -26,7 +26,7 @@ class MaxCPULoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
-            max_over_time(
+            max(sum(
                 irate(
                     container_cpu_usage_seconds_total{{
                         namespace="{object.namespace}",
@@ -35,7 +35,7 @@ class MaxCPULoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
                         {cluster_label}
                     }}[{resolution}]
                 )
-            ) by (container, pod, job)
+            ) by (container, pod, job) ) by (container, pod, job)
         """
 
 
@@ -45,7 +45,7 @@ def PercentileCPULoader(percentile: float) -> type[QueryMetric]:
             pods_selector = "|".join(pod.name for pod in object.pods)
             cluster_label = self.get_prometheus_cluster_label()
             return f"""
-                quantile_over_time(
+                quantile(
                     {round(percentile / 100, 2)},
                     irate(
                         container_cpu_usage_seconds_total{{
@@ -53,9 +53,9 @@ def PercentileCPULoader(percentile: float) -> type[QueryMetric]:
                             pod=~"{pods_selector}",
                             container="{object.container}"
                             {cluster_label}
-                        }}[1m]
-                    )[{resolution}]
-                )
+                        }}[{resolution}]
+                    )
+                ) by (container, pod, job)
             """
 
     return PercentileCPULoader

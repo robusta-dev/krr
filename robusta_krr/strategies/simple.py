@@ -11,7 +11,17 @@ from robusta_krr.core.abstract.strategies import (
     RunResult,
     StrategySettings,
 )
-from robusta_krr.core.integrations.prometheus.metrics import MaxMemoryLoader, PercentileCPULoader, PrometheusMetric
+from robusta_krr.core.integrations.prometheus.metrics import (
+    MaxMemoryLoader,
+    CPULoader,
+    PrometheusMetric,
+    PercentileCPULoader,
+    MaxCPULoader,
+    MemoryLoader,
+    PercentileMemoryLoader,
+)
+
+import matplotlib.pyplot as plt
 
 
 class SimpleStrategySettings(StrategySettings):
@@ -36,7 +46,16 @@ class SimpleStrategySettings(StrategySettings):
         else:
             data_ = list(data.values())[0][:, 1]
 
+        # print("-----")
+        # print(data)
+        # print(data_)
+
         return np.max(data_)
+
+
+from threading import Lock
+
+lock = Lock()
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
@@ -55,11 +74,19 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     @property
     def metrics(self) -> list[type[PrometheusMetric]]:
-        return [PercentileCPULoader(self.settings.cpu_percentile), MaxMemoryLoader]
+        return [
+            PercentileCPULoader(self.settings.cpu_percentile),
+            CPULoader,
+            MaxCPULoader,
+            MaxMemoryLoader,
+            MemoryLoader,
+        ]
 
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
+        data_full = history_data["CPULoader"]
+        data_max = history_data["MaxCPULoader"]
         data = history_data["PercentileCPULoader"]
 
         if len(data) == 0:
@@ -68,13 +95,34 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        cpu_usage = self.settings.calculate_cpu_proposal(data)
-        return ResourceRecommendation(request=cpu_usage, limit=None)
+        cpu_percentile = self.settings.calculate_cpu_proposal(data)
+        cpu_max = self.settings.calculate_cpu_proposal(data_max)
+        cpu_total = self.settings.calculate_cpu_proposal(data_full)
+
+        with lock:
+            plt.rcParams["figure.figsize"] = (20, 20)
+            for pod, values in data_full.items():
+                plt.plot(values[:, 0], values[:, 1], label=pod)
+
+            plt.xlabel("Time")
+            plt.ylabel("CPU usage")
+            plt.axhline(cpu_percentile, color="red", label="PercentileCPULoader")
+            plt.axhline(cpu_max, color="green", label="MaxCPULoader")
+            plt.axhline(cpu_total, color="blue", label="CPULoader")
+
+            plt.legend()
+            import uuid
+
+            plt.savefig(f"./test_images/{uuid.uuid4()}.png")
+            plt.clf()
+
+        return ResourceRecommendation(request=cpu_percentile, limit=None)
 
     def __calculate_memory_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
         data = history_data["MaxMemoryLoader"]
+        data_full = history_data["MemoryLoader"]
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
@@ -83,6 +131,24 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             return ResourceRecommendation.undefined(info="HPA detected")
 
         memory_usage = self.settings.calculate_memory_proposal(data)
+
+        with lock:
+            plt.rcParams["figure.figsize"] = (20, 20)
+            for pod, values in data_full.items():
+                plt.plot(values[:, 0], values[:, 1], label=pod)
+
+            plt.xlabel("Time")
+            plt.ylabel("Memory usage")
+            plt.axhline(memory_usage, color="red", label="MaxMemoryLoader")
+            # plt.axhline(cpu_max, color="green", label="MaxCPULoader")
+            # plt.axhline(cpu_total, color="blue", label="CPULoader")
+
+            plt.legend()
+            import uuid
+
+            plt.savefig(f"./test_images/{uuid.uuid4()}.png")
+            plt.clf()
+
         return ResourceRecommendation(request=memory_usage, limit=memory_usage)
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:

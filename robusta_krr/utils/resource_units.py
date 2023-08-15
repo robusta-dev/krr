@@ -42,6 +42,8 @@ def format(x: Union[float, int], /, *, base: Literal[1024, 1000] = 1024) -> str:
 
     if x < 1:
         return f"{int(x*1000)}m"
+    if x < base:
+        return str(round(x, 3))
 
     units = ["", "K", "M", "G", "T", "P", "E"]
     binary_units = ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei"]
