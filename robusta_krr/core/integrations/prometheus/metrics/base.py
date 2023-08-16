@@ -7,7 +7,7 @@ import datetime
 import enum
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 import numpy as np
 import pydantic as pd
@@ -17,9 +17,7 @@ from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
-
-if TYPE_CHECKING:
-    from .. import CustomPrometheusConnect
+from prometrix import CustomPrometheusConnect
 
 
 class QueryType(str, enum.Enum):
@@ -69,13 +67,14 @@ class PrometheusMetric(BaseMetric, Configurable):
         return f', {self.config.prometheus_label}="{self.config.prometheus_cluster_label}"'
 
     @abc.abstractmethod
-    def get_query(self, object: K8sObjectData, resolution: str) -> str:
+    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         """
         This method should be implemented by all subclasses to provide a query string to fetch metrics.
 
         Args:
         object (K8sObjectData): The object for which metrics need to be fetched.
-        resolution (Optional[str]): a string for configurable resolution to the query.
+        duration (str): a string for duration of the query.
+        step (str): a string for the step size of the query.
 
         Returns:
         str: The query string.
@@ -108,7 +107,7 @@ class PrometheusMetric(BaseMetric, Configurable):
             return value
         else:
             # regular query, lighter on preformance
-            results = self.prometheus.custom_query(query=data.query)
+            results = self.prometheus.custom_query(query=data.query, params={"time": data.start_time.timestamp()})
             # format the results to return the same format as custom_query_range
             for result in results:
                 result["values"] = [result.pop("value")]
@@ -142,9 +141,12 @@ class PrometheusMetric(BaseMetric, Configurable):
         Returns:
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
         """
-        resolution = f"{self._step_to_string(period)}:{self._step_to_string(step)}"
-        query = self.get_query(object, resolution)
-        end_time = datetime.datetime.now().astimezone()
+
+        step_str = "75s"  # self._step_to_string(step)
+        duration_str = self._step_to_string(period)
+
+        query = self.get_query(object, duration_str, step_str)
+        end_time = datetime.datetime.now().replace(second=0, microsecond=0).astimezone()
         start_time = end_time - period
 
         result = await self.query_prometheus(
@@ -152,7 +154,7 @@ class PrometheusMetric(BaseMetric, Configurable):
                 query=query,
                 start_time=start_time,
                 end_time=end_time,
-                step=self._step_to_string(step),
+                step=step_str,
                 type=self.query_type,
             )
         )
