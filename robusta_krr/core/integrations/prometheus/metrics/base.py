@@ -107,7 +107,7 @@ class PrometheusMetric(BaseMetric, Configurable):
             return value
         else:
             # regular query, lighter on preformance
-            results = self.prometheus.custom_query(query=data.query, params={"time": data.start_time.timestamp()})
+            results = self.prometheus.custom_query(query=data.query)
             # format the results to return the same format as custom_query_range
             for result in results:
                 result["values"] = [result.pop("value")]
