@@ -43,6 +43,8 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     """
     CPU request: {cpu_percentile}% percentile, limit: unset
     Memory request: max + {memory_buffer_percentage}%, limit: max + {memory_buffer_percentage}%
+    History: {history_duration} hours
+    Step: {timeframe_duration} minutes
 
     This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
     If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.

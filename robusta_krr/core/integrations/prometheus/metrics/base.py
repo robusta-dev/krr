@@ -142,7 +142,7 @@ class PrometheusMetric(BaseMetric, Configurable):
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
         """
 
-        step_str = "75s"  # self._step_to_string(step)
+        step_str = f"{round(step.total_seconds())}s"
         duration_str = self._step_to_string(period)
 
         query = self.get_query(object, duration_str, step_str)

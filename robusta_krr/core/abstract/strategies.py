@@ -49,7 +49,7 @@ class StrategySettings(pd.BaseModel):
     history_duration: float = pd.Field(
         24 * 7 * 2, ge=1, description="The duration of the history data to use (in hours)."
     )
-    timeframe_duration: float = pd.Field(2, ge=1, description="The step for the history data (in minutes).")
+    timeframe_duration: float = pd.Field(1.25, gt=0, description="The step for the history data (in minutes).")
 
     @property
     def history_timedelta(self) -> datetime.timedelta:
