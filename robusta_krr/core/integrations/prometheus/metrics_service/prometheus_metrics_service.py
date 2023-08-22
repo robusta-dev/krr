@@ -160,12 +160,12 @@ class PrometheusMetricsService(MetricsService):
         pod_owners: list[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
-        if object.kind == "Deployment":
+        if object.kind in ["Deployment", "Rollout"]:
             replicasets = await self.query(
                 f"""
                 kube_replicaset_owner{{
                     owner_name="{object.name}",
-                    owner_kind="Deployment",
+                    owner_kind="{object.kind}",
                     namespace="{object.namespace}"
                     {cluster_label}
                 }}[{period_literal}]
