@@ -11,13 +11,22 @@ from robusta_krr.core.abstract.strategies import (
     RunResult,
     StrategySettings,
 )
-from robusta_krr.core.integrations.prometheus.metrics import MaxMemoryLoader, PercentileCPULoader, PrometheusMetric
+from robusta_krr.core.integrations.prometheus.metrics import (
+    MaxMemoryLoader,
+    PercentileCPULoader,
+    PrometheusMetric,
+    CPUAmountLoader,
+    MemoryAmountLoader,
+)
 
 
 class SimpleStrategySettings(StrategySettings):
     cpu_percentile: float = pd.Field(99, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
     memory_buffer_percentage: float = pd.Field(
-        5, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
+        15, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
+    )
+    points_required: int = pd.Field(
+        100, ge=1, description="The number of data points required to make a recommendation for a resource."
     )
 
     def calculate_memory_proposal(self, data: PodsTimeData) -> float:
@@ -43,6 +52,8 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     """
     CPU request: {cpu_percentile}% percentile, limit: unset
     Memory request: max + {memory_buffer_percentage}%, limit: max + {memory_buffer_percentage}%
+    History: {history_duration} hours
+    Step: {timeframe_duration} minutes
 
     This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
     If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
@@ -55,7 +66,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     @property
     def metrics(self) -> list[type[PrometheusMetric]]:
-        return [PercentileCPULoader(self.settings.cpu_percentile), MaxMemoryLoader]
+        return [PercentileCPULoader(self.settings.cpu_percentile), MaxMemoryLoader, CPUAmountLoader, MemoryAmountLoader]
 
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
@@ -64,6 +75,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
+
+        data_count = {pod: values[0, 1] for pod, values in history_data["CPUAmountLoader"].items()}
+        # Here we filter out pods from calculation that have less than `points_required` data points
+        filtered_data = {
+            pod: values for pod, values in data.items() if data_count.get(pod, 0) >= self.settings.points_required
+        }
+
+        if len(filtered_data) == 0:
+            return ResourceRecommendation.undefined(info="Not enough data")
 
         if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None:
             return ResourceRecommendation.undefined(info="HPA detected")
@@ -79,10 +99,19 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
+        data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
+        # Here we filter out pods from calculation that have less than `points_required` data points
+        filtered_data = {
+            pod: value for pod, value in data.items() if data_count.get(pod, 0) >= self.settings.points_required
+        }
+
+        if len(filtered_data) == 0:
+            return ResourceRecommendation.undefined(info="Not enough data")
+
         if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        memory_usage = self.settings.calculate_memory_proposal(data)
+        memory_usage = self.settings.calculate_memory_proposal(filtered_data)
         return ResourceRecommendation(request=memory_usage, limit=memory_usage)
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
