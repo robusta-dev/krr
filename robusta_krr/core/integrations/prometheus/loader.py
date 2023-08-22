@@ -71,8 +71,8 @@ class PrometheusMetricsLoader(Configurable):
                 self.echo(f"{service_name} found")
                 loader.validate_cluster_name()
                 return loader
-            except MetricsNotFound:
-                self.debug(f"{service_name} not found")
+            except MetricsNotFound as e:
+                self.debug(f"{service_name} not found: {e}")
 
         return None
 
