@@ -62,6 +62,8 @@
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
+_Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [EKS](#eks-managed-prometheus), [Azure](#azure-managed-prometheus) and [Coralogix](#coralogix-managed-prometheus)_
+
 ### Features
 
 - **No Agent Required**: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster. (But it can optionally be run in-cluster for weekly [Slack reports](#slack-integration).)
@@ -377,18 +379,21 @@ Than run the following command with PROMETHEUS_URL substituted for your Azure Ma
 ```sh
 python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-header "Bearer $AZURE_BEARER"
 ```
+
 <p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## EKS managed Prometheus
 
-For EKS managed Prometheus you need to add your prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials 
+For EKS managed Prometheus you need to add your prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials
 
 ```sh
 python krr.py simple -p "https://aps-workspaces.REGION.amazonaws.com/workspaces/..." --eks-managed-prom
 ```
+
 Additional optional parameters are:
+
 ```sh
 --eks-profile-name PROFILE_NAME_HERE # to specify the profile to use from your config
 --eks-access-key ACCESS_KEY # to specify your access key
@@ -396,6 +401,7 @@ Additional optional parameters are:
 --eks-service-name SERVICE_NAME # to use a specific service name in the signature
 --eks-managed-prom-region REGION_NAME # to specify the region the prometheus is in
 ```
+
 <p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
