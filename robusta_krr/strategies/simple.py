@@ -72,11 +72,12 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
         data = history_data["PercentileCPULoader"]
-        data_count = {pod: values[0, 1] for pod, values in history_data["CPUAmountLoader"].items()}
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
+        data_count = {pod: values[0, 1] for pod, values in history_data["CPUAmountLoader"].items()}
+        # Here we filter out pods from calculation that have less than `points_required` data points
         filtered_data = {
             pod: values for pod, values in data.items() if data_count.get(pod, 0) >= self.settings.points_required
         }
@@ -94,11 +95,12 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
         data = history_data["MaxMemoryLoader"]
-        data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
+        data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
+        # Here we filter out pods from calculation that have less than `points_required` data points
         filtered_data = {
             pod: value for pod, value in data.items() if data_count.get(pod, 0) >= self.settings.points_required
         }
