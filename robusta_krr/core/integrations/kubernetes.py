@@ -129,7 +129,7 @@ class ClusterLoader(Configurable):
             self.debug(f"Skipping {kind}s in {self.cluster}")
             return
 
-        if kind == "rollout" and not self.__rollouts_available:
+        if kind == "Rollout" and not self.__rollouts_available:
             return
 
         self.debug(f"Listing {kind}s in {self.cluster}")
@@ -147,7 +147,7 @@ class ClusterLoader(Configurable):
                 self.debug(f"Found {len(ret_multi.items)} {kind} in {self.cluster}")
                 for item in ret_multi.items:
                     for container in item.spec.template.spec.containers:
-                        yield self.__build_obj(item, container)
+                        yield self.__build_obj(item, container, kind)
             else:
                 tasks = [
                     loop.run_in_executor(
@@ -167,11 +167,11 @@ class ClusterLoader(Configurable):
                     total_items += len(ret_single.items)
                     for item in ret_single.items:
                         for container in item.spec.template.spec.containers:
-                            yield self.__build_obj(item, container)
+                            yield self.__build_obj(item, container, kind)
 
                 self.debug(f"Found {total_items} {kind} in {self.cluster}")
         except ApiException as e:
-            if kind == "rollout" and e.status in [400, 401, 403, 404]:
+            if kind == "Rollout" and e.status in [400, 401, 403, 404]:
                 if self.__rollouts_available:
                     self.debug(f"Rollout API not available in {self.cluster}")
                 self.__rollouts_available = False
@@ -182,35 +182,35 @@ class ClusterLoader(Configurable):
 
     def _list_deployments(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="deployment",
+            kind="Deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_deployment,
         )
 
     def _list_rollouts(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="rollout",
+            kind="Rollout",
             all_namespaces_request=self.rollout.list_rollout_for_all_namespaces,
             namespaced_request=self.rollout.list_namespaced_rollout,
         )
 
     def _list_all_statefulsets(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="statefulset",
+            kind="StatefulSet",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_stateful_set,
         )
 
     def _list_all_daemon_set(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="daemonset",
+            kind="DaemonSet",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_daemon_set,
         )
 
     def _list_all_jobs(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
-            kind="job",
+            kind="Job",
             all_namespaces_request=self.batch.list_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_job,
         )

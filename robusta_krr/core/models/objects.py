@@ -4,7 +4,7 @@ import pydantic as pd
 
 from robusta_krr.core.models.allocations import ResourceAllocations
 
-KindLiteral = Literal["deployment", "daemonset", "statefulset", "job", "rollout"]
+KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "Rollout"]
 
 
 class PodData(pd.BaseModel):
