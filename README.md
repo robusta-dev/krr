@@ -282,7 +282,7 @@ customPlaybooks:
 - triggers:
   - on_schedule:
       fixed_delay_repeat:
-        repeat: 1 # number of times to run or -1 to run forever
+        repeat: -1 # number of times to run or -1 to run forever
         seconds_delay: 604800 # 1 week
   actions:
   - krr_scan:
