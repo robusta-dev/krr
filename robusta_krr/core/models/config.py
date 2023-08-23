@@ -21,7 +21,7 @@ class Config(pd.BaseSettings):
     selector: Optional[str] = None
 
     # Value settings
-    cpu_min_value: int = pd.Field(100, ge=0)  # in millicores
+    cpu_min_value: int = pd.Field(10, ge=0)  # in millicores
     memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
 
     # Prometheus Settings
