@@ -173,13 +173,13 @@ def load_commands() -> None:
                     10,
                     "--cpu-min",
                     help="Sets the minimum recommended cpu value in millicores.",
-                    rich_help_panel="Strategy Settings",
+                    rich_help_panel="Recommendation Settings",
                 ),
                 memory_min_value: int = typer.Option(
                     100,
                     "--mem-min",
                     help="Sets the minimum recommended memory value in MB.",
-                    rich_help_panel="Strategy Settings",
+                    rich_help_panel="Recommendation Settings",
                 ),
                 max_workers: int = typer.Option(
                     10,
