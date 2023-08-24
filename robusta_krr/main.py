@@ -169,6 +169,18 @@ def load_commands() -> None:
                     help="Adds the token needed to query Coralogix managed prometheus.",
                     rich_help_panel="Prometheus Coralogix Settings",
                 ),
+                cpu_min_value: int = typer.Option(
+                    10,
+                    "--cpu-min",
+                    help="Sets the minimum recommended cpu value in millicores.",
+                    rich_help_panel="Recommendation Settings",
+                ),
+                memory_min_value: int = typer.Option(
+                    100,
+                    "--mem-min",
+                    help="Sets the minimum recommended memory value in MB.",
+                    rich_help_panel="Recommendation Settings",
+                ),
                 max_workers: int = typer.Option(
                     10,
                     "--max-workers",
@@ -209,6 +221,8 @@ def load_commands() -> None:
                         max_workers=max_workers,
                         format=format,
                         verbose=verbose,
+                        cpu_min_value=cpu_min_value,
+                        memory_min_value=memory_min_value,
                         quiet=quiet,
                         log_to_stderr=log_to_stderr,
                         file_output=file_output,

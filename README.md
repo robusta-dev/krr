@@ -191,6 +191,11 @@ If you want to see additional debug logs:
 krr simple -v
 ```
 
+Other helpful flags:
+* `--cpu-min` Sets the minimum recommended cpu value in millicores
+* `--mem-min` Sets the minimum recommended memory value in MB
+* `--history_duration` The duration of the prometheus history data to use (in hours)
+
 More specific information on Strategy Settings can be found using
 
 ```sh
