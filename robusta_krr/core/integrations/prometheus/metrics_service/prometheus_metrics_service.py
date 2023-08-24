@@ -11,6 +11,7 @@ from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
+from robusta_krr.utils.batched import batched
 
 from ..metrics import PrometheusMetric
 from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
@@ -180,7 +181,7 @@ class PrometheusMetricsService(MetricsService):
             pod_owner_kind = object.kind
 
         owners_regex = "|".join(pod_owners)
-        related_pods = await self.query(
+        related_pods_result = await self.query(
             f"""
                 last_over_time(
                     kube_pod_owner{{
@@ -193,29 +194,27 @@ class PrometheusMetricsService(MetricsService):
             """
         )
 
-        if related_pods == []:
+        if related_pods_result == []:
             self.debug(f"No pods found for {object}")
             return
 
-        current_pods = await self.query(
-            f"""
-                present_over_time(
-                    kube_pod_owner{{
-                        owner_name=~"{owners_regex}",
-                        owner_kind="{pod_owner_kind}",
+        related_pods = [pod["metric"]["pod"] for pod in related_pods_result]
+        current_pods_set = set()
+        del related_pods_result
+
+        for pod_group in batched(related_pods, 100):
+            group_regex = "|".join(pod_group)
+            pods_status_result = await self.query(
+                f"""
+                    kube_pod_status_phase{{
+                        phase="Running",
+                        pod=~"{group_regex}",
                         namespace="{object.namespace}"
                         {cluster_label}
-                    }}[1m]
-                )
-            """
-        )
+                    }} == 1
+                """
+            )
+            current_pods_set |= {pod["metric"]["pod"] for pod in pods_status_result}
+            del pods_status_result
 
-        current_pods_set = {pod["metric"]["pod"] for pod in current_pods}
-        del current_pods
-
-        object.pods += set(
-            [
-                PodData(name=pod["metric"]["pod"], deleted=pod["metric"]["pod"] not in current_pods_set)
-                for pod in related_pods
-            ]
-        )
+        object.pods = list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})
