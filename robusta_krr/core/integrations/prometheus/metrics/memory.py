@@ -1,9 +1,15 @@
 from robusta_krr.core.models.objects import K8sObjectData
 
-from .base import BatchedRequestMixin, FilterJobsMixin, QueryMetric, QueryRangeMetric
+from .base import PrometheusMetric, QueryType
 
 
-class MemoryLoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):
+class MemoryLoader(PrometheusMetric):
+    """
+    A metric loader for loading memory usage metrics.
+    """
+
+    query_type: QueryType = QueryType.QueryRange
+
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
@@ -19,7 +25,11 @@ class MemoryLoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):
         """
 
 
-class MaxMemoryLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
+class MaxMemoryLoader(PrometheusMetric):
+    """
+    A metric loader for loading max memory usage metrics.
+    """
+
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
@@ -35,7 +45,11 @@ class MaxMemoryLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
         """
 
 
-class MemoryAmountLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
+class MemoryAmountLoader(PrometheusMetric):
+    """
+    A metric loader for loading memory points count.
+    """
+
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()

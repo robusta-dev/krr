@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from typing import Literal, Optional
 
 import pydantic as pd
 
 from robusta_krr.core.models.allocations import ResourceAllocations
+from robusta_krr.utils.batched import batched
 
 KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "Rollout"]
 
@@ -52,3 +55,25 @@ class K8sObjectData(pd.BaseModel):
     @property
     def pods_count(self) -> int:
         return len(self.pods)
+
+    def batched(self, n: int) -> list[K8sObjectData]:
+        """
+        Batch this object into n objects, splitting the pods into batches of size n.
+        """
+
+        if self.pods_count <= n:
+            return [self]
+
+        return [
+            K8sObjectData(
+                cluster=self.cluster,
+                name=self.name,
+                container=self.container,
+                pods=batch,
+                hpa=self.hpa,
+                namespace=self.namespace,
+                kind=self.kind,
+                allocations=self.allocations,
+            )
+            for batch in batched(self.pods, n)
+        ]
