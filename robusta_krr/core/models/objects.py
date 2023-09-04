@@ -35,7 +35,7 @@ class K8sObjectData(pd.BaseModel):
     pods: list[PodData] = []
     hpa: Optional[HPAData]
     namespace: str
-    kind: str
+    kind: KindLiteral
     allocations: ResourceAllocations
 
     def __str__(self) -> str:
