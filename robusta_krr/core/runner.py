@@ -31,6 +31,10 @@ class Runner(Configurable):
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
 
+        # eks has a lower step limit than other types of prometheus, it will throw an error
+        if config.eks_managed_prom and self._strategy.settings.timeframe_duration < 2:
+            self._strategy.settings.timeframe_duration = 2
+        
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(self.config.max_workers)
 
