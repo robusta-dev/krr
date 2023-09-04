@@ -208,7 +208,7 @@ class Runner(Configurable):
         try:
             # eks has a lower step limit than other types of prometheus, it will throw an error
             step_count = self._strategy.settings.history_duration * 60 / self._strategy.settings.timeframe_duration
-            if self.config.eks_managed_prom and step_count > 10000:
+            if self.config.eks_managed_prom and step_count > 11000:
                 min_step = self._strategy.settings.history_duration * 60 / 10000 
                 self.warning(f"The timeframe duration provided is insufficient and will be overridden with {min_step}. Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}.")
                 self._strategy.settings.timeframe_duration = min_step
