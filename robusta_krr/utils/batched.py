@@ -1,7 +1,6 @@
 import itertools
 from typing import Iterable, TypeVar
 
-
 _T = TypeVar("_T")
 
 

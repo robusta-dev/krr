@@ -10,13 +10,13 @@ from typing import Any, Optional, TypedDict
 
 import numpy as np
 import pydantic as pd
+from prometrix import CustomPrometheusConnect
 
 from robusta_krr.core.abstract.metrics import BaseMetric
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.utils.configurable import Configurable
-from prometrix import CustomPrometheusConnect
 
 
 class PrometheusSeries(TypedDict):

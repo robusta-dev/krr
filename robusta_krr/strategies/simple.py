@@ -12,11 +12,11 @@ from robusta_krr.core.abstract.strategies import (
     StrategySettings,
 )
 from robusta_krr.core.integrations.prometheus.metrics import (
+    CPUAmountLoader,
     MaxMemoryLoader,
+    MemoryAmountLoader,
     PercentileCPULoader,
     PrometheusMetric,
-    CPUAmountLoader,
-    MemoryAmountLoader,
 )
 
 
