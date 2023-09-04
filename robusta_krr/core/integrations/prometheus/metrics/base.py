@@ -176,7 +176,7 @@ class PrometheusMetric(BaseMetric, Configurable):
             results = await asyncio.gather(
                 *[
                     self.load_data(splitted_object, period, step)
-                    for splitted_object in object.batched(self.pods_batch_size)
+                    for splitted_object in object.split_into_batches(self.pods_batch_size)
                 ]
             )
             return self.combine_batches(results)

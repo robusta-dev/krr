@@ -56,7 +56,7 @@ class K8sObjectData(pd.BaseModel):
     def pods_count(self) -> int:
         return len(self.pods)
 
-    def batched(self, n: int) -> list[K8sObjectData]:
+    def split_into_batches(self, n: int) -> list[K8sObjectData]:
         """
         Batch this object into n objects, splitting the pods into batches of size n.
         """
