@@ -10,8 +10,8 @@ from prometrix import PrometheusNotFound, get_custom_prometheus_connect
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.objects import K8sObjectData, PodData
-from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 from robusta_krr.utils.batched import batched
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from ..metrics import PrometheusMetric
 from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
