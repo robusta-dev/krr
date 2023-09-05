@@ -18,6 +18,9 @@ jobs:
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
+      - name: Select main branch
+        run: git checkout main
+
       - name: Update version in pyproject.toml
         run: |
           sed -i "s/version = \".*\"/version = \"$VERSION\"/" pyproject.toml
