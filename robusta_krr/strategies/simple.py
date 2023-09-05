@@ -88,7 +88,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        cpu_usage = self.settings.calculate_cpu_proposal(data)
+        cpu_usage = self.settings.calculate_cpu_proposal(filtered_data)
         return ResourceRecommendation(request=cpu_usage, limit=None)
 
     def __calculate_memory_proposal(
