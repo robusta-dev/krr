@@ -8,7 +8,7 @@ class CPULoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
-            sum(
+            max(
                 rate(
                     container_cpu_usage_seconds_total{{
                         namespace="{object.namespace}",
@@ -16,7 +16,7 @@ class CPULoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):
                         container="{object.container}"
                         {cluster_label}
                     }}[{step}]
-                ) 
+                )
             ) by (container, pod, job)
         """
 
@@ -29,7 +29,7 @@ def PercentileCPULoader(percentile: float) -> type[QueryMetric]:
             return f"""
                 quantile_over_time(
                     {round(percentile / 100, 2)},
-                    sum(
+                    max(
                         rate(
                             container_cpu_usage_seconds_total{{
                                 namespace="{object.namespace}",
@@ -52,7 +52,7 @@ class CPUAmountLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             count_over_time(
-                sum(
+                max(
                     container_cpu_usage_seconds_total{{
                         namespace="{object.namespace}",
                         pod=~"{pods_selector}",

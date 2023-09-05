@@ -8,7 +8,7 @@ class MemoryLoader(QueryRangeMetric, FilterJobsMixin, BatchedRequestMixin):
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
-            sum(
+            max(
                 container_memory_working_set_bytes{{
                     namespace="{object.namespace}",
                     pod=~"{pods_selector}",
@@ -25,7 +25,7 @@ class MaxMemoryLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             max_over_time(
-                sum(
+                max(
                     container_memory_working_set_bytes{{
                         namespace="{object.namespace}",
                         pod=~"{pods_selector}",
@@ -44,7 +44,7 @@ class MemoryAmountLoader(QueryMetric, FilterJobsMixin, BatchedRequestMixin):
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             count_over_time(
-                sum(
+                max(
                     container_memory_working_set_bytes{{
                         namespace="{object.namespace}",
                         pod=~"{pods_selector}",
