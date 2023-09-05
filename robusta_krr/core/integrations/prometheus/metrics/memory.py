@@ -14,7 +14,7 @@ class MemoryLoader(PrometheusMetric):
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
-            sum(
+            max(
                 container_memory_working_set_bytes{{
                     namespace="{object.namespace}",
                     pod=~"{pods_selector}",
@@ -35,12 +35,15 @@ class MaxMemoryLoader(PrometheusMetric):
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             max_over_time(
-                container_memory_working_set_bytes{{
-                    namespace="{object.namespace}",
-                    pod=~"{pods_selector}",
-                    container="{object.container}"
-                    {cluster_label}
-                }}[{duration}:{step}]
+                max(
+                    container_memory_working_set_bytes{{
+                        namespace="{object.namespace}",
+                        pod=~"{pods_selector}",
+                        container="{object.container}"
+                        {cluster_label}
+                    }}
+                ) by (container, pod, job)
+                [{duration}:{step}]
             )
         """
 
@@ -55,11 +58,14 @@ class MemoryAmountLoader(PrometheusMetric):
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             count_over_time(
-                container_memory_working_set_bytes{{
-                    namespace="{object.namespace}",
-                    pod=~"{pods_selector}",
-                    container="{object.container}"
-                    {cluster_label}
-                }}[{duration}:{step}]
+                max(
+                    container_memory_working_set_bytes{{
+                        namespace="{object.namespace}",
+                        pod=~"{pods_selector}",
+                        container="{object.container}"
+                        {cluster_label}
+                    }}
+                ) by (container, pod, job)
+                [{duration}:{step}]
             )
         """
