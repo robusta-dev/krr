@@ -66,9 +66,10 @@ _Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery),
 
 ### Features
 
-- **No Agent Required**: Robusta KRR is a CLI tool that runs on your local machine. It does not require running Pods in your cluster. (But it can optionally be run in-cluster for weekly [Slack reports](#slack-integration).)
-- **Prometheus Integration**: Gather resource usage data using built-in Prometheus queries, with support for custom queries coming soon.
+- **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-integration).)
+- **Prometheus Integration**: Get recommendations based on the data you already have
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
+- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://home.robusta.dev/).
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### Resource Allocation Statistics
@@ -139,7 +140,7 @@ All above examples show running command as `krr ...`, replace it with `python kr
 
 ### Other Configuration Methods
 
-- [View KRR Reports in a Web UI](#robusta-ui-integration)
+- [View KRR Reports in a Web UI](#optional-free-saas-platform)
 - [Get a Weekly Message in Slack with KRR Recommendations](#slack-integration)
 - Setup KRR on [Google Cloud Managed Prometheus
   ](./docs/google-cloud-managed-service-for-prometheus.md)
@@ -204,6 +205,19 @@ krr simple --help
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Optional: Free SaaS Platform
+
+With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
+
+* See why KRR recommends what it does
+* Sort and filter recommendations by namespace, priority, and more
+* Copy a YAML snippet to fix the problems KRR finds
+
+![Robusta UI Screen Shot][ui-screenshot]
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
 ## How it works
 
 ### Metrics Gathering
@@ -223,6 +237,8 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
   ```
 
 [_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
+
+Get a free breakdown of KRR recommendations in the [Robusta SaaS](#optional-free-saas-platform).
 
 ### Algorithm
 
@@ -252,16 +268,6 @@ Find about how KRR tries to find the default prometheus to connect <a href="#pro
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
-
-## Robusta UI integration
-
-If you are using [Robusta SaaS](https://platform.robusta.dev/), then KRR is integrated starting from [v0.10.15](https://github.com/robusta-dev/robusta/releases/tag/0.10.15). You can view all your recommendations (previous ones also), filter and sort them by either cluster, namespace or name.
-
-More features (like seeing graphs, based on which recommendations were made) coming soon. [Tell us what you need the most!](https://github.com/robusta-dev/krr/issues/new)
-
-![Robusta UI Screen Shot][ui-screenshot]
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- ADVANCED USAGE EXAMPLES -->
 
