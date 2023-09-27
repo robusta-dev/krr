@@ -529,4 +529,4 @@ If you have any questions, feel free to contact **support@robusta.dev** or messa
 [linkedin-url]: https://linkedin.com/in/othneildrew
 [product-screenshot]: images/screenshot.jpeg
 [slack-screenshot]: images/krr_slack_example.png
-[ui-screenshot]: images/ui_screenshot.jpeg
+[ui-screenshot]: images/ui_video.gif
