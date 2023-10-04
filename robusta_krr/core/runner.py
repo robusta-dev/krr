@@ -30,7 +30,7 @@ class Runner(Configurable):
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
-        
+
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(self.config.max_workers)
 
@@ -128,6 +128,17 @@ class Runner(Configurable):
         if prometheus_loader is None:
             return {resource: ResourceRecommendation.undefined() for resource in ResourceType}
 
+        object.pods = await prometheus_loader.load_pods(object, self._strategy.settings.history_timedelta)
+        if object.pods == []:
+            # TODO: Fallback to Kubernetes API
+            object.pods = await self._k8s_loader.load_pods(object)
+            if object.pods != []:  # NOTE: Kubernetes API returned pods, but Prometheus did not
+                self.warning(
+                    f"Was not able to load any pods for {object} from Prometheus.\n\t"
+                    "This could mean that Prometheus is missing some required metrics.\n\t"
+                    "Loaded pods from Kubernetes API instead."
+                )
+
         metrics = await prometheus_loader.gather_data(
             object,
             self._strategy,
@@ -209,8 +220,10 @@ class Runner(Configurable):
             # eks has a lower step limit than other types of prometheus, it will throw an error
             step_count = self._strategy.settings.history_duration * 60 / self._strategy.settings.timeframe_duration
             if self.config.eks_managed_prom and step_count > 11000:
-                min_step = self._strategy.settings.history_duration * 60 / 10000 
-                self.warning(f"The timeframe duration provided is insufficient and will be overridden with {min_step}. Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}.")
+                min_step = self._strategy.settings.history_duration * 60 / 10000
+                self.warning(
+                    f"The timeframe duration provided is insufficient and will be overridden with {min_step}. Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}."
+                )
                 self._strategy.settings.timeframe_duration = min_step
 
             result = await self._collect_result()

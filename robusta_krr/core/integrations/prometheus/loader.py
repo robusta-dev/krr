@@ -8,7 +8,7 @@ from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
 from prometrix import MetricsNotFound, PrometheusNotFound
 
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.configurable import Configurable
 
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
@@ -76,6 +76,9 @@ class PrometheusMetricsLoader(Configurable):
 
         return None
 
+    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
+        return await self.loader.load_pods(object, period)
+
     async def gather_data(
         self,
         object: K8sObjectData,
@@ -96,8 +99,6 @@ class PrometheusMetricsLoader(Configurable):
         Returns:
             ResourceHistoryData: The gathered resource history data.
         """
-
-        await self.loader.load_pods(object, period)
 
         return {
             MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, step)

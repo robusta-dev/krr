@@ -13,12 +13,13 @@ from kubernetes.client.models import (
     V1Job,
     V1LabelSelector,
     V1Pod,
+    V1PodList,
     V1StatefulSet,
     V2HorizontalPodAutoscaler,
     V2HorizontalPodAutoscalerList,
 )
 
-from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral
+from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
@@ -79,6 +80,20 @@ class ClusterLoader(Configurable):
                     continue
                 yield object
 
+    async def list_pods(self, object: K8sObjectData) -> list[PodData]:
+        selector = self._build_selector_query(object.api_resource.spec.selector)
+        if selector is None:
+            return []
+
+        loop = asyncio.get_running_loop()
+        ret: V1PodList = await loop.run_in_executor(
+            self.executor,
+            lambda: self.core.list_namespaced_pod(
+                namespace=object.api_resource.metadata.namespace, label_selector=selector
+            ),
+        )
+        return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
+
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
         if expression.operator.lower() == "exists":
@@ -115,6 +130,7 @@ class ClusterLoader(Configurable):
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
             hpa=self.__hpa_list.get((namespace, kind, name)),
+            api_resource=item,
         )
 
     def _should_list_resource(self, resource: str):
@@ -305,6 +321,11 @@ class ClusterLoader(Configurable):
 
 
 class KubernetesLoader(Configurable):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._cluster_loaders: dict[Optional[str], ClusterLoader] = {}
+
     async def list_clusters(self) -> Optional[list[str]]:
         """List all clusters.
 
@@ -363,17 +384,25 @@ class KubernetesLoader(Configurable):
         else:
             _cluster_loaders = [self._try_create_cluster_loader(cluster) for cluster in clusters]
 
-        cluster_loaders = [cl for cl in _cluster_loaders if cl is not None]
-        if cluster_loaders == []:
+        self.cluster_loaders = {cl.cluster: cl for cl in _cluster_loaders if cl is not None}
+        if self.cluster_loaders == {}:
             self.error("Could not load any cluster.")
             return
 
         # https://stackoverflow.com/questions/55299564/join-multiple-async-generators-in-python
         # This will merge all the streams from all the cluster loaders into a single stream
         objects_combined = aiostream.stream.merge(
-            *[cluster_loader.list_scannable_objects() for cluster_loader in cluster_loaders]
+            *[cluster_loader.list_scannable_objects() for cluster_loader in self.cluster_loaders.values()]
         )
 
         async with objects_combined.stream() as streamer:
             async for object in streamer:
                 yield object
+
+    async def load_pods(self, object: K8sObjectData) -> list[PodData]:
+        try:
+            cluster_loader = self.cluster_loaders[object.cluster]
+        except KeyError:
+            raise RuntimeError(f"Cluster loader for cluster {object.cluster} not found") from None
+
+        return await cluster_loader.list_pods(object)

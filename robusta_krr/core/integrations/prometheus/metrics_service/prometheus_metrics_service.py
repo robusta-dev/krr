@@ -146,7 +146,7 @@ class PrometheusMetricsService(MetricsService):
 
         return data
 
-    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> None:
+    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
         """
         List pods related to the object and add them to the object's pods list.
         Args:
@@ -195,8 +195,7 @@ class PrometheusMetricsService(MetricsService):
         )
 
         if related_pods_result == []:
-            self.debug(f"No pods found for {object}")
-            return
+            return []
 
         related_pods = [pod["metric"]["pod"] for pod in related_pods_result]
         current_pods_set = set()
@@ -217,4 +216,4 @@ class PrometheusMetricsService(MetricsService):
             current_pods_set |= {pod["metric"]["pod"] for pod in pods_status_result}
             del pods_status_result
 
-        object.pods = list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})
+        return list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})
