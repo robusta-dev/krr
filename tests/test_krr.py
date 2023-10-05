@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 
 from robusta_krr.main import app, load_commands
 
-runner = CliRunner()
+runner = CliRunner(mix_stderr=False)
 load_commands()
 
 STRATEGY_NAME = "simple"
@@ -30,8 +30,9 @@ def test_run(log_flag: str):
 
 
 @pytest.mark.parametrize("format", ["json", "yaml", "table", "pprint"])
-def test_output_formats(format: str):
-    result = runner.invoke(app, [STRATEGY_NAME, "-q", "-f", format])
+@pytest.mark.parametrize("output", ["--logtostderr", "-q"])
+def test_output_formats(format: str, output: str):
+    result = runner.invoke(app, [STRATEGY_NAME, output, "-f", format])
     try:
         assert result.exit_code == 0, result.exc_info
     except AssertionError as e:

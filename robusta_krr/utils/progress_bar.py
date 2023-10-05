@@ -1,10 +1,9 @@
 from alive_progress import alive_bar
 
-from robusta_krr.core.models.config import Config
-from robusta_krr.utils.configurable import Configurable
+from robusta_krr.core.models.config import settings
 
 
-class ProgressBar(Configurable):
+class ProgressBar:
     """
     Progress bar for displaying progress of gathering recommendations.
 
@@ -12,11 +11,10 @@ class ProgressBar(Configurable):
     Use `progress` method to step the progress bar.
     """
 
-    def __init__(self, config: Config, **kwargs) -> None:
-        super().__init__(config)
-        self.show_bar = self.echo_active
+    def __init__(self, **kwargs) -> None:
+        self.show_bar = not settings.quiet and not settings.log_to_stderr
         if self.show_bar:
-            self.alive_bar = alive_bar(**kwargs)
+            self.alive_bar = alive_bar(**kwargs, enrich_print=False)
 
     def __enter__(self):
         if self.show_bar:

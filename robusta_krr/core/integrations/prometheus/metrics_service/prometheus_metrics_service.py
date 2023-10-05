@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
@@ -8,7 +9,7 @@ from prometheus_api_client import PrometheusApiClientException
 from prometrix import PrometheusNotFound, get_custom_prometheus_connect
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
-from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.batched import batched
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
@@ -16,6 +17,8 @@ from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 from ..metrics import PrometheusMetric
 from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
 from .base_metric_service import MetricsService
+
+logger = logging.getLogger("krr")
 
 
 class PrometheusDiscovery(MetricsServiceDiscovery):
@@ -50,22 +53,21 @@ class PrometheusMetricsService(MetricsService):
 
     def __init__(
         self,
-        config: Config,
         *,
         cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
-        super().__init__(config=config, api_client=api_client, cluster=cluster, executor=executor)
+        super().__init__(api_client=api_client, cluster=cluster, executor=executor)
 
-        self.info(f"Connecting to {self.name} for {self.cluster} cluster")
+        logger.info(f"Connecting to {self.name} for {self.cluster} cluster")
 
-        self.auth_header = self.config.prometheus_auth_header
-        self.ssl_enabled = self.config.prometheus_ssl_enabled
+        self.auth_header = settings.prometheus_auth_header
+        self.ssl_enabled = settings.prometheus_ssl_enabled
 
-        self.prometheus_discovery = self.service_discovery(config=self.config, api_client=self.api_client)
+        self.prometheus_discovery = self.service_discovery(api_client=self.api_client)
 
-        self.url = self.config.prometheus_url
+        self.url = settings.prometheus_url
         self.url = self.url or self.prometheus_discovery.find_metrics_url()
 
         if not self.url:
@@ -74,15 +76,15 @@ class PrometheusMetricsService(MetricsService):
                 "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
             )
 
-        self.info(f"Using {self.name} at {self.url} for cluster {cluster or 'default'}")
+        logger.info(f"Using {self.name} at {self.url} for cluster {cluster or 'default'}")
 
-        headers = self.config.prometheus_other_headers
+        headers = settings.prometheus_other_headers
 
         if self.auth_header:
             headers |= {"Authorization": self.auth_header}
-        elif not self.config.inside_cluster and self.api_client is not None:
+        elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
-        self.prom_config = generate_prometheus_config(config, url=self.url, headers=headers, metrics_service=self)
+        self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
         self.prometheus = get_custom_prometheus_connect(self.prom_config)
 
     def check_connection(self):
@@ -98,10 +100,10 @@ class PrometheusMetricsService(MetricsService):
         return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
 
     def validate_cluster_name(self):
-        if not self.config.prometheus_cluster_label and not self.config.prometheus_label:
+        if not settings.prometheus_cluster_label and not settings.prometheus_label:
             return
 
-        cluster_label = self.config.prometheus_cluster_label
+        cluster_label = settings.prometheus_cluster_label
         cluster_names = self.get_cluster_names()
 
         if cluster_names is None or len(cluster_names) <= 1:
@@ -119,9 +121,9 @@ class PrometheusMetricsService(MetricsService):
 
     def get_cluster_names(self) -> Optional[List[str]]:
         try:
-            return self.prometheus.get_label_values(label_name=self.config.prometheus_label)
+            return self.prometheus.get_label_values(label_name=settings.prometheus_label)
         except PrometheusApiClientException:
-            self.error("Labels api not present on prometheus client")
+            logger.error("Labels api not present on prometheus client")
             return []
 
     async def gather_data(
@@ -134,13 +136,13 @@ class PrometheusMetricsService(MetricsService):
         """
         ResourceHistoryData: The gathered resource history data.
         """
-        self.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
+        logger.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
 
-        metric_loader = LoaderClass(self.config, self.prometheus, self.name, self.executor)
+        metric_loader = LoaderClass(self.prometheus, self.name, self.executor)
         data = await metric_loader.load_data(object, period, step)
 
         if len(data) == 0:
-            self.warning(
+            logger.warning(
                 f"{metric_loader.service_name} returned no {metric_loader.__class__.__name__} metrics for {object}"
             )
 
@@ -154,7 +156,7 @@ class PrometheusMetricsService(MetricsService):
             period (datetime.timedelta): The time period for which to gather data.
         """
 
-        self.debug(f"Adding historic pods for {object}")
+        logger.debug(f"Adding historic pods for {object}")
 
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"

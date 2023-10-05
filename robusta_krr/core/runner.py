@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import math
 import os
 import sys
@@ -12,32 +13,33 @@ from slack_sdk import WebClient
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
-from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
-from robusta_krr.utils.configurable import Configurable
 from robusta_krr.utils.logo import ASCII_LOGO
+from robusta_krr.utils.print import print
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version
 
+logger = logging.getLogger("krr")
 
-class Runner(Configurable):
+
+class Runner:
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
 
-    def __init__(self, config: Config) -> None:
-        super().__init__(config)
-        self._k8s_loader = KubernetesLoader(self.config)
+    def __init__(self) -> None:
+        self._k8s_loader = KubernetesLoader()
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
-        self._strategy = self.config.create_strategy()
+        self._strategy = settings.create_strategy()
 
         # This executor will be running calculations for recommendations
-        self._executor = ThreadPoolExecutor(self.config.max_workers)
+        self._executor = ThreadPoolExecutor(settings.max_workers)
 
     def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[PrometheusMetricsLoader]:
         if cluster not in self._metrics_service_loaders:
             try:
-                self._metrics_service_loaders[cluster] = PrometheusMetricsLoader(self.config, cluster=cluster)
+                self._metrics_service_loaders[cluster] = PrometheusMetricsLoader(cluster=cluster)
             except Exception as e:
                 self._metrics_service_loaders[cluster] = e
 
@@ -45,7 +47,7 @@ class Runner(Configurable):
         if isinstance(result, self.EXPECTED_EXCEPTIONS):
             if result not in self._metrics_service_loaders_error_logged:
                 self._metrics_service_loaders_error_logged.add(result)
-                self.error(str(result))
+                logger.error(str(result))
             return None
         elif isinstance(result, Exception):
             raise result
@@ -53,42 +55,46 @@ class Runner(Configurable):
         return result
 
     def _greet(self) -> None:
-        self.echo(ASCII_LOGO, no_prefix=True)
-        self.echo(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}", no_prefix=True)
-        self.echo(f"Using strategy: {self._strategy}", no_prefix=True)
-        self.echo(f"Using formatter: {self.config.format}", no_prefix=True)
-        self.echo(no_prefix=True)
+        if settings.quiet:
+            return
+
+        print(ASCII_LOGO)
+        print(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
+        print(f"Using strategy: {self._strategy}")
+        print(f"Using formatter: {settings.format}")
+        print("")
 
     def _process_result(self, result: Result) -> None:
-        Formatter = self.config.Formatter
+        Formatter = settings.Formatter
         formatted = result.format(Formatter)
-        self.echo("\n", no_prefix=True)
-        self.print_result(formatted, rich=getattr(Formatter, "__rich_console__", False))
-        if (self.config.file_output) or (self.config.slack_output):
-            if self.config.file_output:
-                file_name = self.config.file_output
-            elif self.config.slack_output:
-                file_name = self.config.slack_output
+        rich = getattr(Formatter, "__rich_console__", False)
+
+        print(formatted, rich=rich, force=True)
+        if settings.file_output or settings.slack_output:
+            if settings.file_output:
+                file_name = settings.file_output
+            elif settings.slack_output:
+                file_name = settings.slack_output
             with open(file_name, "w") as target_file:
                 sys.stdout = target_file
-                self.print_result(formatted, rich=getattr(Formatter, "__rich_console__", False))
+                print(formatted, rich=rich, force=True)
                 sys.stdout = sys.stdout
-            if self.config.slack_output:
+            if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)
                 client.files_upload(
-                    channels=f"#{self.config.slack_output}",
+                    channels=f"#{settings.slack_output}",
                     title="KRR Report",
                     file=f"./{file_name}",
-                    initial_comment=f'Kubernetes Resource Report for {(" ".join(self.config.namespaces))}',
+                    initial_comment=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}',
                 )
                 os.remove(file_name)
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
-            return 1 / 1000 * self.config.cpu_min_value
+            return 1 / 1000 * settings.cpu_min_value
         elif resource == ResourceType.Memory:
-            return 1024**2 * self.config.memory_min_value
+            return 1024**2 * settings.memory_min_value
         else:
             return 0
 
@@ -130,10 +136,12 @@ class Runner(Configurable):
 
         object.pods = await prometheus_loader.load_pods(object, self._strategy.settings.history_timedelta)
         if object.pods == []:
-            # TODO: Fallback to Kubernetes API
+            # Fallback to Kubernetes API
             object.pods = await self._k8s_loader.load_pods(object)
-            if object.pods != []:  # NOTE: Kubernetes API returned pods, but Prometheus did not
-                self.warning(
+
+            # NOTE: Kubernetes API returned pods, but Prometheus did not
+            if object.pods != []:
+                logger.warning(
                     f"Was not able to load any pods for {object} from Prometheus.\n\t"
                     "This could mean that Prometheus is missing some required metrics.\n\t"
                     "Loaded pods from Kubernetes API instead."
@@ -146,7 +154,7 @@ class Runner(Configurable):
             step=self._strategy.settings.timeframe_timedelta,
         )
 
-        self.debug(f"Calculating recommendations for {object} with {len(metrics)} metrics")
+        logger.debug(f"Calculating recommendations for {object} with {len(metrics)} metrics")
 
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
@@ -170,16 +178,16 @@ class Runner(Configurable):
 
     async def _collect_result(self) -> Result:
         clusters = await self._k8s_loader.list_clusters()
-        if clusters and len(clusters) > 1 and self.config.prometheus_url:
+        if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
             # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
             raise ClusterNotSpecifiedException(
                 f"Cannot scan multiple clusters for this prometheus, Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
             )
 
-        self.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
+        logger.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
 
-        with ProgressBar(self.config, title="Calculating Recommendation") as self.__progressbar:
+        with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             scans_tasks = [
                 asyncio.create_task(self._gather_object_allocations(k8s_object))
                 async for k8s_object in self._k8s_loader.list_scannable_objects(clusters)
@@ -188,10 +196,12 @@ class Runner(Configurable):
             scans = await asyncio.gather(*scans_tasks)
 
         if len(scans) == 0:
-            self.warning("Current filters resulted in no objects available to scan.")
-            self.warning("Try to change the filters or check if there is anything available.")
-            if self.config.namespaces == "*":
-                self.warning("Note that you are using the '*' namespace filter, which by default excludes kube-system.")
+            logger.warning("Current filters resulted in no objects available to scan.")
+            logger.warning("Try to change the filters or check if there is anything available.")
+            if settings.namespaces == "*":
+                logger.warning(
+                    "Note that you are using the '*' namespace filter, which by default excludes kube-system."
+                )
             return Result(
                 scans=[],
                 strategy=StrategyData(name=str(self._strategy).lower(), settings=self._strategy.settings.dict()),
@@ -210,25 +220,26 @@ class Runner(Configurable):
         self._greet()
 
         try:
-            self.config.load_kubeconfig()
+            settings.load_kubeconfig()
         except Exception as e:
-            self.error(f"Could not load kubernetes configuration: {e}")
-            self.error("Try to explicitly set --context and/or --kubeconfig flags.")
+            logger.error(f"Could not load kubernetes configuration: {e}")
+            logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
             return
 
         try:
             # eks has a lower step limit than other types of prometheus, it will throw an error
             step_count = self._strategy.settings.history_duration * 60 / self._strategy.settings.timeframe_duration
-            if self.config.eks_managed_prom and step_count > 11000:
+            if settings.eks_managed_prom and step_count > 11000:
                 min_step = self._strategy.settings.history_duration * 60 / 10000
-                self.warning(
-                    f"The timeframe duration provided is insufficient and will be overridden with {min_step}. Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}."
+                logger.warning(
+                    f"The timeframe duration provided is insufficient and will be overridden with {min_step}. "
+                    f"Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}."
                 )
                 self._strategy.settings.timeframe_duration = min_step
 
             result = await self._collect_result()
             self._process_result(result)
         except ClusterNotSpecifiedException as e:
-            self.error(e)
+            logger.error(e)
         except Exception:
-            self.console.print_exception(extra_lines=1, max_frames=10)
+            logger.exception("An unexpected error occurred")

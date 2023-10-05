@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 import asyncio
-import textwrap
+import inspect
+import logging
 from datetime import datetime
-from typing import List, Literal, Optional, Union
+from typing import List, Optional
 from uuid import UUID
 
 import typer
 import urllib3
 from pydantic import ValidationError  # noqa: F401
-from rich import print  # noqa: F401
 
 from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
-from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+from robusta_krr.core.abstract.strategies import BaseStrategy
 from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
@@ -23,35 +23,36 @@ app = typer.Typer(pretty_exceptions_show_locals=False, pretty_exceptions_short=T
 # NOTE: Disable insecure request warnings, as it might be expected to use self-signed certificates inside the cluster
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+logger = logging.getLogger("krr")
+
 
 @app.command(rich_help_panel="Utils")
 def version() -> None:
     typer.echo(get_version())
 
 
-def __process_type(_T: type) -> str:
+def __process_type(_T: type) -> type:
     """Process type to a python literal"""
     if _T in (int, float, str, bool, datetime, UUID):
-        return _T.__name__
+        return _T
     elif _T is Optional:
-        return f"Optional[{__process_type(_T.__args__[0])}]"  # type: ignore
+        return Optional[{__process_type(_T.__args__[0])}]  # type: ignore
     else:
-        return "str"  # It the type is unknown, just use str and let pydantic handle it
+        return str  # It the type is unknown, just use str and let pydantic handle it
 
 
 def load_commands() -> None:
     for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ignore
-        FUNC_TEMPLATE = textwrap.dedent(
-            """
-            @app.command(rich_help_panel="Strategies")
-            def {func_name}(
+        # NOTE: This wrapper here is needed to avoid the strategy_name being overwritten in the loop
+        def strategy_wrapper(_strategy_name: str = strategy_name):
+            def run_strategy(
                 ctx: typer.Context,
                 kubeconfig: Optional[str] = typer.Option(
                     None,
                     "--kubeconfig",
                     "-k",
                     help="Path to kubeconfig file. If not provided, will attempt to find it.",
-                    rich_help_panel="Kubernetes Settings"
+                    rich_help_panel="Kubernetes Settings",
                 ),
                 clusters: List[str] = typer.Option(
                     None,
@@ -59,34 +60,34 @@ def load_commands() -> None:
                     "--cluster",
                     "-c",
                     help="List of clusters to run on. By default, will run on the current cluster. Use --all-clusters to run on all clusters.",
-                    rich_help_panel="Kubernetes Settings"
+                    rich_help_panel="Kubernetes Settings",
                 ),
                 all_clusters: bool = typer.Option(
                     False,
                     "--all-clusters",
                     help="Run on all clusters. Overrides --context.",
-                    rich_help_panel="Kubernetes Settings"
+                    rich_help_panel="Kubernetes Settings",
                 ),
                 namespaces: List[str] = typer.Option(
                     None,
                     "--namespace",
                     "-n",
                     help="List of namespaces to run on. By default, will run on all namespaces.",
-                    rich_help_panel="Kubernetes Settings"
+                    rich_help_panel="Kubernetes Settings",
                 ),
                 resources: List[str] = typer.Option(
                     None,
                     "--resource",
                     "-r",
                     help="List of resources to run on (Deployment, StatefullSet, DaemonSet, Job, Rollout). By default, will run on all resources. Case insensitive.",
-                    rich_help_panel="Kubernetes Settings"
+                    rich_help_panel="Kubernetes Settings",
                 ),
                 selector: Optional[str] = typer.Option(
                     None,
                     "--selector",
                     "-s",
                     help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -s key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.",
-                    rich_help_panel="Kubernetes Settings"
+                    rich_help_panel="Kubernetes Settings",
                 ),
                 prometheus_url: Optional[str] = typer.Option(
                     None,
@@ -188,15 +189,34 @@ def load_commands() -> None:
                     help="Max workers to use for async requests.",
                     rich_help_panel="Threading Settings",
                 ),
-                format: str = typer.Option("table", "--formatter", "-f", help="Output formatter ({formatters})", rich_help_panel="Logging Settings"),
-                verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"),
-                quiet: bool = typer.Option(False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"),
-                log_to_stderr: bool = typer.Option(False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"),
-                file_output: Optional[str] = typer.Option(None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"),
-                slack_output: Optional[str] = typer.Option(None, "--slackoutput", help="Send to output to a slack channel, must have SLACK_BOT_TOKEN", rich_help_panel="Output Settings"),
-                {strategy_settings},
+                format: str = typer.Option(
+                    "table",
+                    "--formatter",
+                    "-f",
+                    help=f"Output formatter ({', '.join(formatters.list_available())})",
+                    rich_help_panel="Logging Settings",
+                ),
+                verbose: bool = typer.Option(
+                    False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
+                ),
+                quiet: bool = typer.Option(
+                    False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"
+                ),
+                log_to_stderr: bool = typer.Option(
+                    False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"
+                ),
+                file_output: Optional[str] = typer.Option(
+                    None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"
+                ),
+                slack_output: Optional[str] = typer.Option(
+                    None,
+                    "--slackoutput",
+                    help="Send to output to a slack channel, must have SLACK_BOT_TOKEN",
+                    rich_help_panel="Output Settings",
+                ),
+                **strategy_args,
             ) -> None:
-                '''Run KRR using the `{func_name}` strategy'''
+                f"""Run KRR using the `{_strategy_name}` strategy"""
 
                 try:
                     config = Config(
@@ -227,47 +247,39 @@ def load_commands() -> None:
                         log_to_stderr=log_to_stderr,
                         file_output=file_output,
                         slack_output=slack_output,
-                        strategy="{func_name}",
-                        other_args={strategy_args},
+                        strategy=_strategy_name,
+                        other_args=strategy_args,
                     )
-                except ValidationError as e:
-                    print(str(e))
+                    Config.set_config(config)
+                except ValidationError:
+                    logger.exception("Error occured while parsing arguments")
                 else:
-                    runner = Runner(config)
+                    runner = Runner()
                     asyncio.run(runner.run())
-            """
-        )
 
-        exec(
-            FUNC_TEMPLATE.format(
-                func_name=strategy_name,
-                strategy_name=strategy_type.__name__,
-                strategy_settings=",\n".join(
-                    f'{field_name}: {__process_type(field_meta.type_)} = typer.Option({field_meta.default!r}, "--{field_name}", help="{field_meta.field_info.description}", rich_help_panel="Strategy Settings")'
+            run_strategy.__name__ = strategy_name
+            signature = inspect.signature(run_strategy)
+            run_strategy.__signature__ = signature.replace(  # type: ignore
+                parameters=list(signature.parameters.values())[:-1]
+                + [
+                    inspect.Parameter(
+                        name=field_name,
+                        kind=inspect.Parameter.KEYWORD_ONLY,
+                        default=typer.Option(
+                            field_meta.default,
+                            f"--{field_name}",
+                            help=f"{field_meta.field_info.description}",
+                            rich_help_panel="Strategy Settings",
+                        ),
+                        annotation=__process_type(field_meta.type_),
+                    )
                     for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
-                ),
-                strategy_args="{"
-                + ",\n".join(
-                    f"'{field_name}': {field_name}" for field_name in strategy_type.get_settings_type().__fields__
-                )
-                + "}",
-                formatters=", ".join(formatters.list_available()),
-            ),
-            globals()
-            | {strategy.__name__: strategy for strategy in AnyStrategy.get_all().values()}  # Defined strategies
-            | {
-                "Runner": Runner,
-                "Config": Config,
-                "List": List,
-                "Optional": Optional,
-                "Union": Union,
-                "Literal": Literal,
-                "asyncio": asyncio,
-                "typer": typer,
-                # Required imports, here to make the linter happy (it doesn't know that exec will use them)
-            },
-            locals(),
-        )
+                ]
+            )
+
+            app.command(rich_help_panel="Strategies")(run_strategy)
+
+        strategy_wrapper()
 
 
 def run() -> None:

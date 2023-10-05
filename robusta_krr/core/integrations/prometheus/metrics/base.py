@@ -14,9 +14,8 @@ from prometrix import CustomPrometheusConnect
 
 from robusta_krr.core.abstract.metrics import BaseMetric
 from robusta_krr.core.abstract.strategies import PodsTimeData
-from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.utils.configurable import Configurable
 
 
 class PrometheusSeries(TypedDict):
@@ -37,7 +36,7 @@ class PrometheusMetricData(pd.BaseModel):
     type: QueryType
 
 
-class PrometheusMetric(BaseMetric, Configurable):
+class PrometheusMetric(BaseMetric):
     """
     Base class for all metric loaders.
 
@@ -63,12 +62,10 @@ class PrometheusMetric(BaseMetric, Configurable):
 
     def __init__(
         self,
-        config: Config,
         prometheus: CustomPrometheusConnect,
         service_name: str,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
-        super().__init__(config)
         self.prometheus = prometheus
         self.service_name = service_name
 
@@ -84,9 +81,9 @@ class PrometheusMetric(BaseMetric, Configurable):
         Returns:
         str: a promql safe label string for querying the cluster.
         """
-        if self.config.prometheus_cluster_label is None:
+        if settings.prometheus_cluster_label is None:
             return ""
-        return f', {self.config.prometheus_label}="{self.config.prometheus_cluster_label}"'
+        return f', {settings.prometheus_label}="{settings.prometheus_cluster_label}"'
 
     @abc.abstractmethod
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
@@ -237,7 +234,7 @@ class PrometheusMetric(BaseMetric, Configurable):
             if len(relevant_kubelet_metric) == 1:
                 return_list.append(relevant_kubelet_metric[0])
                 continue
-            sorted_relevant_series = sorted(relevant_series, key=lambda s: s["metric"].get("job"), reverse=False)
+            sorted_relevant_series = sorted(relevant_series, key=lambda s: s["metric"].get("job", ""), reverse=False)
             return_list.append(sorted_relevant_series[0])
         return return_list
 

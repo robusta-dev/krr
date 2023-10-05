@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 import pydantic as pd
 
@@ -38,7 +38,7 @@ class K8sObjectData(pd.BaseModel):
     kind: KindLiteral
     allocations: ResourceAllocations
 
-    api_resource: Any
+    _api_resource = pd.PrivateAttr(None)
 
     def __str__(self) -> str:
         return f"{self.kind} {self.namespace}/{self.name}/{self.container}"

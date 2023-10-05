@@ -83,6 +83,18 @@ def mock_prometheus_loader():
 
 
 @pytest.fixture(autouse=True, scope="session")
+def mock_prometheus_load_pods():
+    with patch(
+        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.load_pods",
+        new=AsyncMock(
+            return_value=TEST_OBJECT.pods,
+        ),
+    ) as mock_prometheus_loader:
+        mock_prometheus_loader
+        yield
+
+
+@pytest.fixture(autouse=True, scope="session")
 def mock_prometheus_init():
     with patch("robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.__init__", return_value=None):
         yield
