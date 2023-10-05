@@ -141,6 +141,7 @@ class Runner:
 
             # NOTE: Kubernetes API returned pods, but Prometheus did not
             if object.pods != []:
+                object.add_warning("NoPrometheusPods")
                 logger.warning(
                     f"Was not able to load any pods for {object} from Prometheus.\n\t"
                     "This could mean that Prometheus is missing some required metrics.\n\t"
@@ -154,12 +155,12 @@ class Runner:
             step=self._strategy.settings.timeframe_timedelta,
         )
 
-        logger.debug(f"Calculating recommendations for {object} with {len(metrics)} metrics")
-
         # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
         # But keep in mind that numpy calcluations will not block the GIL
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(self._executor, self._strategy.run, metrics, object)
+
+        logger.info(f"Calculated recommendations for {object} (using {len(metrics)} metrics)")
         return self._format_result(result)
 
     async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> ResourceScan:

@@ -27,6 +27,13 @@ class HPAData(pd.BaseModel):
     target_memory_utilization_percentage: Optional[float]
 
 
+PodWarning = Literal[
+    "NoPrometheusPods",
+    "NoPrometheusCPUMetrics",
+    "NoPrometheusMemoryMetrics",
+]
+
+
 class K8sObjectData(pd.BaseModel):
     # NOTE: Here None means that we are running inside the cluster
     cluster: Optional[str]
@@ -37,6 +44,7 @@ class K8sObjectData(pd.BaseModel):
     namespace: str
     kind: KindLiteral
     allocations: ResourceAllocations
+    warnings: set[PodWarning] = set()
 
     _api_resource = pd.PrivateAttr(None)
 
@@ -45,6 +53,9 @@ class K8sObjectData(pd.BaseModel):
 
     def __hash__(self) -> int:
         return hash(str(self))
+
+    def add_warning(self, warning: PodWarning) -> None:
+        self.warnings.add(warning)
 
     @property
     def current_pods_count(self) -> int:

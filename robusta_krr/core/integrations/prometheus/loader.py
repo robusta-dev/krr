@@ -70,7 +70,11 @@ class PrometheusMetricsLoader:
         return None
 
     async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
-        return await self.loader.load_pods(object, period)
+        try:
+            return await self.loader.load_pods(object, period)
+        except Exception as e:
+            logger.exception(f"Failed to load pods for {object}: {e}")
+            return []
 
     async def gather_data(
         self,

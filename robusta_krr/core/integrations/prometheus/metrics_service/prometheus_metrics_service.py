@@ -142,6 +142,11 @@ class PrometheusMetricsService(MetricsService):
         data = await metric_loader.load_data(object, period, step)
 
         if len(data) == 0:
+            if "CPU" in LoaderClass.__name__:
+                object.add_warning("NoPrometheusCPUMetrics")
+            elif "Memory" in LoaderClass.__name__:
+                object.add_warning("NoPrometheusMemoryMetrics")
+
             logger.warning(
                 f"{metric_loader.service_name} returned no {metric_loader.__class__.__name__} metrics for {object}"
             )
