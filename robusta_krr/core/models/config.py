@@ -138,7 +138,7 @@ class Config(pd.BaseSettings):
 
 # NOTE: This class is just a proxy for _config.
 # Import settings from this module and use it like it is just a config object.
-class _Settings(Config):
+class _Settings(Config):  # Config here is used for type checking
     def __init__(self) -> None:
         pass
 

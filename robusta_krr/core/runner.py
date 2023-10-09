@@ -145,7 +145,8 @@ class Runner:
                 logger.warning(
                     f"Was not able to load any pods for {object} from Prometheus.\n\t"
                     "This could mean that Prometheus is missing some required metrics.\n\t"
-                    "Loaded pods from Kubernetes API instead."
+                    "Loaded pods from Kubernetes API instead.\n\t"
+                    "See more info at https://github.com/robusta-dev/krr#requirements "
                 )
 
         metrics = await prometheus_loader.gather_data(
