@@ -14,7 +14,7 @@ class ProgressBar(Configurable):
 
     def __init__(self, config: Config, **kwargs) -> None:
         super().__init__(config)
-        self.show_bar = self.echo_active
+        self.show_bar = self.echo_active and False
         if self.show_bar:
             self.alive_bar = alive_bar(**kwargs)
 
