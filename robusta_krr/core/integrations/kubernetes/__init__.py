@@ -22,6 +22,7 @@ from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.configurable import Configurable
 
+from . import config_patch as _
 from .rollout import RolloutAppsV1Api
 
 AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
