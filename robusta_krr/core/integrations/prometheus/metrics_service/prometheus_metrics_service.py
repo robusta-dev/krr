@@ -37,6 +37,7 @@ class PrometheusDiscovery(MetricsServiceDiscovery):
                 "app=prometheus-msteams",
                 "app=rancher-monitoring-prometheus",
                 "app=prometheus-prometheus",
+                "platform.monitoring.app=prometheus"
             ]
         )
 
