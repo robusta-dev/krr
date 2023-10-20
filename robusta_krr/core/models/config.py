@@ -1,13 +1,20 @@
+from __future__ import annotations
+
+import logging
+import sys
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
 from rich.console import Console
+from rich.logging import RichHandler
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 from robusta_krr.core.models.objects import KindLiteral
+
+logger = logging.getLogger("krr")
 
 
 class Config(pd.BaseSettings):
@@ -113,3 +120,34 @@ class Config(pd.BaseSettings):
             self.inside_cluster = False
         else:
             self.inside_cluster = True
+
+    @staticmethod
+    def set_config(config: Config) -> None:
+        global _config
+
+        _config = config
+        logging.basicConfig(
+            level="NOTSET",
+            format="%(message)s",
+            datefmt="[%X]",
+            handlers=[RichHandler(console=Console(file=sys.stderr if settings.log_to_stderr else sys.stdout))],
+        )
+        logging.getLogger("").setLevel(logging.CRITICAL)
+        logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
+
+
+# NOTE: This class is just a proxy for _config.
+# Import settings from this module and use it like it is just a config object.
+class _Settings(Config):  # Config here is used for type checking
+    def __init__(self) -> None:
+        pass
+
+    def __getattr__(self, name: str):
+        if _config is None:
+            raise AttributeError("Config is not set")
+
+        return getattr(_config, name)
+
+
+_config: Optional[Config] = None
+settings = _Settings()

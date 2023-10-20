@@ -87,6 +87,20 @@ Read more about [how KRR works](#how-it-works) and [KRR vs Kubernetes VPA](#diff
 
 ## Installation
 
+### Requirements
+
+KRR requires you to have Prometheus.
+
+Additionally to that, [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) needs to be running on your cluster, as KRR is dependant on those metrics:
+
+- `container_cpu_usage_seconds_total`
+- `container_memory_working_set_bytes`
+- `kube_replicaset_owner`
+- `kube_pod_owner`
+- `kube_pod_status_phase`
+
+_Note: If one of last three metrics is absent KRR will still work, but it will only consider currently-running pods when calculating recommendations. Historic pods that no longer exist in the cluster will not be taken into consideration._
+
 ### With brew (MacOS/Linux):
 
 1. Add our tap:
@@ -193,9 +207,10 @@ krr simple -v
 ```
 
 Other helpful flags:
-* `--cpu-min` Sets the minimum recommended cpu value in millicores
-* `--mem-min` Sets the minimum recommended memory value in MB
-* `--history_duration` The duration of the prometheus history data to use (in hours)
+
+- `--cpu-min` Sets the minimum recommended cpu value in millicores
+- `--mem-min` Sets the minimum recommended memory value in MB
+- `--history_duration` The duration of the prometheus history data to use (in hours)
 
 More specific information on Strategy Settings can be found using
 
@@ -209,14 +224,13 @@ krr simple --help
 
 With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
 
-* See why KRR recommends what it does
-* Sort and filter recommendations by namespace, priority, and more
-* Copy a YAML snippet to fix the problems KRR finds
+- See why KRR recommends what it does
+- Sort and filter recommendations by namespace, priority, and more
+- Copy a YAML snippet to fix the problems KRR finds
 
 ![Robusta UI Screen Shot][ui-screenshot]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 ## How it works
 
@@ -431,9 +445,10 @@ python krr.py simple -p "https://prom-api.coralogix..." --coralogix_token
 
 ## Grafana Cloud managed Prometheus
 
-For Grafana Cloud managed Prometheus you need to specify prometheus link, prometheus user, and an access token of your Grafana Cloud stack. The Prometheus link and user for the stack can be found on the Grafana Cloud Portal. An access token with a `metrics:read` scope can also be created using Access Policies on the same portal. 
+For Grafana Cloud managed Prometheus you need to specify prometheus link, prometheus user, and an access token of your Grafana Cloud stack. The Prometheus link and user for the stack can be found on the Grafana Cloud Portal. An access token with a `metrics:read` scope can also be created using Access Policies on the same portal.
 
 Next, run the following command, after setting the values of PROM_URL, PROM_USER, and PROM_TOKEN variables with your Grafana Cloud stack's prometheus link, prometheus user, and access token.
+
 ```sh
 python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:${PROM_TOKEN}" --prometheus-ssl-enabled
 ```
