@@ -89,9 +89,9 @@ Read more about [how KRR works](#how-it-works) and [KRR vs Kubernetes VPA](#diff
 
 ### Requirements
 
-KRR requires you to have Prometheus, running either on your cluster or centralized.
+KRR requires you to have Prometheus.
 
-Additionally to that, [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) needs to be running on your cluster, as KRR is dependant on next metrics:
+Additionally to that, [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) needs to be running on your cluster, as KRR is dependant on those metrics:
 
 - `container_cpu_usage_seconds_total`
 - `container_memory_working_set_bytes`
@@ -99,7 +99,7 @@ Additionally to that, [kube-state-metrics](https://github.com/kubernetes/kube-st
 - `kube_pod_owner`
 - `kube_pod_status_phase`
 
-_Note: If one of last three metrics is absent KRR will still work, but will result in potentially worse results and raise a warning_
+_Note: If one of last three metrics is absent KRR will still work, but it will only consider currently-running pods when calculating recommendations. Historic pods that no longer exist in the cluster will not be taken into consideration._
 
 ### With brew (MacOS/Linux):
 
