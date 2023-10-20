@@ -30,7 +30,7 @@ class Runner(Configurable):
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = self.config.create_strategy()
-        
+
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(self.config.max_workers)
 
@@ -126,7 +126,7 @@ class Runner(Configurable):
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
-            return {resource: ResourceRecommendation.undefined() for resource in ResourceType}
+            return {resource: ResourceRecommendation.undefined("Prometheus not found") for resource in ResourceType}
 
         metrics = await prometheus_loader.gather_data(
             object,
@@ -209,8 +209,10 @@ class Runner(Configurable):
             # eks has a lower step limit than other types of prometheus, it will throw an error
             step_count = self._strategy.settings.history_duration * 60 / self._strategy.settings.timeframe_duration
             if self.config.eks_managed_prom and step_count > 11000:
-                min_step = self._strategy.settings.history_duration * 60 / 10000 
-                self.warning(f"The timeframe duration provided is insufficient and will be overridden with {min_step}. Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}.")
+                min_step = self._strategy.settings.history_duration * 60 / 10000
+                self.warning(
+                    f"The timeframe duration provided is insufficient and will be overridden with {min_step}. Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}."
+                )
                 self._strategy.settings.timeframe_duration = min_step
 
             result = await self._collect_result()
