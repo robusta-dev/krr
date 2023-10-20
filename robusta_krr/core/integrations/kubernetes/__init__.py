@@ -24,6 +24,7 @@ from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 
+from . import config_patch as _
 from .rollout import RolloutAppsV1Api
 
 logger = logging.getLogger("krr")

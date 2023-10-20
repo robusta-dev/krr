@@ -132,7 +132,7 @@ class Runner:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
-            return {resource: ResourceRecommendation.undefined() for resource in ResourceType}
+            return {resource: ResourceRecommendation.undefined("Prometheus not found") for resource in ResourceType}
 
         object.pods = await prometheus_loader.load_pods(object, self._strategy.settings.history_timedelta)
         if object.pods == []:
