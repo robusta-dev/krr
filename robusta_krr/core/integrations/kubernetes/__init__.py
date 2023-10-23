@@ -124,7 +124,7 @@ class ClusterLoader:
         namespace = item.metadata.namespace
         kind = kind or item.__class__.__name__[2:]
 
-        return K8sObjectData(
+        obj = K8sObjectData(
             cluster=self.cluster,
             namespace=namespace,
             name=name,
@@ -132,8 +132,9 @@ class ClusterLoader:
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
             hpa=self.__hpa_list.get((namespace, kind, name)),
-            api_resource=item,
         )
+        obj._api_resource = item
+        return obj
 
     def _should_list_resource(self, resource: str):
         if settings.resources == "*":
