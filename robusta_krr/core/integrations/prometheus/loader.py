@@ -15,6 +15,7 @@ from robusta_krr.core.models.objects import K8sObjectData, PodData
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+from .metrics_service.mimir_metrics_service import MimirMetricsService
 
 if TYPE_CHECKING:
     from robusta_krr.core.abstract.strategies import BaseStrategy, MetricsPodData
@@ -25,6 +26,7 @@ METRICS_SERVICES = {
     "Prometheus": PrometheusMetricsService,
     "Victoria Metrics": VictoriaMetricsService,
     "Thanos": ThanosMetricsService,
+    "Mimir Metrics": MimirMetricsService,
 }
 
 

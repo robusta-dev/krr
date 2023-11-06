@@ -79,6 +79,10 @@ class PrometheusMetricsService(MetricsService):
         logger.info(f"Using {self.name} at {self.url} for cluster {cluster or 'default'}")
 
         headers = settings.prometheus_other_headers
+        # FIXME: not the right place, Mimir specific
+        headers.update(
+            {"X-Scope-OrgID": "anonymous"}
+        )
 
         if self.auth_header:
             headers |= {"Authorization": self.auth_header}
