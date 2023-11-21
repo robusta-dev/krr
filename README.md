@@ -62,7 +62,7 @@
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
-_Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [EKS](#eks-managed-prometheus), [Azure](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
+_Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
 
 ### Features
 
@@ -409,9 +409,9 @@ python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-hea
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## EKS managed Prometheus
+## Amazon Managed Prometheus
 
-For EKS managed Prometheus you need to add your prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials
+For Amazon Managed Prometheus you need to add your prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials
 
 ```sh
 python krr.py simple -p "https://aps-workspaces.REGION.amazonaws.com/workspaces/..." --eks-managed-prom
