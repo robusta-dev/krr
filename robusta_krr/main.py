@@ -205,6 +205,9 @@ def load_commands() -> None:
                 log_to_stderr: bool = typer.Option(
                     False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"
                 ),
+                width: Optional[int] = typer.Option(
+                    None, "--width", help="Width of the output. Will use console width by default.", rich_help_panel="Logging Settings"
+                ),
                 file_output: Optional[str] = typer.Option(
                     None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"
                 ),
@@ -245,6 +248,7 @@ def load_commands() -> None:
                         memory_min_value=memory_min_value,
                         quiet=quiet,
                         log_to_stderr=log_to_stderr,
+                        width=width,
                         file_output=file_output,
                         slack_output=slack_output,
                         strategy=_strategy_name,

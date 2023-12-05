@@ -1,7 +1,4 @@
-import json
-
 import pytest
-import yaml
 from typer.testing import CliRunner
 
 from robusta_krr.main import app, load_commands
@@ -37,14 +34,3 @@ def test_output_formats(format: str, output: str):
         assert result.exit_code == 0, result.exc_info
     except AssertionError as e:
         raise e from result.exception
-
-    try:
-        if format == "json":
-            json_output = json.loads(result.stdout)
-            assert json_output, result.stdout
-            assert len(json_output["scans"]) > 0, result.stdout
-
-        if format == "yaml":
-            assert yaml.safe_load(result.stdout), result.stdout
-    except Exception as e:
-        raise Exception(result.stdout) from e

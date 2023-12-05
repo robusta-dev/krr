@@ -53,6 +53,7 @@ class Config(pd.BaseSettings):
     format: str
     strategy: str
     log_to_stderr: bool
+    width: Optional[int] = pd.Field(None, ge=1)
 
     # Outputs Settings
     file_output: Optional[str] = pd.Field(None)
@@ -62,11 +63,11 @@ class Config(pd.BaseSettings):
 
     # Internal
     inside_cluster: bool = False
-    console: Optional[Console] = None
+    _logging_console: Optional[Console] = pd.PrivateAttr(None)
+    _result_console: Optional[Console] = pd.PrivateAttr(None)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.console = Console(stderr=self.log_to_stderr)
 
     @property
     def Formatter(self) -> formatters.FormatterFunc:
@@ -112,6 +113,18 @@ class Config(pd.BaseSettings):
     def context(self) -> Optional[str]:
         return self.clusters[0] if self.clusters != "*" and self.clusters else None
 
+    @property
+    def logging_console(self) -> Console:
+        if getattr(self, "_logging_console") is None:
+            self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
+        return self._logging_console
+
+    @property
+    def result_console(self) -> Console:
+        if getattr(self, "_result_console") is None:
+            self._result_console = Console(file=sys.stdout, width=self.width)
+        return self._result_console
+
     def load_kubeconfig(self) -> None:
         try:
             config.load_incluster_config()
@@ -130,7 +143,7 @@ class Config(pd.BaseSettings):
             level="NOTSET",
             format="%(message)s",
             datefmt="[%X]",
-            handlers=[RichHandler(console=Console(file=sys.stderr if settings.log_to_stderr else sys.stdout))],
+            handlers=[RichHandler(console=config.logging_console)],
         )
         logging.getLogger("").setLevel(logging.CRITICAL)
         logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
