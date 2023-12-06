@@ -1,5 +1,5 @@
-# Use the official Python 3.9 slim image as the base image
-FROM python:3.9-slim as builder
+# Use the official Python 3.12 slim image as the base image
+FROM python:3.12-slim as builder
 
 # Set the working directory
 WORKDIR /app
