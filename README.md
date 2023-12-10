@@ -82,7 +82,7 @@ According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kub
 
 By right-sizing your containers with KRR, you can save an average of 69% on cloud costs.
 
-Read more about [how KRR works](#how-it-works) and [KRR vs Kubernetes VPA](#difference-with-kubernetes-vpa)
+Read more about [how KRR works](#how-krr-works) and [KRR vs Kubernetes VPA](#difference-with-kubernetes-vpa)
 
 <!-- GETTING STARTED -->
 
