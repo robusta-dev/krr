@@ -204,6 +204,24 @@ krr simple --help
 </details>
 
 <details>
+  <summary>Giving an Explicit Prometheus URL</summary>
+
+If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
+
+For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
+
+```sh
+kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
+```
+
+Then, open another terminal and run krr in it, giving an explicit prometheus url:
+
+```sh
+krr simple -p http://127.0.0.1:9090
+```
+</details>
+
+<details>
   <summary>Run on specific namespaces</summary>
 
 List as many namespaces as you want with `-n` (in this case, `default` and `ingress-nginx`)
@@ -276,25 +294,6 @@ krr.py simple --prometheus-label cluster -l my-cluster-name
 
 You may also need the `-p` flag to explicitly give Prometheus' URL.
 </details>
-
-<details>
-  <summary>Giving an Explicit Prometheus URL</summary>
-
-If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
-
-For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
-
-```sh
-kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
-```
-
-Then, open another terminal and run krr in it, giving an explicit prometheus url:
-
-```sh
-krr simple -p http://127.0.0.1:9090
-```
-</details>
-
 
 <details>
   <summary>Debug mode</summary>
