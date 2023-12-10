@@ -275,7 +275,7 @@ krr.py simple --prometheus-label cluster -l my-cluster-name
 ```
 
 You may also need the `-p` flag to explicitly give Prometheus' URL.
-
+</details>
 
 <details>
   <summary>Giving an Explicit Prometheus URL</summary>
