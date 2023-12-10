@@ -283,16 +283,8 @@ krr simple --logtostderr -f yaml > result.yaml
 
 <details>
   <summary>Centralized Prometheus (multi-cluster)</summary>
+  <p ><a href="#scanning-with-a-centralized-prometheus">See below on filtering output from a centralized prometheus, so it matches only one cluster</a></p>
 
-If your Prometheus monitors multiple clusters we require the label you defined for your cluster in Prometheus.
-
-For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"`, then run this command:
-
-```sh
-krr.py simple --prometheus-label cluster -l my-cluster-name
-```
-
-You may also need the `-p` flag to explicitly give Prometheus' URL.
 </details>
 
 <details>
@@ -446,6 +438,17 @@ And for Victoria Metrics its the following labels:
 If none of those labels result in finding Prometheus, Victoria Metrics or Thanos, you will get an error and will have to pass the working url explicitly (using the `-p` flag).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Scanning with a Centralized Prometheus
+If your Prometheus monitors multiple clusters we require the label you defined for your cluster in Prometheus.
+
+For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"`, then run this command:
+
+```sh
+krr.py simple --prometheus-label cluster -l my-cluster-name
+```
+
+You may also need the `-p` flag to explicitly give Prometheus' URL.
 
 ## Azure Managed Prometheus
 
