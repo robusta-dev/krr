@@ -20,7 +20,7 @@
     .
     <a href="#usage"><strong>Usage</strong></a>
     ·
-    <a href="#how-it-works"><strong>How it works</strong></a>
+    <a href="#how-krr-works"><strong>How KRR works</strong></a>
     .
     <a href="#slack-integration"><strong>Slack Integration</strong></a>
     <br />
@@ -62,17 +62,18 @@
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
-_Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
+_Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Google Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure Managed Prometheus](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
 
 ### Features
 
 - **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-integration).)
 - **Prometheus Integration**: Get recommendations based on the data you already have
+- **Explainability**: Understand how recommendations were calculated
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
 - **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://home.robusta.dev/).
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
-### Resource Allocation Statistics
+### Why Use KRR?
 
 According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kubernetes/), on average, Kubernetes clusters have:
 
@@ -81,7 +82,7 @@ According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kub
 
 By right-sizing your containers with KRR, you can save an average of 69% on cloud costs.
 
-Read more about [how KRR works](#how-it-works) and [KRR vs Kubernetes VPA](#difference-with-kubernetes-vpa)
+Read more about [how KRR works](#how-krr-works) and [KRR vs Kubernetes VPA](#difference-with-kubernetes-vpa)
 
 <!-- GETTING STARTED -->
 
@@ -101,7 +102,10 @@ Additionally to that, [kube-state-metrics](https://github.com/kubernetes/kube-st
 
 _Note: If one of last three metrics is absent KRR will still work, but it will only consider currently-running pods when calculating recommendations. Historic pods that no longer exist in the cluster will not be taken into consideration._
 
-### With brew (MacOS/Linux):
+### Installation Methods
+
+<details>
+  <summary>Brew (Mac/Linux)</summary>
 
 1. Add our tap:
 
@@ -120,12 +124,16 @@ brew install krr
 ```sh
 krr --help
 ```
+</details>
 
-### On Windows:
+<details>
+  <summary>Windows</summary>
 
-You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or install manually.
+You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-on-Linux), or install from source (see below).
+</details>
 
-### Manual Installation
+<details>
+  <summary>From Source</summary>
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
 2. Clone the repo:
@@ -150,63 +158,39 @@ python krr.py --help
 Notice that using source code requires you to run as a python script, when installing with brew allows to run `krr`.
 All above examples show running command as `krr ...`, replace it with `python krr.py ...` if you are using a manual installation.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+</details>
 
-### Other Configuration Methods
+### Additional Options
 
 - [View KRR Reports in a Web UI](#optional-free-saas-platform)
-- [Get a Weekly Message in Slack with KRR Recommendations](#slack-integration)
-- Setup KRR on [Google Cloud Managed Prometheus
-  ](./docs/google-cloud-managed-service-for-prometheus.md)
-- Setup KRR for [Azure managed Prometheus](#azure-managed-prometheus)
+- [Receive KRR Reports Weekly in Slack](#slack-integration)
+
+### Environment-Specific Instructions
+Setup KRR for...
+- [Google Cloud Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md)
+- [Azure Managed Prometheus](#azure-managed-prometheus)
+- [Amazon Managed Prometheus](#amazon-managed-prometheus)
+- [Coralogix Managed Prometheus](#coralogix-managed-prometheus)
+- [Grafana Cloud Managed Prometheus](#grafana-cloud-managed-prometheus)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
 
 ## Usage
 
-Straightforward usage, to run the simple strategy:
-
+<details>
+  <summary>Basic usage</summary>
+  
 ```sh
 krr simple
 ```
+</details>
 
-If you want only specific namespaces (default and ingress-nginx):
-
-```sh
-krr simple -n default -n ingress-nginx
-```
-
-Filtering by labels (more info [here](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api)):
-
-```sh
-python krr.py simple --selector 'app.kubernetes.io/instance in (robusta, ingress-nginx)'
-```
-
-By default krr will run in the current context. If you want to run it in a different context:
-
-```sh
-krr simple -c my-cluster-1 -c my-cluster-2
-```
-
-If you want to get the output in JSON format (--logtostderr is required so no logs go to the result file):
-
-```sh
-krr simple --logtostderr -f json > result.json
-```
-
-If you want to get the output in YAML format:
-
-```sh
-krr simple --logtostderr -f yaml > result.yaml
-```
-
-If you want to see additional debug logs:
-
-```sh
-krr simple -v
-```
-
-Other helpful flags:
+<details>
+  <summary>Tweak the recommendation algorithm</summary>
+  
+Most helpful flags:
 
 - `--cpu-min` Sets the minimum recommended cpu value in millicores
 - `--mem-min` Sets the minimum recommended memory value in MB
@@ -217,6 +201,101 @@ More specific information on Strategy Settings can be found using
 ```sh
 krr simple --help
 ```
+</details>
+
+<details>
+  <summary>Giving an Explicit Prometheus URL</summary>
+
+If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
+
+For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
+
+```sh
+kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
+```
+
+Then, open another terminal and run krr in it, giving an explicit prometheus url:
+
+```sh
+krr simple -p http://127.0.0.1:9090
+```
+</details>
+
+<details>
+  <summary>Run on specific namespaces</summary>
+
+List as many namespaces as you want with `-n` (in this case, `default` and `ingress-nginx`)
+
+```sh
+krr simple -n default -n ingress-nginx
+```
+</details>
+
+<details>
+  <summary>Run on workloads filtered by label</summary>
+
+Use a <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api">label selector</a>
+
+```sh
+python krr.py simple --selector 'app.kubernetes.io/instance in (robusta, ingress-nginx)'
+```
+</details>
+
+<details>
+  <summary>Override the kubectl context</summary>
+
+By default krr will run in the current context. If you want to run it in a different context:
+
+```sh
+krr simple -c my-cluster-1 -c my-cluster-2
+```
+
+</details>
+
+<details>
+  <summary>Customize output (JSON, YAML, and more</summary>
+
+Currently KRR ships with a few formatters to represent the scan data:
+
+- `table` - a pretty CLI table used by default, powered by [Rich](https://github.com/Textualize/rich) library
+- `json`
+- `yaml`
+- `pprint` - data representation from python's pprint library
+
+To run a strategy with a selected formatter, add a `-f` flag:
+
+```sh
+krr simple -f json
+```
+
+For JSON output, add --logtostderr  so no logs go to the result file:
+
+```sh
+krr simple --logtostderr -f json > result.json
+```
+
+For YAML output, do the same:
+
+```sh
+krr simple --logtostderr -f yaml > result.yaml
+```
+</details>
+
+<details>
+  <summary>Centralized Prometheus (multi-cluster)</summary>
+  <p ><a href="#scanning-with-a-centralized-prometheus">See below on filtering output from a centralized prometheus, so it matches only one cluster</a></p>
+
+</details>
+
+<details>
+  <summary>Debug mode</summary>
+If you want to see additional debug logs:
+
+```sh
+krr simple -v
+```
+
+</details>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -232,7 +311,7 @@ With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## How it works
+## How KRR works
 
 ### Metrics Gathering
 
@@ -278,9 +357,10 @@ Find about how KRR tries to find the default prometheus to connect <a href="#pro
 | Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
 | Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
+| Explainability 📖           | ✅ See graphs explaining the recommendations                                                               | ❌ Not supported                                            |
+
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
-| Explainability 📖           | 🔄 Support in future versions (Robusta will send you additional graphs)                                    | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
 
 <!-- ADVANCED USAGE EXAMPLES -->
@@ -359,37 +439,18 @@ If none of those labels result in finding Prometheus, Victoria Metrics or Thanos
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Example of using port-forward for Prometheus
-
-If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
-
-For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
-
-```sh
-kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
-```
-
-Then, open another terminal and run krr in it, giving an explicit prometheus url:
-
-```sh
-krr simple -p http://127.0.0.1:9090
-```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Scanning with a centralized Prometheus
-
+## Scanning with a Centralized Prometheus
 If your Prometheus monitors multiple clusters we require the label you defined for your cluster in Prometheus.
 
-For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"` and your prometheus is at url `http://my-centralized-prometheus:9090`, then run this command:
+For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"`, then run this command:
 
 ```sh
-krr.py simple -p http://my-centralized-prometheus:9090 --prometheus-label cluster -l my-cluster-name
+krr.py simple --prometheus-label cluster -l my-cluster-name
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+You may also need the `-p` flag to explicitly give Prometheus' URL.
 
-## Azure managed Prometheus
+## Azure Managed Prometheus
 
 For Azure managed Prometheus you need to generate an access token, which can be done by running the following command:
 
@@ -431,7 +492,7 @@ Additional optional parameters are:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Coralogix managed Prometheus
+## Coralogix Managed Prometheus
 
 For Coralogix managed Prometheus you need to specify your prometheus link and add the flag coralogix_token with your Logs Query Key
 
@@ -443,7 +504,7 @@ python krr.py simple -p "https://prom-api.coralogix..." --coralogix_token
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Grafana Cloud managed Prometheus
+## Grafana Cloud Managed Prometheus
 
 For Grafana Cloud managed Prometheus you need to specify prometheus link, prometheus user, and an access token of your Grafana Cloud stack. The Prometheus link and user for the stack can be found on the Grafana Cloud Portal. An access token with a `metrics:read` scope can also be created using Access Policies on the same portal.
 
@@ -454,25 +515,6 @@ python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:
 ```
 
 <p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- Formatters -->
-
-## Available formatters
-
-Currently KRR ships with a few formatters to represent the scan data:
-
-- `table` - a pretty CLI table used by default, powered by [Rich](https://github.com/Textualize/rich) library
-- `json`
-- `yaml`
-- `pprint` - data representation from python's pprint library
-
-To run a strategy with a selected formatter, add a `-f` flag:
-
-```sh
-krr simple -f json
-```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
