@@ -358,7 +358,6 @@ Find about how KRR tries to find the default prometheus to connect <a href="#pro
 | Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
 | Explainability 📖           | ✅ See graphs explaining the recommendations                                                               | ❌ Not supported                                            |
-
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
