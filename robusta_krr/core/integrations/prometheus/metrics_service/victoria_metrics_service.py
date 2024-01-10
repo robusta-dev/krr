@@ -30,7 +30,8 @@ class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
                     "app=vmselect",
                 ]
             )
-            url = f"{url}/select/0/prometheus/"
+            if url is not None:
+                url = f"{url}/select/0/prometheus/"
         return url
 
 
