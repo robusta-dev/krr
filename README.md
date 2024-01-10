@@ -558,8 +558,13 @@ customPlaybooks:
 <details>
   <summary>k9s Plugin </summary>
 
-  Install our k9s Plugin to get recommendations by hitting 
+  Install our k9s Plugin to get recommendations directly in deployments/daemonsets/statefulsets views.
 
+  Plugin: [resource recommender](https://github.com/derailed/k9s/blob/master/plugins/resource-recommendations.yaml)
+
+  Installation instructions: [k9s docs](https://k9scli.io/topics/plugins/)
+
+  Follow the plugins installation guide: here
 </details>
 
 ## Creating a Custom Strategy/Formatter
