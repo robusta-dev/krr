@@ -563,8 +563,6 @@ customPlaybooks:
   Plugin: [resource recommender](https://github.com/derailed/k9s/blob/master/plugins/resource-recommendations.yaml)
 
   Installation instructions: [k9s docs](https://k9scli.io/topics/plugins/)
-
-  Follow the plugins installation guide: here
 </details>
 
 ## Creating a Custom Strategy/Formatter
