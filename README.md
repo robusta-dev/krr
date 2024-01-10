@@ -81,7 +81,9 @@ View Instructions for:
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#data-source-integrations)
 
-* [Seeing KRR in a UI](#integrations)
+View instructions for:
+
+* [Seeing recommendations in a UI](#integrations)
 * [Sending recommendations to Slack](#integrations)
 * [Setting up KRR as a k9s plugin](#integrations)
 
