@@ -171,8 +171,8 @@ class ClusterLoader:
                 tasks = [
                     loop.run_in_executor(
                         self.executor,
-                        lambda: namespaced_request(
-                            namespace=namespace,
+                        lambda ns=namespace: namespaced_request(
+                            namespace=ns,
                             watch=False,
                             label_selector=settings.selector,
                         ),
