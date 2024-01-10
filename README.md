@@ -62,16 +62,28 @@
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
 
-_Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Google Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure Managed Prometheus](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
-
 ### Data Integrations
 
 [![Used to send data to KRR](./images/krr-datasources.svg)](#data-source-integrations)
 
-### Integrations
+View Instructions for:
+* [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery)
+* [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery)
+* [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery)
+
+* [Google Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md)
+* [Amazon Managed Prometheus](#amazon-managed-prometheus)
+* [Azure Managed Prometheus](#azure-managed-prometheus)
+* [Coralogix](#coralogix-managed-prometheus)
+* [Grafana Cloud](#grafana-cloud-managed-prometheus)
+
+### Get Recommendations
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#data-source-integrations)
 
+* [Seeing KRR in a UI](#integrations)
+* [Sending recommendations to Slack](#integrations)
+* [Setting up KRR as a k9s plugin](#integrations)
 
 ### Features
 
@@ -355,7 +367,6 @@ Find about how KRR tries to find the default Prometheus to connect <a href="#pro
 | Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
 | Explainability 📖           | ✅ See graphs explaining the recommendations                                                               | ❌ Not supported                                            |
-
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
@@ -371,7 +382,7 @@ Find about how KRR tries to find the default Prometheus to connect <a href="#pro
   <summary>Prometheus, Victoria Metrics and Thanos auto-discovery</summary>
 
 By default, KRR will try to auto-discover the running Prometheus Victoria Metrics and Thanos.
-For discovering Prometheus it scan services for those labels:
+For discovering Prometheus it scans services for those labels:
 
 ```python
 "app=kube-prometheus-stack-prometheus"
@@ -505,7 +516,7 @@ python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:
 ## Integrations
 
 <details>
-  <summary> Free SaaS Platform </summary>
+  <summary> Free UI for KRR recommendations </summary>
 
 With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
 
