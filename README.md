@@ -64,6 +64,15 @@ Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resou
 
 _Supports: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Google Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure Managed Prometheus](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
 
+### Data Integrations
+
+[![Used to send data to KRR](./images/krr-datasources.svg)](#data-source-integrations)
+
+### Integrations
+
+[![Used to receive information from KRR](./images/krr-other-integrations.svg)](#data-source-integrations)
+
+
 ### Features
 
 - **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-integration).)
@@ -194,7 +203,7 @@ Most helpful flags:
 
 - `--cpu-min` Sets the minimum recommended cpu value in millicores
 - `--mem-min` Sets the minimum recommended memory value in MB
-- `--history_duration` The duration of the prometheus history data to use (in hours)
+- `--history_duration` The duration of the Prometheus history data to use (in hours)
 
 More specific information on Strategy Settings can be found using
 
@@ -206,7 +215,7 @@ krr simple --help
 <details>
   <summary>Giving an Explicit Prometheus URL</summary>
 
-If your prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
+If your Prometheus is not auto-connecting, you can use `kubectl port-forward` for manually forwarding Prometheus.
 
 For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-0`, then run this command to port-forward it:
 
@@ -214,7 +223,7 @@ For example, if you have a Prometheus Pod called `kube-prometheus-st-prometheus-
 kubectl port-forward pod/kube-prometheus-st-prometheus-0 9090
 ```
 
-Then, open another terminal and run krr in it, giving an explicit prometheus url:
+Then, open another terminal and run krr in it, giving an explicit Prometheus url:
 
 ```sh
 krr simple -p http://127.0.0.1:9090
@@ -299,18 +308,6 @@ krr simple -v
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Optional: Free SaaS Platform
-
-With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
-
-- See why KRR recommends what it does
-- Sort and filter recommendations by namespace, priority, and more
-- Copy a YAML snippet to fix the problems KRR finds
-
-![Robusta UI Screen Shot][ui-screenshot]
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ## How KRR works
 
 ### Metrics Gathering
@@ -343,7 +340,7 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 ### Prometheus connection
 
-Find about how KRR tries to find the default prometheus to connect <a href="#prometheus-victoria-metrics-and-thanos-auto-discovery">here</a>.
+Find about how KRR tries to find the default Prometheus to connect <a href="#prometheus-victoria-metrics-and-thanos-auto-discovery">here</a>.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -365,47 +362,16 @@ Find about how KRR tries to find the default prometheus to connect <a href="#pro
 
 <!-- ADVANCED USAGE EXAMPLES -->
 
-## Slack integration
 
-Put cost savings on autopilot. Get notified in Slack about recommendations above X%. Send a weekly global report, or one report per team.
 
-![Slack Screen Shot][slack-screenshot]
 
-### Prerequisites
+## Data Source Integrations
 
-- A Slack workspace
-
-### Setup
-
-1. [Install Robusta with Helm to your cluster and configure slack](https://docs.robusta.dev/master/installation.html)
-2. Create your KRR slack playbook by adding the following to `generated_values.yaml`:
-
-```
-customPlaybooks:
-# Runs a weekly krr scan on the namespace devs-namespace and sends it to the configured slack channel
-customPlaybooks:
-- triggers:
-  - on_schedule:
-      fixed_delay_repeat:
-        repeat: -1 # number of times to run or -1 to run forever
-        seconds_delay: 604800 # 1 week
-  actions:
-  - krr_scan:
-      args: "--namespace devs-namespace" ## KRR args here
-  sinks:
-      - "main_slack_sink" # slack sink you want to send the report to here
-```
-
-3. Do a Helm upgrade to apply the new values: `helm upgrade robusta robusta/robusta --values=generated_values.yaml --set clusterName=<YOUR_CLUSTER_NAME>`
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- Port-forwarding -->
-
-## Prometheus, Victoria Metrics and Thanos auto-discovery
+<details>
+  <summary>Prometheus, Victoria Metrics and Thanos auto-discovery</summary>
 
 By default, KRR will try to auto-discover the running Prometheus Victoria Metrics and Thanos.
-For discovering prometheus it scan services for those labels:
+For discovering Prometheus it scan services for those labels:
 
 ```python
 "app=kube-prometheus-stack-prometheus"
@@ -439,7 +405,11 @@ If none of those labels result in finding Prometheus, Victoria Metrics or Thanos
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Scanning with a Centralized Prometheus
+</details>
+
+<details>
+<summary>Scanning with a Centralized Prometheus</summary>
+
 If your Prometheus monitors multiple clusters we require the label you defined for your cluster in Prometheus.
 
 For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"`, then run this command:
@@ -450,7 +420,11 @@ krr.py simple --prometheus-label cluster -l my-cluster-name
 
 You may also need the `-p` flag to explicitly give Prometheus' URL.
 
-## Azure Managed Prometheus
+</details>
+
+
+<details>
+<summary>Azure Managed Prometheus</summary>
 
 For Azure managed Prometheus you need to generate an access token, which can be done by running the following command:
 
@@ -470,9 +444,13 @@ python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-hea
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Amazon Managed Prometheus
+</details>
 
-For Amazon Managed Prometheus you need to add your prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials
+
+<details>
+<summary> Amazon Managed Prometheus </summary>
+
+For Amazon Managed Prometheus you need to add your Prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials
 
 ```sh
 python krr.py simple -p "https://aps-workspaces.REGION.amazonaws.com/workspaces/..." --eks-managed-prom
@@ -485,16 +463,18 @@ Additional optional parameters are:
 --eks-access-key ACCESS_KEY # to specify your access key
 --eks-secret-key SECRET_KEY # to specify your secret key
 --eks-service-name SERVICE_NAME # to use a specific service name in the signature
---eks-managed-prom-region REGION_NAME # to specify the region the prometheus is in
+--eks-managed-prom-region REGION_NAME # to specify the region the Prometheus is in
 ```
 
 <p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+</details>
 
-## Coralogix Managed Prometheus
+<details>
+<summary>Coralogix Managed Prometheus</summary>
 
-For Coralogix managed Prometheus you need to specify your prometheus link and add the flag coralogix_token with your Logs Query Key
+For Coralogix managed Prometheus you need to specify your Prometheus link and add the flag coralogix_token with your Logs Query Key
 
 ```sh
 python krr.py simple -p "https://prom-api.coralogix..." --coralogix_token
@@ -503,12 +483,14 @@ python krr.py simple -p "https://prom-api.coralogix..." --coralogix_token
 <p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+</details>
 
-## Grafana Cloud Managed Prometheus
+<details>
+<summary> Grafana Cloud Managed Prometheus </summary>
 
-For Grafana Cloud managed Prometheus you need to specify prometheus link, prometheus user, and an access token of your Grafana Cloud stack. The Prometheus link and user for the stack can be found on the Grafana Cloud Portal. An access token with a `metrics:read` scope can also be created using Access Policies on the same portal.
+For Grafana Cloud managed Prometheus you need to specify Prometheus link, Prometheus user, and an access token of your Grafana Cloud stack. The Prometheus link and user for the stack can be found on the Grafana Cloud Portal. An access token with a `metrics:read` scope can also be created using Access Policies on the same portal.
 
-Next, run the following command, after setting the values of PROM_URL, PROM_USER, and PROM_TOKEN variables with your Grafana Cloud stack's prometheus link, prometheus user, and access token.
+Next, run the following command, after setting the values of PROM_URL, PROM_USER, and PROM_TOKEN variables with your Grafana Cloud stack's Prometheus link, Prometheus user, and access token.
 
 ```sh
 python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:${PROM_TOKEN}" --prometheus-ssl-enabled
@@ -518,7 +500,67 @@ python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- CUSTOM -->
+</details>
+
+## Integrations
+
+<details>
+  <summary> Free SaaS Platform </summary>
+
+With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
+
+- See why KRR recommends what it does
+- Sort and filter recommendations by namespace, priority, and more
+- Copy a YAML snippet to fix the problems KRR finds
+
+![Robusta UI Screen Shot][ui-screenshot]
+
+</details>
+
+<details>
+  <summary> Slack Notification</summary>
+
+Put cost savings on autopilot. Get notified in Slack about recommendations above X%. Send a weekly global report, or one report per team.
+
+![Slack Screen Shot][slack-screenshot]
+
+### Prerequisites
+
+- A Slack workspace
+
+### Setup
+
+1. [Install Robusta with Helm to your cluster and configure slack](https://docs.robusta.dev/master/installation.html)
+2. Create your KRR slack playbook by adding the following to `generated_values.yaml`:
+
+```
+customPlaybooks:
+# Runs a weekly krr scan on the namespace devs-namespace and sends it to the configured slack channel
+customPlaybooks:
+- triggers:
+  - on_schedule:
+      fixed_delay_repeat:
+        repeat: -1 # number of times to run or -1 to run forever
+        seconds_delay: 604800 # 1 week
+  actions:
+  - krr_scan:
+      args: "--namespace devs-namespace" ## KRR args here
+  sinks:
+      - "main_slack_sink" # slack sink you want to send the report to here
+```
+
+3. Do a Helm upgrade to apply the new values: `helm upgrade robusta robusta/robusta --values=generated_values.yaml --set clusterName=<YOUR_CLUSTER_NAME>`
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+</details>
+<details>
+  <summary>k9s Plugin </summary>
+
+  Install our k9s Plugin to get recommendations by hitting 
+
+</details>
 
 ## Creating a Custom Strategy/Formatter
 
