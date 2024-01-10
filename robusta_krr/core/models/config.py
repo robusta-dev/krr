@@ -92,7 +92,7 @@ class Config(pd.BaseSettings):
         if v == []:
             return "*"
 
-        return [val.lower() for val in v]
+        return [val.capitalize() for val in v]
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)

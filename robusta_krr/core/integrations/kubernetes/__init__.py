@@ -139,7 +139,7 @@ class ClusterLoader:
     def _should_list_resource(self, resource: str):
         if settings.resources == "*":
             return True
-        return resource.lower() in settings.resources
+        return resource.capitalize() in settings.resources
 
     async def _list_workflows(
         self, kind: KindLiteral, all_namespaces_request: Callable, namespaced_request: Callable
