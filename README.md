@@ -73,7 +73,7 @@ _View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-aut
 
 ### Reporting Integrations
 
-[![Used to receive information from KRR](./images/krr-other-integrations.svg)](#data-source-integrations)
+[![Used to receive information from KRR](./images/krr-other-integrations.svg)](#integrations)
 
 _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin)_
 
@@ -505,7 +505,7 @@ python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:
 </details>
 </p>
 
-## Reporting Integrations
+## Integrations
 
 <details id="free-ui-for-krr-recommendations">
 <summary>Free UI for KRR recommendations</summary>
