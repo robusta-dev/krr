@@ -66,6 +66,8 @@ Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resou
 
 [![Used to send data to KRR](./images/krr-datasources.svg)](#data-source-integrations)
 
+_View instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Google Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure Managed Prometheus](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
+
 View Instructions for:
 * [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery)
 * [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery)
@@ -81,7 +83,6 @@ View Instructions for:
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#data-source-integrations)
 
-View instructions for:
 
 * [Seeing recommendations in a UI](#integrations)
 * [Sending recommendations to Slack](#integrations)
@@ -484,8 +485,11 @@ Additional optional parameters are:
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 </details>
 
-<details>
-<summary>Coralogix Managed Prometheus</summary>
+
+<details><summary>
+
+## Coralogix Managed Prometheus
+ </summary>
 
 For Coralogix managed Prometheus you need to specify your Prometheus link and add the flag coralogix_token with your Logs Query Key
 
