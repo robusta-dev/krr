@@ -75,7 +75,7 @@ _View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-aut
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#data-source-integrations)
 
-View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations),[Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin)
+_View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin)_
 
 ### Features
 
