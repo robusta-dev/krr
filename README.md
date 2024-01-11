@@ -103,10 +103,14 @@ Read more about [how KRR works](#how-krr-works) and [KRR vs Kubernetes VPA](#dif
 
 ### Requirements
 
-KRR requires you to have Prometheus.
+KRR requires Prometheus and [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics).
 
-Additionally to that, [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) needs to be running on your cluster, as KRR is dependant on those metrics:
+<details>
+  <summary>Which metrics does KRR need?</summary>
+No setup is required if you use kube-prometheus-stack or <a href="https://docs.robusta.dev/master/configuration/alertmanager-integration/embedded-prometheus.html">Robusta's Embedded Prometheus</a>.
 
+If you have a different setup, make sure the following metrics exist:
+  
 - `container_cpu_usage_seconds_total`
 - `container_memory_working_set_bytes`
 - `kube_replicaset_owner`
@@ -114,6 +118,7 @@ Additionally to that, [kube-state-metrics](https://github.com/kubernetes/kube-st
 - `kube_pod_status_phase`
 
 _Note: If one of last three metrics is absent KRR will still work, but it will only consider currently-running pods when calculating recommendations. Historic pods that no longer exist in the cluster will not be taken into consideration._
+</details>
 
 ### Installation Methods
 
