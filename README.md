@@ -71,7 +71,7 @@ _View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-aut
 
 
 
-### Get Recommendations
+### Reporting Integrations
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#data-source-integrations)
 
@@ -369,11 +369,7 @@ Find about how KRR tries to find the default Prometheus to connect <a href="#pro
 
 
 ## Data Source Integrations
-<p>
-<details><summary>
-
-#### Prometheus, Victoria Metrics and Thanos auto-discovery
-  </summary>
+<details id="prometheus-victoria-metrics-and-thanos-auto-discovery"><summary> Prometheus, Victoria Metrics and Thanos auto-discovery</summary>
 
 By default, KRR will try to auto-discover the running Prometheus Victoria Metrics and Thanos.
 For discovering Prometheus it scans services for those labels:
@@ -412,11 +408,8 @@ If none of those labels result in finding Prometheus, Victoria Metrics or Thanos
 
 </details>
 
-<details><summary>
-
-#### Scanning with a Centralized Prometheus
-
-</summary>
+<details id="scanning-with-a-centralized-prometheus">
+<summary>Scanning with a Centralized Prometheus</summary>
 
 If your Prometheus monitors multiple clusters we require the label you defined for your cluster in Prometheus.
 
@@ -431,11 +424,8 @@ You may also need the `-p` flag to explicitly give Prometheus' URL.
 </details>
 
 
-<details><summary>
-
-#### Azure Managed Prometheus
-
-</summary>
+<details id="azure-managed-prometheus">
+<summary>Azure Managed Prometheus</summary>
 
 For Azure managed Prometheus you need to generate an access token, which can be done by running the following command:
 
@@ -458,11 +448,8 @@ python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-hea
 </details>
 
 
-<details><summary> 
-
-#### Amazon Managed Prometheus
-
-</summary>
+<details id="amazon-managed-prometheus">
+<summary>Amazon Managed Prometheus</summary>
 
 For Amazon Managed Prometheus you need to add your Prometheus link and the flag --eks-managed-prom and krr will automatically use your aws credentials
 
@@ -486,11 +473,8 @@ Additional optional parameters are:
 </details>
 
 
-<details><summary>
-
-#### Coralogix Managed Prometheus
-
- </summary>
+<details id="coralogix-managed-prometheus">
+<summary>Coralogix Managed Prometheus</summary>
 
 For Coralogix managed Prometheus you need to specify your Prometheus link and add the flag coralogix_token with your Logs Query Key
 
@@ -503,11 +487,8 @@ python krr.py simple -p "https://prom-api.coralogix..." --coralogix_token
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 </details>
 
-<details><summary> 
-
-#### Grafana Cloud Managed Prometheus
-
-</summary>
+<details id="grafana-cloud-managed-prometheus">
+<summary>Grafana Cloud Managed Prometheus</summary>
 
 For Grafana Cloud managed Prometheus you need to specify Prometheus link, Prometheus user, and an access token of your Grafana Cloud stack. The Prometheus link and user for the stack can be found on the Grafana Cloud Portal. An access token with a `metrics:read` scope can also be created using Access Policies on the same portal.
 
@@ -524,13 +505,10 @@ python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:
 </details>
 </p>
 
-## Integrations
+## Reporting Integrations
 
-<details><summary>
-
-  #### Free UI for KRR recommendations
-
-</summary>
+<details id="free-ui-for-krr-recommendations">
+<summary>Free UI for KRR recommendations</summary>
 
 With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
 
@@ -542,11 +520,8 @@ With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
 
 </details>
 
-<details><summary> 
-  
-  #### Slack Notification
-
-</summary>
+<details id="slack-notification">
+<summary>Slack Notification</summary>
 
 Put cost savings on autopilot. Get notified in Slack about recommendations above X%. Send a weekly global report, or one report per team.
 
@@ -583,11 +558,9 @@ customPlaybooks:
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 </details>
-<details><summary>
 
-#### k9s Plugin
-
-</summary>
+<details id="k9s-plugin">
+<summary>k9s Plugin</summary>
 
   Install our k9s Plugin to get recommendations directly in deployments/daemonsets/statefulsets views.
 
