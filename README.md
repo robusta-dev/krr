@@ -119,10 +119,16 @@ brew tap robusta-dev/homebrew-krr
 brew install krr
 ```
 
-3. Check that installation was successfull (First launch might take a little longer):
+3. Check that installation was successfull:
 
 ```sh
 krr --help
+```
+
+4. Run KRR (First launch might take a little longer):
+
+```sh
+krr simple
 ```
 </details>
 
