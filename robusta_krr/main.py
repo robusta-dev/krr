@@ -38,7 +38,7 @@ def __process_type(_T: type) -> type:
     elif _T is Optional:
         return Optional[{__process_type(_T.__args__[0])}]  # type: ignore
     else:
-        return str  # It the type is unknown, just use str and let pydantic handle it
+        return str  # If the type is unknown, just use str and let pydantic handle it
 
 
 def load_commands() -> None:
