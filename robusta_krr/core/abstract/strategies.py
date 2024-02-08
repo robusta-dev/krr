@@ -59,6 +59,11 @@ class StrategySettings(pd.BaseModel):
     def timeframe_timedelta(self) -> datetime.timedelta:
         return datetime.timedelta(minutes=self.timeframe_duration)
 
+    def history_range_enough(self, history_range: tuple[datetime.timedelta, datetime.timedelta]) -> bool:
+        """Override this function to check if the history range is enough for the strategy."""
+
+        return True
+
 
 # A type alias for a numpy array of shape (N, 2).
 ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]

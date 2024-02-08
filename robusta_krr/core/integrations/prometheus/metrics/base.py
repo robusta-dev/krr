@@ -165,7 +165,7 @@ class PrometheusMetric(BaseMetric):
         duration_str = self._step_to_string(period)
 
         query = self.get_query(object, duration_str, step_str)
-        end_time = datetime.datetime.now().replace(second=0, microsecond=0).astimezone()
+        end_time = datetime.datetime.utcnow().replace(second=0, microsecond=0)
         start_time = end_time - period
 
         # Here if we split the object into multiple sub-objects, we query each sub-object recursively.

@@ -65,9 +65,14 @@ class PrometheusMetricsLoader:
                 loader.validate_cluster_name()
                 return loader
             except MetricsNotFound as e:
-                logger.debug(f"{service_name} not found: {e}")
+                logger.info(f"{service_name} not found: {e}")
 
         return None
+
+    async def get_history_range(
+        self, history_duration: datetime.timedelta
+    ) -> tuple[datetime.datetime, datetime.datetime] | None:
+        return await self.loader.get_history_range(history_duration)
 
     async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
         try:

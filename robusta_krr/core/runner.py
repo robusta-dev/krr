@@ -33,6 +33,8 @@ class Runner:
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = settings.create_strategy()
 
+        self.metadata: list = []
+
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(settings.max_workers)
 
@@ -65,6 +67,8 @@ class Runner:
         print("")
 
     def _process_result(self, result: Result) -> None:
+        result.metadata = self.metadata
+
         Formatter = settings.Formatter
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
@@ -164,6 +168,28 @@ class Runner:
         logger.info(f"Calculated recommendations for {object} (using {len(metrics)} metrics)")
         return self._format_result(result)
 
+    async def _check_data_availability(self, cluster: str) -> None:
+        prometheus_loader = self._get_prometheus_loader(cluster)
+        if prometheus_loader is None:
+            return
+
+        history_range = await prometheus_loader.get_history_range(self._strategy.settings.history_timedelta)
+        logger.debug(f"History range for {cluster}: {history_range}")
+        enough_data = history_range is not None and self._strategy.settings.history_range_enough(history_range)
+
+        if enough_data:
+            return
+
+        if history_range is None:
+            logger.warning(f"Was not able to load history available for cluster {cluster}.")
+        else:
+            logger.warning(f"Not enough history available for cluster {cluster}.")
+
+        logger.warning(
+            "If the cluster is freshly installed, it might take some time for the enough data to be available."
+        )
+        self.metadata.append("NotEnoughHistoryAvailable")
+
     async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> ResourceScan:
         recommendation = await self._calculate_object_recommendations(k8s_object)
 
@@ -182,12 +208,16 @@ class Runner:
         clusters = await self._k8s_loader.list_clusters()
         if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
-            # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
+            # In this scenario we dont yet support determining
+            # which metrics belong to which cluster so the reccomendation can be incorrect
             raise ClusterNotSpecifiedException(
-                f"Cannot scan multiple clusters for this prometheus, Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
+                f"Cannot scan multiple clusters for this prometheus, "
+                f"Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
             )
 
         logger.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
+
+        await asyncio.gather(*[self._check_data_availability(cluster) for cluster in clusters])
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             scans_tasks = [
