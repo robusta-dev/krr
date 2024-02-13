@@ -170,6 +170,13 @@ def load_commands() -> None:
                     help="Adds the token needed to query Coralogix managed prometheus.",
                     rich_help_panel="Prometheus Coralogix Settings",
                 ),
+                openshift: bool = typer.Option(
+                    False,
+                    "--openshift",
+                    help="Used when running by Robusta inside an OpenShift cluster.",
+                    rich_help_panel="Prometheus Openshift Settings",
+                    hidden=True,
+                ),
                 cpu_min_value: int = typer.Option(
                     10,
                     "--cpu-min",
@@ -206,7 +213,10 @@ def load_commands() -> None:
                     False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"
                 ),
                 width: Optional[int] = typer.Option(
-                    None, "--width", help="Width of the output. Will use console width by default.", rich_help_panel="Logging Settings"
+                    None,
+                    "--width",
+                    help="Width of the output. Will use console width by default.",
+                    rich_help_panel="Logging Settings",
                 ),
                 file_output: Optional[str] = typer.Option(
                     None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"
@@ -241,6 +251,7 @@ def load_commands() -> None:
                         eks_secret_key=eks_secret_key,
                         eks_service_name=eks_service_name,
                         coralogix_token=coralogix_token,
+                        openshift=openshift,
                         max_workers=max_workers,
                         format=format,
                         verbose=verbose,

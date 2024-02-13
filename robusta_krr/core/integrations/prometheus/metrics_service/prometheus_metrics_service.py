@@ -9,6 +9,7 @@ from prometheus_api_client import PrometheusApiClientException
 from prometrix import PrometheusNotFound, get_custom_prometheus_connect
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
+from robusta_krr.core.integrations import openshift
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.batched import batched
@@ -64,6 +65,16 @@ class PrometheusMetricsService(MetricsService):
 
         self.auth_header = settings.prometheus_auth_header
         self.ssl_enabled = settings.prometheus_ssl_enabled
+
+        if settings.openshift:
+            logging.info("Openshift flag is set, trying to load token from service account.")
+            openshift_token = openshift.load_token()
+
+            if openshift_token:
+                logging.info("Openshift token is loaded successfully.")
+                self.auth_header = self.auth_header or f"Bearer {openshift_token}"
+            else:
+                logging.warning("Openshift token is not found, trying to connect without it.")
 
         self.prometheus_discovery = self.service_discovery(api_client=self.api_client)
 
