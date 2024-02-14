@@ -72,7 +72,7 @@ def load_commands() -> None:
                     None,
                     "--namespace",
                     "-n",
-                    help="List of namespaces to run on. By default, will run on all namespaces.",
+                    help="List of namespaces to run on. By default, will run on all namespaces except 'kube-system'.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 resources: List[str] = typer.Option(
