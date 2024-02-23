@@ -212,7 +212,7 @@ krr simple
 </details>
 
 <details>
-  <summary>Tweak the recommendation algorithm</summary>
+  <summary>Tweak the recommendation algorithm (strategy)</summary>
   
 Most helpful flags:
 

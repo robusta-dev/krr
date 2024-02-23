@@ -287,6 +287,7 @@ class Runner:
                 self._strategy.settings.timeframe_duration = min_step
 
             result = await self._collect_result()
+            logger.info("Result collected, displaying...")
             self._process_result(result)
         except ClusterNotSpecifiedException as e:
             logger.error(e)

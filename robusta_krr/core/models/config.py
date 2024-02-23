@@ -45,6 +45,7 @@ class Config(pd.BaseSettings):
     eks_service_name: Optional[str] = pd.Field(None)
     eks_managed_prom_region: Optional[str] = pd.Field(None)
     coralogix_token: Optional[str] = pd.Field(None)
+    openshift: bool = pd.Field(False)
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
