@@ -135,7 +135,7 @@ class PrometheusMetricsService(MetricsService):
             logger.error("Labels api not present on prometheus client")
             return []
 
-    async def get_history_range(self, history_duration: timedelta) -> tuple[datetime, datetime] | None:
+    async def get_history_range(self, history_duration: timedelta) -> tuple[datetime, datetime]:
         """
         Get the history range from Prometheus, based on container_memory_working_set_bytes.
         Returns:
@@ -149,12 +149,16 @@ class PrometheusMetricsService(MetricsService):
             end=now,
             step=timedelta(hours=1),
         )
-        values = result[0]["values"]
         try:
+            if isinstance(result, dict) and "result" in result:
+                result = result["result"]
+
+            values = result[0]["values"]
             start, end = values[0][0], values[-1][0]
             return datetime.fromtimestamp(start), datetime.fromtimestamp(end)
-        except (KeyError, IndexError):
-            return None
+        except (KeyError, IndexError) as e:
+            logger.debug(f"Returned from get_history_range: {result}")
+            raise ValueError("Error while getting history range") from e
 
     async def gather_data(
         self,
