@@ -108,7 +108,7 @@ class PrometheusMetricsService(MetricsService):
 
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(self.executor, lambda: self.prometheus.custom_query(query=query))
+        return await loop.run_in_executor(self.executor, lambda: self.prometheus.safe_custom_query(query=query))
 
     def validate_cluster_name(self):
         if not settings.prometheus_cluster_label and not settings.prometheus_label:
