@@ -114,7 +114,7 @@ class PrometheusMetricsService(MetricsService):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
-            lambda: self.prometheus.custom_query_range(
+            lambda: self.prometheus.safe_custom_query_range(
                 query=query, start_time=start, end_time=end, step=f"{step.seconds}s"
             ),
         )
