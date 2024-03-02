@@ -151,6 +151,7 @@ class Config(pd.BaseSettings):
     def get_kube_client(self, context: Optional[str]=None):
         api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
         if self.impersonate_user is not None:
+            # trick copied from https://github.com/kubernetes-client/python/issues/362
             api_client.set_default_header("Impersonate-User", self.impersonate_user)
         return api_client
 
