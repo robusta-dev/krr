@@ -34,15 +34,11 @@ HPAKey = tuple[str, str, str]
 
 
 class ClusterLoader:
-    def __init__(self, cluster: Optional[str]):
+    def __init__(self, cluster: Optional[str]=None):
         self.cluster = cluster
         # This executor will be running requests to Kubernetes API
         self.executor = ThreadPoolExecutor(settings.max_workers)
-        self.api_client = (
-            config.new_client_from_config(context=cluster, config_file=settings.kubeconfig)
-            if cluster is not None
-            else None
-        )
+        self.api_client = settings.get_kube_client(cluster)
         self.apps = client.AppsV1Api(api_client=self.api_client)
         self.custom_objects = client.CustomObjectsApi(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
