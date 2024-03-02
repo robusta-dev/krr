@@ -600,7 +600,7 @@ _We use pytest to run tests._
 4. Install dev dependencies:
 
 ```sh
-poetry install --group dev
+poetry install --with=dev
 ```
 
 5. Install robusta_krr as editable dependency:
