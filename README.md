@@ -219,8 +219,10 @@ Most helpful flags:
 - `--cpu-min` Sets the minimum recommended cpu value in millicores
 - `--mem-min` Sets the minimum recommended memory value in MB
 - `--history_duration` The duration of the Prometheus history data to use (in hours)
+- `--cpu-percentile` How to calculate the CPU recommendation (90 means 90th percentile of historical CPU)
+- `--memory-buffer-percentage` How to calculate the memory recommendation ("5" means add a 5% buffer to max historical memory)
 
-More specific information on Strategy Settings can be found using
+More information on strategy settings can be found using
 
 ```sh
 krr simple --help

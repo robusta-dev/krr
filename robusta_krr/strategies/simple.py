@@ -1,5 +1,7 @@
 import numpy as np
 import pydantic as pd
+import textwrap
+from typing import Optional
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
@@ -18,6 +20,7 @@ from robusta_krr.core.integrations.prometheus.metrics import (
     PercentileCPULoader,
     PrometheusMetric,
 )
+from robusta_krr.core.models.config import settings
 
 
 class SimpleStrategySettings(StrategySettings):
@@ -48,27 +51,39 @@ class SimpleStrategySettings(StrategySettings):
         return np.max(data_)
 
 
-class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
-    """
-    CPU request: {cpu_percentile}% percentile, limit: unset
-    Memory request: max + {memory_buffer_percentage}%, limit: max + {memory_buffer_percentage}%
-    History: {history_duration} hours
-    Step: {timeframe_duration} minutes
-
-    All parameters can be customized. For example: `krr simple --cpu_percentile=90 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
-
-    This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
-    If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
-
-    Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
-    """
+class SimpleStrategy(BaseStrategy):
 
     display_name = "simple"
     rich_console = True
 
+    def __init__(self, settings: SimpleStrategySettings):
+        super().__init__(settings=settings)
+        self.settings = settings  # it's not really necessary, but we repeat this to make the type checker happy
+    
     @property
     def metrics(self) -> list[type[PrometheusMetric]]:
         return [PercentileCPULoader(self.settings.cpu_percentile), MaxMemoryLoader, CPUAmountLoader, MemoryAmountLoader]
+
+    @property
+    def description(self) -> Optional[str]:
+        """
+        Generate a description for the strategy.
+        You can use Rich's markdown syntax to format the description.
+        """
+        return textwrap.dedent(f"""\
+            CPU request: {self.settings.cpu_percentile}% percentile, limit: unset, minimum: {settings.cpu_min_value}m
+            Memory request: max + {self.settings.memory_buffer_percentage}%, limit: max + {self.settings.memory_buffer_percentage}%, minimum: {settings.memory_min_value}Mi
+            History: {self.settings.history_duration} hours
+            Step: {self.settings.timeframe_duration} minutes
+
+            All parameters can be customized. For example: `krr simple --cpu-percentile=90 --memory-buffer-percentage=15 --history-duration=24 --timeframe-duration=0.5 --cpu-min=20 --mem-min=30`
+
+            This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
+            If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
+
+            Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
+            """)
+        
 
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData

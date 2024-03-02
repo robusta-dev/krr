@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from robusta_krr.core.abstract import formatters
-from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+from robusta_krr.core.abstract.strategies import BaseStrategy
 from robusta_krr.core.models.objects import KindLiteral
 
 logger = logging.getLogger("krr")
@@ -28,8 +28,8 @@ class Config(pd.BaseSettings):
     selector: Optional[str] = None
 
     # Value settings
-    cpu_min_value: int = pd.Field(10, ge=0)  # in millicores
-    memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
+    cpu_min_value: int = pd.Field(10, ge=0, description="Sets the minimum recommended cpu value in millicores.")  # in millicores
+    memory_min_value: int = pd.Field(100, ge=0, description="Sets the minimum recommended memory value in MB.")  # in megabytes
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
@@ -59,8 +59,6 @@ class Config(pd.BaseSettings):
     # Outputs Settings
     file_output: Optional[str] = pd.Field(None)
     slack_output: Optional[str] = pd.Field(None)
-
-    other_args: dict[str, Any]
 
     # Internal
     inside_cluster: bool = False
@@ -94,20 +92,11 @@ class Config(pd.BaseSettings):
             return "*"
 
         return [val.capitalize() for val in v]
-
-    def create_strategy(self) -> AnyStrategy:
-        StrategyType = AnyStrategy.find(self.strategy)
-        StrategySettingsType = StrategyType.get_settings_type()
-        return StrategyType(StrategySettingsType(**self.other_args))  # type: ignore
-
-    @pd.validator("strategy")
-    def validate_strategy(cls, v: str) -> str:
-        BaseStrategy.find(v)  # NOTE: raises if strategy is not found
-        return v
+    
 
     @pd.validator("format")
     def validate_format(cls, v: str) -> str:
-        formatters.find(v)  # NOTE: raises if strategy is not found
+        formatters.find(v)  # NOTE: raises if formatter is not found
         return v
 
     @property
@@ -150,7 +139,7 @@ class Config(pd.BaseSettings):
         logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
 
 
-# NOTE: This class is just a proxy for _config.
+# NOTE: This class is just a proxy for _config so you can access it globally without passing it around everywhere
 # Import settings from this module and use it like it is just a config object.
 class _Settings(Config):  # Config here is used for type checking
     def __init__(self) -> None:

@@ -69,19 +69,12 @@ MetricsPodData = dict[str, PodsTimeData]
 
 RunResult = dict[ResourceType, ResourceRecommendation]
 
-SelfBS = TypeVar("SelfBS", bound="BaseStrategy")
-_StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
-
 
 # An abstract base class for strategy implementation.
 # This class requires implementation of a 'run' method for calculating recommendation.
 # Make a subclass if you want to create a concrete strategy.
-class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
+class BaseStrategy(abc.ABC):
     """An abstract base class for strategy implementation.
-
-    This class is generic, and requires a type for the settings.
-    This settings type will be used for the settings property of the strategy.
-    It will be used to generate CLI parameters for this strategy, validated by pydantic.
 
     This class requires implementation of a 'run' method for calculating recommendation.
     Additionally, it provides a 'description' property for generating a description for the strategy.
@@ -102,28 +95,20 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     def metrics(self) -> Sequence[type[PrometheusMetric]]:
         pass
 
-    def __init__(self, settings: _StrategySettings):
+    def __init__(self, settings: StrategySettings):
         self.settings = settings
 
     def __str__(self) -> str:
-        return self._display_name.title()
+        return self.display_name.title()
 
     @property
-    def _display_name(self) -> str:
-        return getattr(self, "display_name", self.__class__.__name__.lower().removeprefix("strategy"))
-
-    @property
+    @abc.abstractmethod
     def description(self) -> Optional[str]:
         """
         Generate a description for the strategy.
-        You can use the settings in the description by using the format syntax.
-        Also you can use Rich's markdown syntax to format the description.
+        You can use Rich's markdown syntax to format the description.
         """
-
-        if self.__doc__ is None:
-            return None
-
-        return f"[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip()
+        pass
 
     # Abstract method that needs to be implemented by subclass.
     # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
@@ -131,33 +116,8 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
         pass
 
-    # This method is intended to return a strategy by its name.
-    @classmethod
-    def find(cls: type[SelfBS], name: str) -> type[SelfBS]:
-        strategies = cls.get_all()
-        if name.lower() in strategies:
-            return strategies[name.lower()]
-
-        raise ValueError(f"Unknown strategy name: {name}. Available strategies: {', '.join(strategies)}")
-
-    # This method is intended to return all the available strategies.
-    @classmethod
-    def get_all(cls: type[SelfBS]) -> dict[str, type[SelfBS]]:
-        from robusta_krr import strategies as _  # noqa: F401
-
-        return {sub_cls.display_name.lower(): sub_cls for sub_cls in cls.__subclasses__()}
-
-    # This method is intended to return the type of settings used in strategy.
-    @classmethod
-    def get_settings_type(cls) -> type[StrategySettings]:
-        return get_args(cls.__orig_bases__[0])[0]  # type: ignore
-
-
-AnyStrategy = BaseStrategy[StrategySettings]
-
 
 __all__ = [
-    "AnyStrategy",
     "BaseStrategy",
     "StrategySettings",
     "PodsTimeData",

@@ -10,7 +10,7 @@ from typing import Optional, Union
 from prometrix import PrometheusNotFound
 from slack_sdk import WebClient
 
-from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
+from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult, BaseStrategy, StrategySettings
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
 from robusta_krr.core.models.config import settings
@@ -27,11 +27,11 @@ logger = logging.getLogger("krr")
 class Runner:
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
 
-    def __init__(self) -> None:
+    def __init__(self, strategy) -> None:
         self._k8s_loader = KubernetesLoader()
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
-        self._strategy = settings.create_strategy()
+        self._strategy = strategy
 
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(settings.max_workers)
