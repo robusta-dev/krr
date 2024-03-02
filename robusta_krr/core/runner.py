@@ -17,11 +17,19 @@ from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
 from robusta_krr.utils.logo import ASCII_LOGO
-from robusta_krr.utils.print import print
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version
 
 logger = logging.getLogger("krr")
+
+
+def custom_print(*objects, rich: bool = True, force: bool = False) -> None:
+    """
+    A wrapper around `rich.print` that prints only if `settings.quiet` is False.
+    """
+    print_func = settings.logging_console.print if rich else print
+    if not settings.quiet or force:
+        print_func(*objects)  # type: ignore
 
 
 class Runner:
@@ -58,18 +66,17 @@ class Runner:
         if settings.quiet:
             return
 
-        print(ASCII_LOGO)
-        print(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
-        print(f"Using strategy: {self._strategy}")
-        print(f"Using formatter: {settings.format}")
-        print("")
+        custom_print(ASCII_LOGO)
+        custom_print(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
+        custom_print(f"Using strategy: {self._strategy}")
+        custom_print(f"Using formatter: {settings.format}")
+        custom_print("")
 
     def _process_result(self, result: Result) -> None:
         Formatter = settings.Formatter
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
-        print(formatted, rich=rich, force=True)
         if settings.file_output or settings.slack_output:
             if settings.file_output:
                 file_name = settings.file_output
@@ -77,7 +84,7 @@ class Runner:
                 file_name = settings.slack_output
             with open(file_name, "w") as target_file:
                 sys.stdout = target_file
-                print(formatted, rich=rich, force=True)
+                custom_print(formatted, rich=rich, force=True)
                 sys.stdout = sys.stdout
             if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
