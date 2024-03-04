@@ -375,6 +375,7 @@ Find about how KRR tries to find the default Prometheus to connect <a href="#pro
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
+| Default History 🕒          | 14 days                                                                                                    | 8 days                                             |
 
 <!-- ADVANCED USAGE EXAMPLES -->
 

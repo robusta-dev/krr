@@ -63,6 +63,7 @@ class Result(pd.BaseModel):
     resources: list[str] = ["cpu", "memory"]
     description: Optional[str] = None
     strategy: StrategyData
+    errors: list[dict[str, Any]] = pd.Field(default_factory=list)
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

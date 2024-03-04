@@ -72,6 +72,16 @@ class Config(pd.BaseSettings):
     def Formatter(self) -> formatters.FormatterFunc:
         return formatters.find(self.format)
 
+    @pd.validator("prometheus_url")
+    def validate_prometheus_url(cls, v: Optional[str]):
+        if v is None:
+            return None
+        
+        if not v.startswith("https://") and not v.startswith("http://"):
+            raise Exception("--prometheus-url must start with https:// or http://")
+        
+        return v
+
     @pd.validator("prometheus_other_headers", pre=True)
     def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
         if isinstance(headers, dict):
