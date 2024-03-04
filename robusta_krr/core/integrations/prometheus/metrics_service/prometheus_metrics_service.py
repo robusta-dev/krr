@@ -224,7 +224,6 @@ class PrometheusMetricsService(MetricsService):
                 }}[{period_literal}]
                 """
             )
-            replicasets = replicasets["result"]
             pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
             pod_owner_kind = "ReplicaSet"
 
@@ -246,7 +245,6 @@ class PrometheusMetricsService(MetricsService):
                 )
             """
         )
-        related_pods_result = related_pods_result["result"]
 
         if related_pods_result == []:
             return []
@@ -267,7 +265,6 @@ class PrometheusMetricsService(MetricsService):
                     }} == 1
                 """
             )
-            pods_status_result = pods_status_result["result"]
             current_pods_set |= {pod["metric"]["pod"] for pod in pods_status_result}
             del pods_status_result
 
