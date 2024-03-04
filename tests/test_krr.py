@@ -1,11 +1,9 @@
 import pytest
 from typer.testing import CliRunner
 
-from robusta_krr.main import app, load_commands
+from robusta_krr.main import app
 
 runner = CliRunner(mix_stderr=False)
-load_commands()
-
 STRATEGY_NAME = "simple"
 
 
