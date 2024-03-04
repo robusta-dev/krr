@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import numpy as np
 import pydantic as pd
 
@@ -46,6 +48,10 @@ class SimpleStrategySettings(StrategySettings):
             data_ = list(data.values())[0][:, 1]
 
         return np.max(data_)
+
+    def history_range_enough(self, history_range: tuple[timedelta, timedelta]) -> bool:
+        start, end = history_range
+        return min(end - start, self.history_timedelta) / self.timeframe_timedelta >= self.points_required
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):

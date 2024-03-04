@@ -1,7 +1,7 @@
 import asyncio
-import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from kubernetes.client import ApiClient
@@ -108,7 +108,19 @@ class PrometheusMetricsService(MetricsService):
 
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(self.executor, lambda: self.prometheus.safe_custom_query(query=query))
+        return await loop.run_in_executor(
+            self.executor, 
+            lambda: self.prometheus.safe_custom_query(query=query)["result"],
+        )
+
+    async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> dict:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self.executor,
+            lambda: self.prometheus.safe_custom_query_range(
+                query=query, start_time=start, end_time=end, step=f"{step.seconds}s"
+            )["result"],
+        )
 
     def validate_cluster_name(self):
         if not settings.prometheus_cluster_label and not settings.prometheus_label:
@@ -137,12 +149,34 @@ class PrometheusMetricsService(MetricsService):
             logger.error("Labels api not present on prometheus client")
             return []
 
+    async def get_history_range(self, history_duration: timedelta) -> tuple[datetime, datetime]:
+        """
+        Get the history range from Prometheus, based on container_memory_working_set_bytes.
+        Returns:
+            float: The first history point.
+        """
+
+        now = datetime.now()
+        result = await self.query_range(
+            "max(container_memory_working_set_bytes)",
+            start=now - history_duration,
+            end=now,
+            step=timedelta(hours=1),
+        )
+        try:
+            values = result[0]["values"]
+            start, end = values[0][0], values[-1][0]
+            return datetime.fromtimestamp(start), datetime.fromtimestamp(end)
+        except (KeyError, IndexError) as e:
+            logger.debug(f"Returned from get_history_range: {result}")
+            raise ValueError("Error while getting history range") from e
+
     async def gather_data(
         self,
         object: K8sObjectData,
         LoaderClass: type[PrometheusMetric],
-        period: datetime.timedelta,
-        step: datetime.timedelta = datetime.timedelta(minutes=30),
+        period: timedelta,
+        step: timedelta = timedelta(minutes=30),
     ) -> PodsTimeData:
         """
         ResourceHistoryData: The gathered resource history data.
@@ -164,12 +198,12 @@ class PrometheusMetricsService(MetricsService):
 
         return data
 
-    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
+    async def load_pods(self, object: K8sObjectData, period: timedelta) -> list[PodData]:
         """
         List pods related to the object and add them to the object's pods list.
         Args:
             object (K8sObjectData): The Kubernetes object.
-            period (datetime.timedelta): The time period for which to gather data.
+            period (timedelta): The time period for which to gather data.
         """
 
         logger.debug(f"Adding historic pods for {object}")

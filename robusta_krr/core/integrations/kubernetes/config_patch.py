@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from kubernetes.client import configuration
 from kubernetes.config import kube_config
 
@@ -25,7 +27,7 @@ class KubeConfigLoader(kube_config.KubeConfigLoader):
 class Configuration(configuration.Configuration):
     def __init__(
         self,
-        proxy: str | None = None,
+        proxy: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)

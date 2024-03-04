@@ -41,6 +41,8 @@ class Runner:
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = settings.create_strategy()
 
+        self.errors: list[dict] = []
+
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(settings.max_workers)
 
@@ -73,6 +75,8 @@ class Runner:
         custom_print("")
 
     def _process_result(self, result: Result) -> None:
+        result.errors = self.errors
+
         Formatter = settings.Formatter
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
@@ -149,13 +153,12 @@ class Runner:
             object.pods = await self._k8s_loader.load_pods(object)
 
             # NOTE: Kubernetes API returned pods, but Prometheus did not
+            # This might happen with fast executing jobs
             if object.pods != []:
                 object.add_warning("NoPrometheusPods")
                 logger.warning(
-                    f"Was not able to load any pods for {object} from Prometheus.\n\t"
-                    "This could mean that Prometheus is missing some required metrics.\n\t"
-                    "Loaded pods from Kubernetes API instead.\n\t"
-                    "See more info at https://github.com/robusta-dev/krr#requirements "
+                    f"Was not able to load any pods for {object} from Prometheus. "
+                    "Loaded pods from Kubernetes API instead."
                 )
 
         metrics = await prometheus_loader.gather_data(
@@ -172,6 +175,43 @@ class Runner:
 
         logger.info(f"Calculated recommendations for {object} (using {len(metrics)} metrics)")
         return self._format_result(result)
+
+    async def _check_data_availability(self, cluster: Optional[str]) -> None:
+        prometheus_loader = self._get_prometheus_loader(cluster)
+        if prometheus_loader is None:
+            return
+
+        try:
+            history_range = await prometheus_loader.get_history_range(self._strategy.settings.history_timedelta)
+        except ValueError:
+            logger.exception(f"Was not able to get history range for cluster {cluster}")
+            self.errors.append(
+                {
+                    "name": "HistoryRangeError",
+                }
+            )
+            return
+
+        logger.debug(f"History range for {cluster}: {history_range}")
+        enough_data = self._strategy.settings.history_range_enough(history_range)
+
+        if not enough_data:
+            logger.error(f"Not enough history available for cluster {cluster}.")
+            try_after = history_range[0] + self._strategy.settings.history_timedelta
+
+            logger.error(
+                "If the cluster is freshly installed, it might take some time for the enough data to be available."
+            )
+            logger.error(
+                f"Enough data is estimated to be available after {try_after}, "
+                "but will try to calculate recommendations anyway."
+            )
+            self.errors.append(
+                {
+                    "name": "NotEnoughHistoryAvailable",
+                    "retry_after": try_after,
+                }
+            )
 
     async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> ResourceScan:
         recommendation = await self._calculate_object_recommendations(k8s_object)
@@ -191,12 +231,19 @@ class Runner:
         clusters = await self._k8s_loader.list_clusters()
         if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
-            # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
+            # In this scenario we dont yet support determining
+            # which metrics belong to which cluster so the reccomendation can be incorrect
             raise ClusterNotSpecifiedException(
-                f"Cannot scan multiple clusters for this prometheus, Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
+                f"Cannot scan multiple clusters for this prometheus, "
+                f"Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
             )
 
         logger.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
+
+        if clusters is None:
+            await self._check_data_availability(None)
+        else:
+            await asyncio.gather(*[self._check_data_availability(cluster) for cluster in clusters])
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             scans_tasks = [
