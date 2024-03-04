@@ -46,7 +46,7 @@ def version() -> None:
 @app.command(name="simple", rich_help_panel="Strategies")
 def run_simple(
     # For new CLI options, use "--dashes-like-this" and "--not_undersores_like_this"
-    # For backwards compatibility, some CLI options support both styles  
+    # For backwards compatibility, some CLI options support both styles
     kubeconfig: Optional[str] = typer.Option(
         None,
         "--kubeconfig",
@@ -58,6 +58,12 @@ def run_simple(
         None,
         "--as",
         help="Impersonate a user, just like `kubectl --as`. For example, system:serviceaccount:default:krr-account.",
+        rich_help_panel="Kubernetes Settings",
+    ),
+        impersonate_group: Optional[str] = typer.Option(
+        None,
+        "--as-group",
+        help="Impersonate a user inside of a group, just like `kubectl --as-group`. For example, system:authenticated.",
         rich_help_panel="Kubernetes Settings",
     ),
     clusters: List[str] = typer.Option(
@@ -265,6 +271,7 @@ def run_simple(
         config = Config(
             kubeconfig=kubeconfig,
             impersonate_user=impersonate_user,
+            impersonate_group=impersonate_group,
             clusters="*" if all_clusters else clusters,
             namespaces="*" if "*" in namespaces else namespaces,
             resources="*" if "*" in resources else resources,
