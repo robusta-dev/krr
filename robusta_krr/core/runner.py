@@ -77,6 +77,8 @@ class Runner:
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
+        custom_print(formatted, rich=rich, force=True)
+
         if settings.file_output or settings.slack_output:
             if settings.file_output:
                 file_name = settings.file_output
