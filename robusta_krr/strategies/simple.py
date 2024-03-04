@@ -55,6 +55,8 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     History: {history_duration} hours
     Step: {timeframe_duration} minutes
 
+    All parameters can be customized. For example: `krr simple --cpu_percentile=90 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
+
     This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
     If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
 
