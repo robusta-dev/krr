@@ -108,7 +108,10 @@ class PrometheusMetricsService(MetricsService):
 
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(self.executor, lambda: self.prometheus.safe_custom_query(query=query))
+        return await loop.run_in_executor(
+            self.executor, 
+            lambda: self.prometheus.safe_custom_query(query=query)["result"],
+        )
 
     async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> dict:
         loop = asyncio.get_running_loop()
@@ -116,7 +119,7 @@ class PrometheusMetricsService(MetricsService):
             self.executor,
             lambda: self.prometheus.safe_custom_query_range(
                 query=query, start_time=start, end_time=end, step=f"{step.seconds}s"
-            ),
+            )["result"],
         )
 
     def validate_cluster_name(self):
@@ -161,9 +164,6 @@ class PrometheusMetricsService(MetricsService):
             step=timedelta(hours=1),
         )
         try:
-            if isinstance(result, dict) and "result" in result:
-                result = result["result"]
-
             values = result[0]["values"]
             start, end = values[0][0], values[-1][0]
             return datetime.fromtimestamp(start), datetime.fromtimestamp(end)
