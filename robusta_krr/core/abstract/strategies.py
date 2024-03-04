@@ -107,13 +107,12 @@ class BaseStrategy(abc.ABC):
         return self.display_name.title()
 
     @property
-    @abc.abstractmethod
     def description(self) -> Optional[str]:
         """
         Generate a description for the strategy.
         You can use Rich's markdown syntax to format the description.
         """
-        pass
+        return ""
 
     # Abstract method that needs to be implemented by subclass.
     # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
