@@ -1,7 +1,7 @@
 # Test environment for per-namespace scans
 # The purpose of this setup is to verify that per-namespace features work without cluster level permissions
 # You can test this ServiceAccount and KRR using:
-#   krr simple --as system:serviceaccount:default:krr-account -n default
+#   krr simple --as system:serviceaccount:kube-system:krr-account -n kube-system
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -22,6 +22,9 @@ rules:
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
   resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

@@ -61,7 +61,7 @@ class PrometheusMetricsLoader:
                 loader.validate_cluster_name()
                 return loader
             except MetricsNotFound as e:
-                logger.debug(f"{service_name} not found: {e}")
+                logger.info(f"{service_name} not found: {e}")
             except ApiException as e:
                 logger.warning(f"Unable to automatically discover a {service_name} in the cluster. Try specifying how to connect to Prometheus via cli options.")
 
