@@ -10,13 +10,11 @@ from kubernetes.client.models import (
     V1Container,
     V1DaemonSet,
     V1Deployment,
-    V1HorizontalPodAutoscalerList,
     V1Job,
     V1Pod,
     V1PodList,
     V1StatefulSet,
     V2HorizontalPodAutoscaler,
-    V2HorizontalPodAutoscalerList,
 )
 
 from robusta_krr.core.models.config import settings
@@ -158,7 +156,7 @@ class ClusterLoader:
 
         return ",".join(label_filters)
 
-    def __build_obj(
+    def __build_scannable_object(
         self, item: AnyKubernetesAPIObject, container: V1Container, kind: Optional[str] = None
     ) -> K8sObjectData:
         name = item.metadata.name
@@ -182,7 +180,46 @@ class ClusterLoader:
             return True
         return resource in settings.resources
 
-    async def _list_workflows(
+    async def _list_namespaced_or_global_objects(
+        self,
+        kind: KindLiteral,
+        all_namespaces_request: Callable,
+        namespaced_request: Callable
+    ) -> AsyncIterable[Any]:
+        logger.debug(f"Listing {kind}s in {self.cluster}")
+        loop = asyncio.get_running_loop()
+
+        if settings.namespaces == "*":
+            tasks = [
+                loop.run_in_executor(
+                    self.executor,
+                    lambda: all_namespaces_request(
+                        watch=False,
+                        label_selector=settings.selector,
+                    ),
+                )
+            ]
+        else:
+            tasks = [
+                loop.run_in_executor(
+                    self.executor,
+                    lambda ns=namespace: namespaced_request(
+                        namespace=ns,
+                        watch=False,
+                        label_selector=settings.selector,
+                    ),
+                )
+                for namespace in settings.namespaces
+            ]
+
+        total_items = 0
+        for task in asyncio.as_completed(tasks):
+            ret_single = await task
+            total_items += len(ret_single.items)
+            for item in ret_single.items:
+                yield item
+
+    async def _list_scannable_objects(
         self,
         kind: KindLiteral,
         all_namespaces_request: Callable,
@@ -197,49 +234,17 @@ class ClusterLoader:
         if not self.__kind_available[kind]:
             return
 
-        logger.debug(f"Listing {kind}s in {self.cluster}")
-        loop = asyncio.get_running_loop()
-
         try:
-            if settings.namespaces == "*":
-                tasks = [
-                    loop.run_in_executor(
-                        self.executor,
-                        lambda: all_namespaces_request(
-                            watch=False,
-                            label_selector=settings.selector,
-                        ),
-                    )
-                ]
-            else:
-                tasks = [
-                    loop.run_in_executor(
-                        self.executor,
-                        lambda ns=namespace: namespaced_request(
-                            namespace=ns,
-                            watch=False,
-                            label_selector=settings.selector,
-                        ),
-                    )
-                    for namespace in settings.namespaces
-                ]
+            async for item in self._list_namespaced_or_global_objects(kind, all_namespaces_request, namespaced_request):
+                if filter_workflows is not None and not filter_workflows(item):
+                    continue
 
-            total_items = 0
-            for task in asyncio.as_completed(tasks):
-                ret_single = await task
-                total_items += len(ret_single.items)
-                for item in ret_single.items:
-                    if filter_workflows is not None and not filter_workflows(item):
-                        continue
+                containers = extract_containers(item)
+                if asyncio.iscoroutine(containers):
+                    containers = await containers
 
-                    containers = extract_containers(item)
-                    if asyncio.iscoroutine(containers):
-                        containers = await containers
-
-                    for container in containers:
-                        yield self.__build_obj(item, container, kind)
-
-            logger.debug(f"Found {total_items} {kind} in {self.cluster}")
+                for container in containers:
+                    yield self.__build_scannable_object(item, container, kind)
         except ApiException as e:
             if kind in ("Rollout", "DeploymentConfig") and e.status in [400, 401, 403, 404]:
                 if self.__kind_available[kind]:
@@ -250,7 +255,7 @@ class ClusterLoader:
                 logger.error("Will skip this object type and continue.")
 
     def _list_deployments(self) -> AsyncIterable[K8sObjectData]:
-        return self._list_workflows(
+        return self._list_scannable_objects(
             kind="Deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_deployment,
@@ -283,7 +288,7 @@ class ClusterLoader:
 
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
-        return self._list_workflows(
+        return self._list_scannable_objects(
             kind="Rollout",
             all_namespaces_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_cluster_custom_object(
@@ -307,7 +312,7 @@ class ClusterLoader:
     def _list_deploymentconfig(self) -> AsyncIterable[K8sObjectData]:
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
-        return self._list_workflows(
+        return self._list_scannable_objects(
             kind="DeploymentConfig",
             all_namespaces_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_cluster_custom_object(
@@ -329,7 +334,7 @@ class ClusterLoader:
         )
 
     def _list_all_statefulsets(self) -> AsyncIterable[K8sObjectData]:
-        return self._list_workflows(
+        return self._list_scannable_objects(
             kind="StatefulSet",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_stateful_set,
@@ -337,7 +342,7 @@ class ClusterLoader:
         )
 
     def _list_all_daemon_set(self) -> AsyncIterable[K8sObjectData]:
-        return self._list_workflows(
+        return self._list_scannable_objects(
             kind="DaemonSet",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_daemon_set,
@@ -345,7 +350,7 @@ class ClusterLoader:
         )
 
     def _list_all_jobs(self) -> AsyncIterable[K8sObjectData]:
-        return self._list_workflows(
+        return self._list_scannable_objects(
             kind="Job",
             all_namespaces_request=self.batch.list_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_job,
@@ -357,7 +362,7 @@ class ClusterLoader:
         )
 
     def _list_all_cronjobs(self) -> AsyncIterable[K8sObjectData]:
-        return self._list_workflows(
+        return self._list_scannable_objects(
             kind="CronJob",
             all_namespaces_request=self.batch.list_cron_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_cron_job,
@@ -366,11 +371,14 @@ class ClusterLoader:
 
     async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:
         loop = asyncio.get_running_loop()
-
-        res: V1HorizontalPodAutoscalerList = await loop.run_in_executor(
-            self.executor, lambda: self.autoscaling_v1.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False)
+        res = await loop.run_in_executor(
+            self.executor,
+            lambda: self._list_namespaced_or_global_objects(
+                kind="HPA-v1",
+                all_namespaces_request=self.autoscaling_v1.list_horizontal_pod_autoscaler_for_all_namespaces,
+                namespaced_request=self.autoscaling_v1.list_namespaced_horizontal_pod_autoscaler,
+            ),
         )
-
         return {
             (
                 hpa.metadata.namespace,
@@ -384,17 +392,19 @@ class ClusterLoader:
                 target_cpu_utilization_percentage=hpa.spec.target_cpu_utilization_percentage,
                 target_memory_utilization_percentage=None,
             )
-            for hpa in res.items
+            async for hpa in res
         }
 
     async def __list_hpa_v2(self) -> dict[HPAKey, HPAData]:
         loop = asyncio.get_running_loop()
-
-        res: V2HorizontalPodAutoscalerList = await loop.run_in_executor(
+        res = await loop.run_in_executor(
             self.executor,
-            lambda: self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces(watch=False),
+            lambda: self._list_namespaced_or_global_objects(
+                kind="HPA-v2",
+                all_namespaces_request=self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces,
+                namespaced_request=self.autoscaling_v2.list_namespaced_horizontal_pod_autoscaler,
+            ),
         )
-
         def __get_metric(hpa: V2HorizontalPodAutoscaler, metric_name: str) -> Optional[float]:
             return next(
                 (
@@ -404,7 +414,6 @@ class ClusterLoader:
                 ),
                 None,
             )
-
         return {
             (
                 hpa.metadata.namespace,
@@ -418,7 +427,7 @@ class ClusterLoader:
                 target_cpu_utilization_percentage=__get_metric(hpa, "cpu"),
                 target_memory_utilization_percentage=__get_metric(hpa, "memory"),
             )
-            for hpa in res.items
+            async for hpa in res
         }
 
     # TODO: What should we do in case of other metrics bound to the HPA?
