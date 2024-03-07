@@ -30,6 +30,7 @@ class SimpleStrategySettings(StrategySettings):
     points_required: int = pd.Field(
         100, ge=1, description="The number of data points required to make a recommendation for a resource."
     )
+    allow_hpa: bool = pd.Field(False, description="Whether to calculate recommendations even when there is an HPA scaler defined on that resource.")
 
     def calculate_memory_proposal(self, data: PodsTimeData) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
@@ -65,6 +66,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
     If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
+    You can override this behaviour by passing the --allow_hpa flag
 
     Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
     """
@@ -93,7 +95,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if len(filtered_data) == 0:
             return ResourceRecommendation.undefined(info="Not enough data")
 
-        if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None:
+        if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None and not self.settings.allow_hpa:
             return ResourceRecommendation.undefined(info="HPA detected")
 
         cpu_usage = self.settings.calculate_cpu_proposal(filtered_data)
@@ -116,7 +118,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if len(filtered_data) == 0:
             return ResourceRecommendation.undefined(info="Not enough data")
 
-        if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None:
+        if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None and not self.settings.allow_hpa:
             return ResourceRecommendation.undefined(info="HPA detected")
 
         memory_usage = self.settings.calculate_memory_proposal(filtered_data)
