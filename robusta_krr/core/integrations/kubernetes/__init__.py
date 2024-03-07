@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import AsyncGenerator, AsyncIterator, Callable, Optional, Union
+from typing import Any, AsyncGenerator, AsyncIterator, Callable, Iterable, Optional, Union
 
 import aiostream
 from kubernetes import client, config  # type: ignore
@@ -12,6 +12,7 @@ from kubernetes.client.models import (
     V1Deployment,
     V1HorizontalPodAutoscalerList,
     V1Job,
+    V1JobList,
     V1LabelSelector,
     V1Pod,
     V1PodList,
@@ -25,7 +26,6 @@ from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral,
 from robusta_krr.core.models.result import ResourceAllocations
 
 from . import config_patch as _
-from .rollout import RolloutAppsV1Api
 
 logger = logging.getLogger("krr")
 
@@ -44,7 +44,7 @@ class ClusterLoader:
             else None
         )
         self.apps = client.AppsV1Api(api_client=self.api_client)
-        self.rollout = RolloutAppsV1Api(api_client=self.api_client)
+        self.custom_objects = client.CustomObjectsApi(api_client=self.api_client)
         self.batch = client.BatchV1Api(api_client=self.api_client)
         self.core = client.CoreV1Api(api_client=self.api_client)
         self.autoscaling_v1 = client.AutoscalingV1Api(api_client=self.api_client)
@@ -73,6 +73,7 @@ class ClusterLoader:
             self._list_all_statefulsets(),
             self._list_all_daemon_set(),
             self._list_all_jobs(),
+            self._list_all_cronjobs(),
         )
 
         async with objects_combined.stream() as streamer:
@@ -83,17 +84,43 @@ class ClusterLoader:
                 yield object
 
     async def list_pods(self, object: K8sObjectData) -> list[PodData]:
-        selector = self._build_selector_query(object._api_resource.spec.selector)
+        if object.selector is None:
+            return []
+
+        selector = self._build_selector_query(object.selector)
         if selector is None:
             return []
 
         loop = asyncio.get_running_loop()
-        ret: V1PodList = await loop.run_in_executor(
-            self.executor,
-            lambda: self.core.list_namespaced_pod(
-                namespace=object._api_resource.metadata.namespace, label_selector=selector
-            ),
-        )
+
+        if object.kind == "CronJob":
+            ret: V1JobList = await loop.run_in_executor(
+                self.executor,
+                lambda: self.batch.list_namespaced_job(
+                    namespace=object._api_resource.metadata.namespace, label_selector=selector
+                ),
+            )
+            logger.info(f"Found {len(ret.items)} jobs for {object.kind} {object.name} in {self.cluster}")
+            selectors = [
+                ml[0]["batch.kubernetes.io/controller-uid"]
+                for job in ret.items
+                if len(ml := job.spec.selector.matchlabels) == 1
+            ]
+            ret: V1PodList = await loop.run_in_executor(
+                self.executor,
+                lambda: self.core.list_namespaced_pod(
+                    namespace=object._api_resource.metadata.namespace,
+                    label_selector=f"batch.kubernetes.io/controller-uid in ({','.join(selectors)})",
+                ),
+            )
+        else:
+            ret: V1PodList = await loop.run_in_executor(
+                self.executor,
+                lambda: self.core.list_namespaced_pod(
+                    namespace=object._api_resource.metadata.namespace, label_selector=selector
+                ),
+            )
+
         return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
 
     @staticmethod
@@ -142,7 +169,12 @@ class ClusterLoader:
         return resource.capitalize() in settings.resources
 
     async def _list_workflows(
-        self, kind: KindLiteral, all_namespaces_request: Callable, namespaced_request: Callable
+        self,
+        kind: KindLiteral,
+        all_namespaces_request: Callable,
+        namespaced_request: Callable,
+        extract_containers: Callable[[Any], Iterable[K8sObjectData]],
+        filter_workflows: Optional[Callable[[Any], bool]] = None,
     ) -> AsyncIterator[K8sObjectData]:
         if not self._should_list_resource(kind):
             logger.debug(f"Skipping {kind}s in {self.cluster}")
@@ -165,8 +197,9 @@ class ClusterLoader:
                 )
                 logger.debug(f"Found {len(ret_multi.items)} {kind} in {self.cluster}")
                 for item in ret_multi.items:
-                    for container in item.spec.template.spec.containers:
-                        yield self.__build_obj(item, container, kind)
+                    if filter_workflows is None or filter_workflows(item):
+                        for container in extract_containers(item):
+                            yield self.__build_obj(item, container, kind)
             else:
                 tasks = [
                     loop.run_in_executor(
@@ -185,8 +218,9 @@ class ClusterLoader:
                     ret_single = await task
                     total_items += len(ret_single.items)
                     for item in ret_single.items:
-                        for container in item.spec.template.spec.containers:
-                            yield self.__build_obj(item, container, kind)
+                        if filter_workflows is None or filter_workflows(item):
+                            for container in extract_containers(item):
+                                yield self.__build_obj(item, container, kind)
 
                 logger.debug(f"Found {total_items} {kind} in {self.cluster}")
         except ApiException as e:
@@ -203,13 +237,15 @@ class ClusterLoader:
             kind="Deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_deployment,
+            extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
     def _list_rollouts(self) -> AsyncIterator[K8sObjectData]:
         return self._list_workflows(
             kind="Rollout",
-            all_namespaces_request=self.rollout.list_rollout_for_all_namespaces,
-            namespaced_request=self.rollout.list_namespaced_rollout,
+            all_namespaces_request=lambda **kwargs: self.custom_objects.list_cluster_custom_object,
+            namespaced_request=lambda **kwargs: self.custom_objects.list_namespaced_custom_object,
+            extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
     def _list_all_statefulsets(self) -> AsyncIterator[K8sObjectData]:
@@ -217,6 +253,7 @@ class ClusterLoader:
             kind="StatefulSet",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_stateful_set,
+            extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
     def _list_all_daemon_set(self) -> AsyncIterator[K8sObjectData]:
@@ -224,6 +261,7 @@ class ClusterLoader:
             kind="DaemonSet",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_daemon_set,
+            extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
     def _list_all_jobs(self) -> AsyncIterator[K8sObjectData]:
@@ -231,6 +269,19 @@ class ClusterLoader:
             kind="Job",
             all_namespaces_request=self.batch.list_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_job,
+            extract_containers=lambda item: item.spec.template.spec.containers,
+            # NOTE: If the job has ownerReference and it is a CronJob, then we should skip it
+            filter_workflows=lambda item: not any(
+                owner.kind == "CronJob" for owner in item.metadata.owner_references or []
+            ),
+        )
+
+    def _list_all_cronjobs(self) -> AsyncIterator[K8sObjectData]:
+        return self._list_workflows(
+            kind="CronJob",
+            all_namespaces_request=self.batch.list_cron_job_for_all_namespaces,
+            namespaced_request=self.batch.list_namespaced_cron_job,
+            extract_containers=lambda item: item.spec.job_template.spec.template.spec.containers,
         )
 
     async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:

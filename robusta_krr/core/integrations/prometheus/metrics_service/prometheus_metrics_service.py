@@ -109,7 +109,7 @@ class PrometheusMetricsService(MetricsService):
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            self.executor, 
+            self.executor,
             lambda: self.prometheus.safe_custom_query(query=query)["result"],
         )
 
@@ -208,26 +208,46 @@ class PrometheusMetricsService(MetricsService):
 
         logger.debug(f"Adding historic pods for {object}")
 
+        # What about loading labels with
+        # krr.robusta.dev/kind: CustomKind
+        # krr.robusta.dev/key:
+
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"
         pod_owners: list[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
-        if object.kind in ["Deployment", "Rollout"]:
+        if object.kind in ["Deployment", "Rollout", "DeploymentConfig"]:
             replicasets = await self.query(
                 f"""
-                kube_replicaset_owner{{
-                    owner_name="{object.name}",
-                    owner_kind="{object.kind}",
-                    namespace="{object.namespace}"
-                    {cluster_label}
-                }}[{period_literal}]
+                    kube_replicaset_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
                 """
             )
-            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
+            pod_owners = {replicaset["metric"]["replicaset"] for replicaset in replicasets}
             pod_owner_kind = "ReplicaSet"
 
             del replicasets
+
+        elif object.kind == "CronJob":
+            jobs = await self.query(
+                f"""
+                    kube_job_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                """
+            )
+            pod_owners = {job["metric"]["job_name"] for job in jobs}
+            pod_owner_kind = "Job"
+
+            del jobs
         else:
             pod_owners = [object.name]
             pod_owner_kind = object.kind
