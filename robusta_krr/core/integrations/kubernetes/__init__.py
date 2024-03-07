@@ -25,6 +25,8 @@ from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 
+from robusta_krr.utils.object_like_dict import dict_to_object
+
 from . import config_patch as _
 
 logger = logging.getLogger("krr")
@@ -241,10 +243,26 @@ class ClusterLoader:
         )
 
     def _list_rollouts(self) -> AsyncIterator[K8sObjectData]:
+        # NOTE: Using custom objects API returns dicts, but all other APIs return objects
+        # We need to handle this difference using a small wrapper
         return self._list_workflows(
             kind="Rollout",
-            all_namespaces_request=lambda **kwargs: self.custom_objects.list_cluster_custom_object,
-            namespaced_request=lambda **kwargs: self.custom_objects.list_namespaced_custom_object,
+            all_namespaces_request=lambda **kwargs: dict_to_object(
+                self.custom_objects.list_cluster_custom_object(
+                    group="argoproj.io",
+                    version="v1alpha1",
+                    plural="rollouts",
+                    **kwargs,
+                )
+            ),
+            namespaced_request=lambda **kwargs: dict_to_object(
+                self.custom_objects.list_namespaced_custom_object(
+                    group="argoproj.io",
+                    version="v1alpha1",
+                    plural="rollouts",
+                    **kwargs,
+                )
+            ),
             extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
