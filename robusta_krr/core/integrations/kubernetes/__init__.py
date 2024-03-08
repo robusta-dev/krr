@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, AsyncGenerator, AsyncIterator, Callable, Iterable, Optional, Union
+from typing import Any, AsyncGenerator, AsyncIterator, Awaitable, Callable, Iterable, Optional, Union
 from collections import defaultdict
 
 import aiostream
@@ -103,7 +103,7 @@ class ClusterLoader:
                     namespace=object._api_resource.metadata.namespace, label_selector=selector
                 ),
             )
-            logger.info(f"Found {len(ret.items)} jobs for {object.kind} {object.name} in {self.cluster}")
+            logger.debug(f"Found {len(ret.items)} jobs for {object.kind} {object.name} in {self.cluster}")
             selectors = [
                 ml[0]["batch.kubernetes.io/controller-uid"]
                 for job in ret.items
@@ -147,9 +147,9 @@ class ClusterLoader:
             label_filters += [
                 ClusterLoader._get_match_expression_filter(expression) for expression in selector.match_expressions
             ]
-        
+
         if label_filters == []:
-            # NOTE: This might mean that we have DeploymentConfig, 
+            # NOTE: This might mean that we have DeploymentConfig,
             # which uses ReplicationController and it has a dict like matchLabels
             if len(selector) != 0:
                 label_filters += [f"{label[0]}={label[1]}" for label in selector.items()]
@@ -187,13 +187,13 @@ class ClusterLoader:
         kind: KindLiteral,
         all_namespaces_request: Callable,
         namespaced_request: Callable,
-        extract_containers: Callable[[Any], Iterable[V1Container]],
+        extract_containers: Callable[[Any], Iterable[V1Container]] | Callable[[Any], Awaitable[Iterable[V1Container]]],
         filter_workflows: Optional[Callable[[Any], bool]] = None,
     ) -> AsyncIterator[K8sObjectData]:
         if not self._should_list_resource(kind):
             logger.debug(f"Skipping {kind}s in {self.cluster}")
             return
-        
+
         if not self.__kind_available[kind]:
             return
 
@@ -211,9 +211,15 @@ class ClusterLoader:
                 )
                 logger.debug(f"Found {len(ret_multi.items)} {kind} in {self.cluster}")
                 for item in ret_multi.items:
-                    if filter_workflows is None or filter_workflows(item):
-                        for container in extract_containers(item):
-                            yield self.__build_obj(item, container, kind)
+                    if filter_workflows is not None and not filter_workflows(item):
+                        continue
+
+                    containers = extract_containers(item)
+                    if asyncio.iscoroutine(containers):
+                        containers = await containers
+
+                    for container in containers:
+                        yield self.__build_obj(item, container, kind)
             else:
                 tasks = [
                     loop.run_in_executor(
@@ -232,9 +238,15 @@ class ClusterLoader:
                     ret_single = await task
                     total_items += len(ret_single.items)
                     for item in ret_single.items:
-                        if filter_workflows is None or filter_workflows(item):
-                            for container in extract_containers(item):
-                                yield self.__build_obj(item, container, kind)
+                        if filter_workflows is not None and not filter_workflows(item):
+                            continue
+
+                        containers = extract_containers(item)
+                        if asyncio.iscoroutine(containers):
+                            containers = await containers
+
+                        for container in containers:
+                            yield self.__build_obj(item, container, kind)
 
                 logger.debug(f"Found {total_items} {kind} in {self.cluster}")
         except ApiException as e:
@@ -255,6 +267,29 @@ class ClusterLoader:
         )
 
     def _list_rollouts(self) -> AsyncIterator[K8sObjectData]:
+        async def _extract_containers(item: Any) -> list[V1Container]:
+            if item.spec.template is not None:
+                return item.spec.template.spec.containers
+
+            loop = asyncio.get_running_loop()
+
+            logging.debug(
+                f"Rollout has workloadRef, fetching template for {item.metadata.name} in {item.metadata.namespace}"
+            )
+
+            # Template can be None and object might have workloadRef
+            workloadRef = item.spec.workloadRef
+            if workloadRef is not None:
+                ret = await loop.run_in_executor(
+                    self.executor,
+                    lambda: self.apps.read_namespaced_deployment(
+                        namespace=item.metadata.namespace, name=workloadRef.name
+                    ),
+                )
+                return ret.spec.template.spec.containers
+
+            return []
+
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
         return self._list_workflows(
@@ -275,10 +310,7 @@ class ClusterLoader:
                     **kwargs,
                 )
             ),
-            # TODO: Template can be None and object might have workflowRef
-            extract_containers=lambda item: (
-                item.spec.template.spec.containers if item.spec.template is not None else []
-            ),
+            extract_containers=_extract_containers,
         )
 
     def _list_deploymentconfig(self) -> AsyncIterator[K8sObjectData]:
