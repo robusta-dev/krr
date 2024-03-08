@@ -217,7 +217,7 @@ class PrometheusMetricsService(MetricsService):
         pod_owners: list[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
-        if object.kind in ["Deployment", "Rollout", "DeploymentConfig"]:
+        if object.kind in ["Deployment", "Rollout"]:
             replicasets = await self.query(
                 f"""
                     kube_replicaset_owner{{
@@ -232,6 +232,22 @@ class PrometheusMetricsService(MetricsService):
             pod_owner_kind = "ReplicaSet"
 
             del replicasets
+
+        elif object.kind == "DeploymentConfig":
+            replication_controllers = await self.query(
+                f"""
+                    kube_replicationcontroller_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                """
+            )
+            pod_owners = {repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers}
+            pod_owner_kind = "ReplicationController"
+
+            del replication_controllers
 
         elif object.kind == "CronJob":
             jobs = await self.query(

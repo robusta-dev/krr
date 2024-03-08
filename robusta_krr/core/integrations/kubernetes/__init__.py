@@ -72,6 +72,7 @@ class ClusterLoader:
         objects_combined = aiostream.stream.merge(
             self._list_deployments(),
             self._list_rollouts(),
+            self._list_deploymentconfig(),
             self._list_all_statefulsets(),
             self._list_all_daemon_set(),
             self._list_all_jobs(),
@@ -137,12 +138,23 @@ class ClusterLoader:
 
     @staticmethod
     def _build_selector_query(selector: V1LabelSelector) -> Union[str, None]:
-        label_filters = [f"{label[0]}={label[1]}" for label in selector.match_labels.items()]
+        label_filters = []
+
+        if selector.match_labels is not None:
+            label_filters += [f"{label[0]}={label[1]}" for label in selector.match_labels.items()]
 
         if selector.match_expressions is not None:
-            label_filters.extend(
-                [ClusterLoader._get_match_expression_filter(expression) for expression in selector.match_expressions]
-            )
+            label_filters += [
+                ClusterLoader._get_match_expression_filter(expression) for expression in selector.match_expressions
+            ]
+        
+        if label_filters == []:
+            # NOTE: This might mean that we have DeploymentConfig, 
+            # which uses ReplicationController and it has a dict like matchLabels
+            if len(selector) != 0:
+                label_filters += [f"{label[0]}={label[1]}" for label in selector.items()]
+            else:
+                return None
 
         return ",".join(label_filters)
 
@@ -165,10 +177,10 @@ class ClusterLoader:
         obj._api_resource = item
         return obj
 
-    def _should_list_resource(self, resource: str):
+    def _should_list_resource(self, resource: str) -> bool:
         if settings.resources == "*":
             return True
-        return resource.capitalize() in settings.resources
+        return resource in settings.resources
 
     async def _list_workflows(
         self,
@@ -260,6 +272,31 @@ class ClusterLoader:
                     group="argoproj.io",
                     version="v1alpha1",
                     plural="rollouts",
+                    **kwargs,
+                )
+            ),
+            # TODO: Template can be None and object might have workflowRef
+            extract_containers=lambda item: (
+                item.spec.template.spec.containers if item.spec.template is not None else []
+            ),
+        )
+
+    def _list_deploymentconfig(self) -> AsyncIterator[K8sObjectData]:
+        return self._list_workflows(
+            kind="DeploymentConfig",
+            all_namespaces_request=lambda **kwargs: dict_to_object(
+                self.custom_objects.list_cluster_custom_object(
+                    group="apps.openshift.io",
+                    version="v1",
+                    plural="deploymentconfigs",
+                    **kwargs,
+                )
+            ),
+            namespaced_request=lambda **kwargs: dict_to_object(
+                self.custom_objects.list_namespaced_custom_object(
+                    group="apps.openshift.io",
+                    version="v1",
+                    plural="deploymentconfigs",
                     **kwargs,
                 )
             ),

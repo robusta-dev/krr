@@ -19,5 +19,11 @@ class dict_to_object:
     def __repr__(self):
         return repr(self.__dict__)
 
+    def __len__(self):
+        return len(self.__dict__)
+
     def get(self, key, default=None):
         return self.__dict__.get(key, default)
+
+    def items(self):
+        return self.__dict__.items()
