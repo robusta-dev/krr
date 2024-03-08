@@ -2,6 +2,7 @@ import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, AsyncGenerator, AsyncIterator, Callable, Iterable, Optional, Union
+from collections import defaultdict
 
 import aiostream
 from kubernetes import client, config  # type: ignore
@@ -13,7 +14,6 @@ from kubernetes.client.models import (
     V1HorizontalPodAutoscalerList,
     V1Job,
     V1JobList,
-    V1LabelSelector,
     V1Pod,
     V1PodList,
     V1StatefulSet,
@@ -52,7 +52,7 @@ class ClusterLoader:
         self.autoscaling_v1 = client.AutoscalingV1Api(api_client=self.api_client)
         self.autoscaling_v2 = client.AutoscalingV2Api(api_client=self.api_client)
 
-        self.__rollouts_available = True
+        self.__kind_available: defaultdict[KindLiteral, bool] = defaultdict(lambda: True)
 
     async def list_scannable_objects(self) -> AsyncGenerator[K8sObjectData, None]:
         """List all scannable objects.
@@ -137,7 +137,7 @@ class ClusterLoader:
         return f"{expression.key} {expression.operator} ({values})"
 
     @staticmethod
-    def _build_selector_query(selector: V1LabelSelector) -> Union[str, None]:
+    def _build_selector_query(selector: Any) -> Union[str, None]:
         label_filters = []
 
         if selector.match_labels is not None:
@@ -187,14 +187,14 @@ class ClusterLoader:
         kind: KindLiteral,
         all_namespaces_request: Callable,
         namespaced_request: Callable,
-        extract_containers: Callable[[Any], Iterable[K8sObjectData]],
+        extract_containers: Callable[[Any], Iterable[V1Container]],
         filter_workflows: Optional[Callable[[Any], bool]] = None,
     ) -> AsyncIterator[K8sObjectData]:
         if not self._should_list_resource(kind):
             logger.debug(f"Skipping {kind}s in {self.cluster}")
             return
-
-        if kind == "Rollout" and not self.__rollouts_available:
+        
+        if not self.__kind_available[kind]:
             return
 
         logger.debug(f"Listing {kind}s in {self.cluster}")
@@ -238,10 +238,10 @@ class ClusterLoader:
 
                 logger.debug(f"Found {total_items} {kind} in {self.cluster}")
         except ApiException as e:
-            if kind == "Rollout" and e.status in [400, 401, 403, 404]:
-                if self.__rollouts_available:
-                    logger.debug(f"Rollout API not available in {self.cluster}")
-                self.__rollouts_available = False
+            if kind in ("Rollout", "DeploymentConfig") and e.status in [400, 401, 403, 404]:
+                if self.__kind_available[kind]:
+                    logger.debug(f"{kind} API not available in {self.cluster}")
+                self.__kind_available[kind] = False
             else:
                 logger.exception(f"Error {e.status} listing {kind} in cluster {self.cluster}: {e.reason}")
                 logger.error("Will skip this object type and continue.")
@@ -282,6 +282,8 @@ class ClusterLoader:
         )
 
     def _list_deploymentconfig(self) -> AsyncIterator[K8sObjectData]:
+        # NOTE: Using custom objects API returns dicts, but all other APIs return objects
+        # We need to handle this difference using a small wrapper
         return self._list_workflows(
             kind="DeploymentConfig",
             all_namespaces_request=lambda **kwargs: dict_to_object(
