@@ -177,19 +177,7 @@ def load_commands() -> None:
                     rich_help_panel="Prometheus Openshift Settings",
                     hidden=True,
                 ),
-                cpu_min_value: int = typer.Option(
-                    10,
-                    "--cpu-min",
-                    help="Sets the minimum recommended cpu value in millicores.",
-                    rich_help_panel="Recommendation Settings",
-                ),
-                memory_min_value: int = typer.Option(
-                    100,
-                    "--mem-min",
-                    help="Sets the minimum recommended memory value in MB.",
-                    rich_help_panel="Recommendation Settings",
-                ),
-                max_workers: int = typer.Option(
+                                max_workers: int = typer.Option(
                     10,
                     "--max-workers",
                     "-w",
@@ -226,6 +214,18 @@ def load_commands() -> None:
                     "--slackoutput",
                     help="Send to output to a slack channel, must have SLACK_BOT_TOKEN",
                     rich_help_panel="Output Settings",
+                ),
+                cpu_min_value: int = typer.Option(
+                    10,
+                    "--cpu-min",
+                    help="Sets the minimum recommended cpu value in millicores.",
+                    rich_help_panel="Strategy Settings",
+                ),
+                memory_min_value: int = typer.Option(
+                    100,
+                    "--mem-min",
+                    help="Sets the minimum recommended memory value in MB.",
+                    rich_help_panel="Strategy Settings",
                 ),
                 **strategy_args,
             ) -> None:
