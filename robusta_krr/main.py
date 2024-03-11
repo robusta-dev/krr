@@ -18,7 +18,7 @@ from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
 
-app = typer.Typer(pretty_exceptions_show_locals=False, pretty_exceptions_short=True, no_args_is_help=True)
+app = typer.Typer(pretty_exceptions_show_locals=False, pretty_exceptions_short=True, no_args_is_help=True, help="Run `krr simple --help` to see all command line options")
 
 # NOTE: Disable insecure request warnings, as it might be expected to use self-signed certificates inside the cluster
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
