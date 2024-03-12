@@ -1,10 +1,10 @@
-class dict_to_object:
+class ObjectLikeDict:
     def __init__(self, dictionary):
         for key, value in dictionary.items():
             if isinstance(value, dict):
-                value = dict_to_object(value)  # Convert inner dict
+                value = ObjectLikeDict(value)  # Convert inner dict
             if isinstance(value, list):
-                value = [dict_to_object(item) if isinstance(item, dict) else item for item in value]
+                value = [ObjectLikeDict(item) if isinstance(item, dict) else item for item in value]
             self.__dict__[key] = value
 
     def __getattr__(self, name):

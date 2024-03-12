@@ -25,7 +25,7 @@ from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 
-from robusta_krr.utils.object_like_dict import dict_to_object
+from robusta_krr.utils.object_like_dict import ObjectLikeDict
 
 from . import config_patch as _
 
@@ -53,6 +53,9 @@ class ClusterLoader:
         self.autoscaling_v2 = client.AutoscalingV2Api(api_client=self.api_client)
 
         self.__kind_available: defaultdict[KindLiteral, bool] = defaultdict(lambda: True)
+
+        self.__jobs_for_cronjobs: dict[str, list[V1Job]] = {}
+        self.__jobs_loading_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
     async def list_scannable_objects(self) -> AsyncGenerator[K8sObjectData, None]:
         """List all scannable objects.
@@ -86,43 +89,51 @@ class ClusterLoader:
                     continue
                 yield object
 
-    async def list_pods(self, object: K8sObjectData) -> list[PodData]:
-        if object.selector is None:
-            return []
+    async def _list_jobs_for_cronjobs(self, namespace: str) -> list[V1Job]:
+        if namespace not in self.__jobs_for_cronjobs:
+            loop = asyncio.get_running_loop()
 
-        selector = self._build_selector_query(object.selector)
-        if selector is None:
-            return []
+            async with self.__jobs_loading_locks[namespace]:
+                logging.debug(f"Loading jobs for cronjobs in {namespace}")
+                ret = await loop.run_in_executor(
+                    self.executor,
+                    lambda: self.batch.list_namespaced_job(namespace=namespace),
+                )
+                self.__jobs_for_cronjobs[namespace] = ret.items
+
+        return self.__jobs_for_cronjobs[namespace]
+
+    async def list_pods(self, object: K8sObjectData) -> list[PodData]:
+        print(f"Listing pods for {object._api_resource.spec}")
 
         loop = asyncio.get_running_loop()
 
         if object.kind == "CronJob":
-            ret: V1JobList = await loop.run_in_executor(
-                self.executor,
-                lambda: self.batch.list_namespaced_job(
-                    namespace=object._api_resource.metadata.namespace, label_selector=selector
-                ),
-            )
-            logger.debug(f"Found {len(ret.items)} jobs for {object.kind} {object.name} in {self.cluster}")
-            selectors = [
-                ml[0]["batch.kubernetes.io/controller-uid"]
-                for job in ret.items
-                if len(ml := job.spec.selector.matchlabels) == 1
+            namespace_jobs = await self._list_jobs_for_cronjobs(object.namespace)
+            ownered_jobs_uids = [
+                job.metadata.uid
+                for job in namespace_jobs
+                if any(
+                    owner.kind == "CronJob" and owner.uid == object._api_resource.metadata.uid
+                    for owner in job.metadata.owner_references or []
+                )
             ]
-            ret: V1PodList = await loop.run_in_executor(
-                self.executor,
-                lambda: self.core.list_namespaced_pod(
-                    namespace=object._api_resource.metadata.namespace,
-                    label_selector=f"batch.kubernetes.io/controller-uid in ({','.join(selectors)})",
-                ),
-            )
+            selector = f"batch.kubernetes.io/controller-uid in ({','.join(ownered_jobs_uids)})"
+
         else:
-            ret: V1PodList = await loop.run_in_executor(
-                self.executor,
-                lambda: self.core.list_namespaced_pod(
-                    namespace=object._api_resource.metadata.namespace, label_selector=selector
-                ),
-            )
+            if object.selector is None:
+                return []
+
+            selector = self._build_selector_query(object.selector)
+            if selector is None:
+                return []
+
+        ret: V1PodList = await loop.run_in_executor(
+            self.executor,
+            lambda: self.core.list_namespaced_pod(
+                namespace=object._api_resource.metadata.namespace, label_selector=selector
+            ),
+        )
 
         return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
 
@@ -187,7 +198,7 @@ class ClusterLoader:
         kind: KindLiteral,
         all_namespaces_request: Callable,
         namespaced_request: Callable,
-        extract_containers: Callable[[Any], Iterable[V1Container]] | Callable[[Any], Awaitable[Iterable[V1Container]]],
+        extract_containers: Callable[[Any], Union[Iterable[V1Container], Awaitable[Iterable[V1Container]]]],
         filter_workflows: Optional[Callable[[Any], bool]] = None,
     ) -> AsyncIterator[K8sObjectData]:
         if not self._should_list_resource(kind):
@@ -202,24 +213,15 @@ class ClusterLoader:
 
         try:
             if settings.namespaces == "*":
-                ret_multi = await loop.run_in_executor(
-                    self.executor,
-                    lambda: all_namespaces_request(
-                        watch=False,
-                        label_selector=settings.selector,
-                    ),
-                )
-                logger.debug(f"Found {len(ret_multi.items)} {kind} in {self.cluster}")
-                for item in ret_multi.items:
-                    if filter_workflows is not None and not filter_workflows(item):
-                        continue
-
-                    containers = extract_containers(item)
-                    if asyncio.iscoroutine(containers):
-                        containers = await containers
-
-                    for container in containers:
-                        yield self.__build_obj(item, container, kind)
+                tasks = [
+                    loop.run_in_executor(
+                        self.executor,
+                        lambda: all_namespaces_request(
+                            watch=False,
+                            label_selector=settings.selector,
+                        ),
+                    )
+                ]
             else:
                 tasks = [
                     loop.run_in_executor(
@@ -233,22 +235,22 @@ class ClusterLoader:
                     for namespace in settings.namespaces
                 ]
 
-                total_items = 0
-                for task in asyncio.as_completed(tasks):
-                    ret_single = await task
-                    total_items += len(ret_single.items)
-                    for item in ret_single.items:
-                        if filter_workflows is not None and not filter_workflows(item):
-                            continue
+            total_items = 0
+            for task in asyncio.as_completed(tasks):
+                ret_single = await task
+                total_items += len(ret_single.items)
+                for item in ret_single.items:
+                    if filter_workflows is not None and not filter_workflows(item):
+                        continue
 
-                        containers = extract_containers(item)
-                        if asyncio.iscoroutine(containers):
-                            containers = await containers
+                    containers = extract_containers(item)
+                    if asyncio.iscoroutine(containers):
+                        containers = await containers
 
-                        for container in containers:
-                            yield self.__build_obj(item, container, kind)
+                    for container in containers:
+                        yield self.__build_obj(item, container, kind)
 
-                logger.debug(f"Found {total_items} {kind} in {self.cluster}")
+            logger.debug(f"Found {total_items} {kind} in {self.cluster}")
         except ApiException as e:
             if kind in ("Rollout", "DeploymentConfig") and e.status in [400, 401, 403, 404]:
                 if self.__kind_available[kind]:
@@ -294,7 +296,7 @@ class ClusterLoader:
         # We need to handle this difference using a small wrapper
         return self._list_workflows(
             kind="Rollout",
-            all_namespaces_request=lambda **kwargs: dict_to_object(
+            all_namespaces_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_cluster_custom_object(
                     group="argoproj.io",
                     version="v1alpha1",
@@ -302,7 +304,7 @@ class ClusterLoader:
                     **kwargs,
                 )
             ),
-            namespaced_request=lambda **kwargs: dict_to_object(
+            namespaced_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_namespaced_custom_object(
                     group="argoproj.io",
                     version="v1alpha1",
@@ -318,7 +320,7 @@ class ClusterLoader:
         # We need to handle this difference using a small wrapper
         return self._list_workflows(
             kind="DeploymentConfig",
-            all_namespaces_request=lambda **kwargs: dict_to_object(
+            all_namespaces_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_cluster_custom_object(
                     group="apps.openshift.io",
                     version="v1",
@@ -326,7 +328,7 @@ class ClusterLoader:
                     **kwargs,
                 )
             ),
-            namespaced_request=lambda **kwargs: dict_to_object(
+            namespaced_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_namespaced_custom_object(
                     group="apps.openshift.io",
                     version="v1",
