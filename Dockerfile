@@ -1,20 +1,28 @@
-# Use the official Python 3.9 slim image as the base image
-FROM python:3.9-slim as builder
+FROM python:3.9-buster as builder
 
-# Set the working directory
+RUN pip install poetry==1.8.2
+
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_CREATE=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
+
 WORKDIR /app
 
-# Install system dependencies required for Poetry
-RUN apt-get update && \
-    dpkg --add-architecture arm64
+COPY pyproject.toml poetry.lock ./
+RUN touch README.md
 
-COPY ./requirements.txt requirements.txt
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --without dev --no-root
 
-# Install the project dependencies
-RUN pip install -r requirements.txt
+FROM python:3.9-slim-buster as runtime
 
-# Copy the rest of the application code
+ENV VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:$PATH"
+
+COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+
+WORKDIR /app
+
 COPY . .
 
-# Run the application using 'poetry run krr simple'
 CMD ["python", "krr.py", "simple"]
