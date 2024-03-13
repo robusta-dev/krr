@@ -104,8 +104,6 @@ class ClusterLoader:
         return self.__jobs_for_cronjobs[namespace]
 
     async def list_pods(self, object: K8sObjectData) -> list[PodData]:
-        print(f"Listing pods for {object._api_resource.spec}")
-
         loop = asyncio.get_running_loop()
 
         if object.kind == "CronJob":
