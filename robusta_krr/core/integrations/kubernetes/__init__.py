@@ -1,10 +1,9 @@
 import asyncio
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, AsyncGenerator, AsyncIterator, Awaitable, Callable, Iterable, Optional, Union
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, AsyncGenerator, AsyncIterable, AsyncIterator, Awaitable, Callable, Iterable, Optional, Union
 
-import aiostream
 from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException
 from kubernetes.client.models import (
@@ -13,7 +12,6 @@ from kubernetes.client.models import (
     V1Deployment,
     V1HorizontalPodAutoscalerList,
     V1Job,
-    V1JobList,
     V1Pod,
     V1PodList,
     V1StatefulSet,
@@ -24,7 +22,7 @@ from kubernetes.client.models import (
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
-
+from robusta_krr.utils.async_gen_merge import async_gen_merge
 from robusta_krr.utils.object_like_dict import ObjectLikeDict
 
 from . import config_patch as _
@@ -72,7 +70,7 @@ class ClusterLoader:
 
         # https://stackoverflow.com/questions/55299564/join-multiple-async-generators-in-python
         # This will merge all the streams from all the cluster loaders into a single stream
-        objects_combined = aiostream.stream.merge(
+        async for object in async_gen_merge(
             self._list_deployments(),
             self._list_rollouts(),
             self._list_deploymentconfig(),
@@ -80,14 +78,11 @@ class ClusterLoader:
             self._list_all_daemon_set(),
             self._list_all_jobs(),
             self._list_all_cronjobs(),
-        )
-
-        async with objects_combined.stream() as streamer:
-            async for object in streamer:
-                # NOTE: By default we will filter out kube-system namespace
-                if settings.namespaces == "*" and object.namespace == "kube-system":
-                    continue
-                yield object
+        ):
+            # NOTE: By default we will filter out kube-system namespace
+            if settings.namespaces == "*" and object.namespace == "kube-system":
+                continue
+            yield object
 
     async def _list_jobs_for_cronjobs(self, namespace: str) -> list[V1Job]:
         if namespace not in self.__jobs_for_cronjobs:
@@ -198,7 +193,7 @@ class ClusterLoader:
         namespaced_request: Callable,
         extract_containers: Callable[[Any], Union[Iterable[V1Container], Awaitable[Iterable[V1Container]]]],
         filter_workflows: Optional[Callable[[Any], bool]] = None,
-    ) -> AsyncIterator[K8sObjectData]:
+    ) -> AsyncIterable[K8sObjectData]:
         if not self._should_list_resource(kind):
             logger.debug(f"Skipping {kind}s in {self.cluster}")
             return
@@ -258,7 +253,7 @@ class ClusterLoader:
                 logger.exception(f"Error {e.status} listing {kind} in cluster {self.cluster}: {e.reason}")
                 logger.error("Will skip this object type and continue.")
 
-    def _list_deployments(self) -> AsyncIterator[K8sObjectData]:
+    def _list_deployments(self) -> AsyncIterable[K8sObjectData]:
         return self._list_workflows(
             kind="Deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
@@ -266,7 +261,7 @@ class ClusterLoader:
             extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
-    def _list_rollouts(self) -> AsyncIterator[K8sObjectData]:
+    def _list_rollouts(self) -> AsyncIterable[K8sObjectData]:
         async def _extract_containers(item: Any) -> list[V1Container]:
             if item.spec.template is not None:
                 return item.spec.template.spec.containers
@@ -337,7 +332,7 @@ class ClusterLoader:
             extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
-    def _list_all_statefulsets(self) -> AsyncIterator[K8sObjectData]:
+    def _list_all_statefulsets(self) -> AsyncIterable[K8sObjectData]:
         return self._list_workflows(
             kind="StatefulSet",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
@@ -345,7 +340,7 @@ class ClusterLoader:
             extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
-    def _list_all_daemon_set(self) -> AsyncIterator[K8sObjectData]:
+    def _list_all_daemon_set(self) -> AsyncIterable[K8sObjectData]:
         return self._list_workflows(
             kind="DaemonSet",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
@@ -353,7 +348,7 @@ class ClusterLoader:
             extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
-    def _list_all_jobs(self) -> AsyncIterator[K8sObjectData]:
+    def _list_all_jobs(self) -> AsyncIterable[K8sObjectData]:
         return self._list_workflows(
             kind="Job",
             all_namespaces_request=self.batch.list_job_for_all_namespaces,
@@ -512,7 +507,7 @@ class KubernetesLoader:
             logger.error(f"Could not load cluster {cluster} and will skip it: {e}")
             return None
 
-    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> AsyncIterator[K8sObjectData]:
+    async def list_scannable_objects(self, clusters: Optional[list[str]]) -> AsyncIterable[K8sObjectData]:
         """List all scannable objects.
 
         Yields:
@@ -530,13 +525,10 @@ class KubernetesLoader:
 
         # https://stackoverflow.com/questions/55299564/join-multiple-async-generators-in-python
         # This will merge all the streams from all the cluster loaders into a single stream
-        objects_combined = aiostream.stream.merge(
+        async for object in async_gen_merge(
             *[cluster_loader.list_scannable_objects() for cluster_loader in self.cluster_loaders.values()]
-        )
-
-        async with objects_combined.stream() as streamer:
-            async for object in streamer:
-                yield object
+        ):
+            yield object
 
     async def load_pods(self, object: K8sObjectData) -> list[PodData]:
         try:
