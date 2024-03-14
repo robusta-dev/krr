@@ -186,8 +186,8 @@ All above examples show running command as `krr ...`, replace it with `python kr
 
 ### Additional Options
 
-- [View KRR Reports in a Web UI](#optional-free-saas-platform)
-- [Receive KRR Reports Weekly in Slack](#slack-integration)
+- [View KRR Reports in a Web UI](#free-ui-for-krr-recommendations)
+- [Receive KRR Reports Weekly in Slack](#slack-notification)
 
 ### Environment-Specific Instructions
 Setup KRR for...
