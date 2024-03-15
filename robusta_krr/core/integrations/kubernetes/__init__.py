@@ -2,7 +2,7 @@ import asyncio
 import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, AsyncGenerator, AsyncIterable, AsyncIterator, Awaitable, Callable, Iterable, Optional, Union
+from typing import Any, AsyncGenerator, AsyncIterable, Awaitable, Callable, Iterable, Optional, Union
 
 from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException
@@ -308,7 +308,7 @@ class ClusterLoader:
             extract_containers=_extract_containers,
         )
 
-    def _list_deploymentconfig(self) -> AsyncIterator[K8sObjectData]:
+    def _list_deploymentconfig(self) -> AsyncIterable[K8sObjectData]:
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
         return self._list_workflows(
@@ -360,7 +360,7 @@ class ClusterLoader:
             ),
         )
 
-    def _list_all_cronjobs(self) -> AsyncIterator[K8sObjectData]:
+    def _list_all_cronjobs(self) -> AsyncIterable[K8sObjectData]:
         return self._list_workflows(
             kind="CronJob",
             all_namespaces_request=self.batch.list_cron_job_for_all_namespaces,
