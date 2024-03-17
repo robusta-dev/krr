@@ -182,7 +182,7 @@ class Runner:
             return
 
         try:
-            history_range = await prometheus_loader.get_history_range(timedelta(hours=4))
+            history_range = await prometheus_loader.get_history_range(timedelta(hours=5))
         except ValueError:
             logger.exception(f"Was not able to get history range for cluster {cluster}")
             self.errors.append(
