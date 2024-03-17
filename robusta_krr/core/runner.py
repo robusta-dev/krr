@@ -6,7 +6,7 @@ import sys
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
-
+from datetime import timedelta
 from prometrix import PrometheusNotFound
 from slack_sdk import WebClient
 
@@ -182,7 +182,7 @@ class Runner:
             return
 
         try:
-            history_range = await prometheus_loader.get_history_range(self._strategy.settings.history_timedelta)
+            history_range = await prometheus_loader.get_history_range(timedelta(hours=4))
         except ValueError:
             logger.exception(f"Was not able to get history range for cluster {cluster}")
             self.errors.append(
