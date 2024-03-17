@@ -51,7 +51,7 @@ class SimpleStrategySettings(StrategySettings):
 
     def history_range_enough(self, history_range: tuple[timedelta, timedelta]) -> bool:
         start, end = history_range
-        return min(end - start, self.history_timedelta) / self.timeframe_timedelta >= self.points_required
+        return (end - start) >= timedelta(hours=3)
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
