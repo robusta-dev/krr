@@ -158,7 +158,7 @@ class PrometheusMetricsService(MetricsService):
 
         now = datetime.now()
         result = await self.query_range(
-            "prometheus_tsdb_head_series",
+            "max(prometheus_tsdb_head_series)",
             start=now - history_duration,
             end=now,
             step=timedelta(hours=1),
