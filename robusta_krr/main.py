@@ -282,7 +282,7 @@ def load_commands() -> None:
                         kind=inspect.Parameter.KEYWORD_ONLY,
                         default=typer.Option(
                             field_meta.default,
-                            f"--{field_name}",
+                            f"--{field_meta.field_info.extra.get('param_decls') or field_name}",
                             help=f"{field_meta.field_info.description}",
                             rich_help_panel="Strategy Settings",
                         ),
