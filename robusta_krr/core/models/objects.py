@@ -6,8 +6,9 @@ import pydantic as pd
 
 from robusta_krr.core.models.allocations import ResourceAllocations
 from robusta_krr.utils.batched import batched
+from kubernetes.client.models import V1LabelSelector
 
-KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "Rollout"]
+KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "CronJob", "Rollout", "DeploymentConfig"]
 
 
 class PodData(pd.BaseModel):
@@ -68,6 +69,16 @@ class K8sObjectData(pd.BaseModel):
     @property
     def pods_count(self) -> int:
         return len(self.pods)
+
+    @property
+    def selector(self) -> V1LabelSelector:
+        if self._api_resource is None:
+            raise ValueError("api_resource is not set")
+
+        if self.kind == 'CronJob':
+            return self._api_resource.spec.job_template.spec.selector
+        else:
+            return self._api_resource.spec.selector
 
     def split_into_batches(self, n: int) -> list[K8sObjectData]:
         """
