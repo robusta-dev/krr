@@ -283,7 +283,7 @@ def load_commands() -> None:
                         kind=inspect.Parameter.KEYWORD_ONLY,
                         default=OptionInfo(
                             default=field_meta.default,
-                            param_decls=[f"--{field_name}", f"--{field_name.replace('_', '-')}"] if field_name.__contains__("_") else f"--{field_name}",
+                            param_decls=list(set([f"--{field_name}", f"--{field_name.replace('_', '-')}"])),
                             help=f"{field_meta.field_info.description}",
                             rich_help_panel="Strategy Settings",
                         ),
