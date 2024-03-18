@@ -29,11 +29,7 @@ class SimpleStrategySettings(StrategySettings):
     points_required: int = pd.Field(
         100, ge=1, description="The number of data points required to make a recommendation for a resource."
     )
-    allow_hpa: bool = pd.Field(
-        False,
-        param_decls="allow-hpa",
-        description="Whether to calculate recommendations even when there is an HPA scaler defined on that resource."
-    )
+    allow_hpa: bool = pd.Field(False, description="Whether to calculate recommendations even when there is an HPA scaler defined on that resource.")
 
     def calculate_memory_proposal(self, data: PodsTimeData) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
