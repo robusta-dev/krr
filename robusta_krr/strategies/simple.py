@@ -55,7 +55,7 @@ class SimpleStrategySettings(StrategySettings):
 
     def history_range_enough(self, history_range: tuple[timedelta, timedelta]) -> bool:
         start, end = history_range
-        return min(end - start, self.history_timedelta) / self.timeframe_timedelta >= self.points_required
+        return (end - start) >= timedelta(hours=3)
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
@@ -90,18 +90,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             return ResourceRecommendation.undefined(info="No data")
 
         data_count = {pod: values[0, 1] for pod, values in history_data["CPUAmountLoader"].items()}
-        # Here we filter out pods from calculation that have less than `points_required` data points
-        filtered_data = {
-            pod: values for pod, values in data.items() if data_count.get(pod, 0) >= self.settings.points_required
-        }
+        total_points_count = sum(data_count.values())
 
-        if len(filtered_data) == 0:
+        if total_points_count < self.settings.points_required:
             return ResourceRecommendation.undefined(info="Not enough data")
 
         if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None and not self.settings.allow_hpa:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        cpu_usage = self.settings.calculate_cpu_proposal(filtered_data)
+        cpu_usage = self.settings.calculate_cpu_proposal(data)
         return ResourceRecommendation(request=cpu_usage, limit=None)
 
     def __calculate_memory_proposal(
@@ -113,18 +110,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             return ResourceRecommendation.undefined(info="No data")
 
         data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
-        # Here we filter out pods from calculation that have less than `points_required` data points
-        filtered_data = {
-            pod: value for pod, value in data.items() if data_count.get(pod, 0) >= self.settings.points_required
-        }
+        total_points_count = sum(data_count.values())
 
-        if len(filtered_data) == 0:
+        if total_points_count < self.settings.points_required:
             return ResourceRecommendation.undefined(info="Not enough data")
 
         if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None and not self.settings.allow_hpa:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        memory_usage = self.settings.calculate_memory_proposal(filtered_data)
+        memory_usage = self.settings.calculate_memory_proposal(data)
         return ResourceRecommendation(request=memory_usage, limit=memory_usage)
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:

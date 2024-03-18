@@ -186,8 +186,8 @@ All above examples show running command as `krr ...`, replace it with `python kr
 
 ### Additional Options
 
-- [View KRR Reports in a Web UI](#optional-free-saas-platform)
-- [Receive KRR Reports Weekly in Slack](#slack-integration)
+- [View KRR Reports in a Web UI](#free-ui-for-krr-recommendations)
+- [Receive KRR Reports Weekly in Slack](#slack-notification)
 
 ### Environment-Specific Instructions
 Setup KRR for...
@@ -285,6 +285,7 @@ Currently KRR ships with a few formatters to represent the scan data:
 - `json`
 - `yaml`
 - `pprint` - data representation from python's pprint library
+- `csv_export` - export data to a csv file in the current directory
 
 To run a strategy with a selected formatter, add a `-f` flag:
 
