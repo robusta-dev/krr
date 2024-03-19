@@ -55,6 +55,18 @@ def load_commands() -> None:
                     help="Path to kubeconfig file. If not provided, will attempt to find it.",
                     rich_help_panel="Kubernetes Settings",
                 ),
+                impersonate_user: Optional[str] = typer.Option(
+                    None,
+                    "--as",
+                    help="Impersonate a user, just like `kubectl --as`. For example, system:serviceaccount:default:krr-account.",
+                    rich_help_panel="Kubernetes Settings",
+                ),
+                impersonate_group: Optional[str] = typer.Option(
+                    None,
+                    "--as-group",
+                    help="Impersonate a user inside of a group, just like `kubectl --as-group`. For example, system:authenticated.",
+                    rich_help_panel="Kubernetes Settings",
+                ),
                 clusters: List[str] = typer.Option(
                     None,
                     "--context",
@@ -235,6 +247,8 @@ def load_commands() -> None:
                 try:
                     config = Config(
                         kubeconfig=kubeconfig,
+                        impersonate_user=impersonate_user,
+                        impersonate_group=impersonate_group,
                         clusters="*" if all_clusters else clusters,
                         namespaces="*" if "*" in namespaces else namespaces,
                         resources="*" if "*" in resources else resources,
