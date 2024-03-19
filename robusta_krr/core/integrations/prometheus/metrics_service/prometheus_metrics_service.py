@@ -1,8 +1,8 @@
 import asyncio
-import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import Iterable, List, Optional
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
@@ -108,7 +108,19 @@ class PrometheusMetricsService(MetricsService):
 
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(self.executor, lambda: self.prometheus.safe_custom_query(query=query))
+        return await loop.run_in_executor(
+            self.executor,
+            lambda: self.prometheus.safe_custom_query(query=query)["result"],
+        )
+
+    async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> dict:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self.executor,
+            lambda: self.prometheus.safe_custom_query_range(
+                query=query, start_time=start, end_time=end, step=f"{step.seconds}s"
+            )["result"],
+        )
 
     def validate_cluster_name(self):
         if not settings.prometheus_cluster_label and not settings.prometheus_label:
@@ -137,12 +149,34 @@ class PrometheusMetricsService(MetricsService):
             logger.error("Labels api not present on prometheus client")
             return []
 
+    async def get_history_range(self, history_duration: timedelta) -> tuple[datetime, datetime]:
+        """
+        Get the history range from Prometheus, based on container_memory_working_set_bytes.
+        Returns:
+            float: The first history point.
+        """
+
+        now = datetime.now()
+        result = await self.query_range(
+            "max(prometheus_tsdb_head_series)",
+            start=now - history_duration,
+            end=now,
+            step=timedelta(hours=1),
+        )
+        try:
+            values = result[0]["values"]
+            start, end = values[0][0], values[-1][0]
+            return datetime.fromtimestamp(start), datetime.fromtimestamp(end)
+        except (KeyError, IndexError) as e:
+            logger.debug(f"Returned from get_history_range: {result}")
+            raise ValueError("Error while getting history range") from e
+
     async def gather_data(
         self,
         object: K8sObjectData,
         LoaderClass: type[PrometheusMetric],
-        period: datetime.timedelta,
-        step: datetime.timedelta = datetime.timedelta(minutes=30),
+        period: timedelta,
+        step: timedelta = timedelta(minutes=30),
     ) -> PodsTimeData:
         """
         ResourceHistoryData: The gathered resource history data.
@@ -164,37 +198,68 @@ class PrometheusMetricsService(MetricsService):
 
         return data
 
-    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
+    async def load_pods(self, object: K8sObjectData, period: timedelta) -> list[PodData]:
         """
         List pods related to the object and add them to the object's pods list.
         Args:
             object (K8sObjectData): The Kubernetes object.
-            period (datetime.timedelta): The time period for which to gather data.
+            period (timedelta): The time period for which to gather data.
         """
 
         logger.debug(f"Adding historic pods for {object}")
 
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"
-        pod_owners: list[str]
+        pod_owners: Iterable[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
         if object.kind in ["Deployment", "Rollout"]:
             replicasets = await self.query(
                 f"""
-                kube_replicaset_owner{{
-                    owner_name="{object.name}",
-                    owner_kind="{object.kind}",
-                    namespace="{object.namespace}"
-                    {cluster_label}
-                }}[{period_literal}]
+                    kube_replicaset_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
                 """
             )
-            replicasets = replicasets["result"]
-            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
+            pod_owners = {replicaset["metric"]["replicaset"] for replicaset in replicasets}
             pod_owner_kind = "ReplicaSet"
 
             del replicasets
+
+        elif object.kind == "DeploymentConfig":
+            replication_controllers = await self.query(
+                f"""
+                    kube_replicationcontroller_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                """
+            )
+            pod_owners = {repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers}
+            pod_owner_kind = "ReplicationController"
+
+            del replication_controllers
+
+        elif object.kind == "CronJob":
+            jobs = await self.query(
+                f"""
+                    kube_job_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                """
+            )
+            pod_owners = {job["metric"]["job_name"] for job in jobs}
+            pod_owner_kind = "Job"
+
+            del jobs
         else:
             pod_owners = [object.name]
             pod_owner_kind = object.kind
@@ -212,7 +277,6 @@ class PrometheusMetricsService(MetricsService):
                 )
             """
         )
-        related_pods_result = related_pods_result["result"]
 
         if related_pods_result == []:
             return []
@@ -233,7 +297,6 @@ class PrometheusMetricsService(MetricsService):
                     }} == 1
                 """
             )
-            pods_status_result = pods_status_result["result"]
             current_pods_set |= {pod["metric"]["pod"] for pod in pods_status_result}
             del pods_status_result
 

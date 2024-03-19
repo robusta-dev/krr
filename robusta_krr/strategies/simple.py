@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import numpy as np
 import pydantic as pd
 
@@ -19,7 +21,6 @@ from robusta_krr.core.integrations.prometheus.metrics import (
     PrometheusMetric,
 )
 
-
 class SimpleStrategySettings(StrategySettings):
     cpu_percentile: float = pd.Field(99, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
     memory_buffer_percentage: float = pd.Field(
@@ -28,6 +29,7 @@ class SimpleStrategySettings(StrategySettings):
     points_required: int = pd.Field(
         100, ge=1, description="The number of data points required to make a recommendation for a resource."
     )
+    allow_hpa: bool = pd.Field(False, description="Whether to calculate recommendations even when there is an HPA scaler defined on that resource.")
 
     def calculate_memory_proposal(self, data: PodsTimeData) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
@@ -47,6 +49,10 @@ class SimpleStrategySettings(StrategySettings):
 
         return np.max(data_)
 
+    def history_range_enough(self, history_range: tuple[timedelta, timedelta]) -> bool:
+        start, end = history_range
+        return (end - start) >= timedelta(hours=3)
+
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     """
@@ -59,6 +65,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
     If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
+    You can override this behaviour by passing the --allow-hpa flag
 
     Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
     """
@@ -79,18 +86,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             return ResourceRecommendation.undefined(info="No data")
 
         data_count = {pod: values[0, 1] for pod, values in history_data["CPUAmountLoader"].items()}
-        # Here we filter out pods from calculation that have less than `points_required` data points
-        filtered_data = {
-            pod: values for pod, values in data.items() if data_count.get(pod, 0) >= self.settings.points_required
-        }
+        total_points_count = sum(data_count.values())
 
-        if len(filtered_data) == 0:
+        if total_points_count < self.settings.points_required:
             return ResourceRecommendation.undefined(info="Not enough data")
 
-        if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None:
+        if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None and not self.settings.allow_hpa:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        cpu_usage = self.settings.calculate_cpu_proposal(filtered_data)
+        cpu_usage = self.settings.calculate_cpu_proposal(data)
         return ResourceRecommendation(request=cpu_usage, limit=None)
 
     def __calculate_memory_proposal(
@@ -102,18 +106,15 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             return ResourceRecommendation.undefined(info="No data")
 
         data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
-        # Here we filter out pods from calculation that have less than `points_required` data points
-        filtered_data = {
-            pod: value for pod, value in data.items() if data_count.get(pod, 0) >= self.settings.points_required
-        }
+        total_points_count = sum(data_count.values())
 
-        if len(filtered_data) == 0:
+        if total_points_count < self.settings.points_required:
             return ResourceRecommendation.undefined(info="Not enough data")
 
-        if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None:
+        if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None and not self.settings.allow_hpa:
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        memory_usage = self.settings.calculate_memory_proposal(filtered_data)
+        memory_usage = self.settings.calculate_memory_proposal(data)
         return ResourceRecommendation(request=memory_usage, limit=memory_usage)
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
