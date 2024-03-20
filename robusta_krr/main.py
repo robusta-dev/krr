@@ -203,6 +203,9 @@ def load_commands() -> None:
                     help=f"Output formatter ({', '.join(formatters.list_available())})",
                     rich_help_panel="Logging Settings",
                 ),
+                show_cluster_name: bool = typer.Option(
+                    False, "--show-cluster-name", help="In table output, always show the cluster name even for a single cluster", rich_help_panel="Output Settings"
+                ),
                 verbose: bool = typer.Option(
                     False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
                 ),
@@ -254,6 +257,7 @@ def load_commands() -> None:
                         openshift=openshift,
                         max_workers=max_workers,
                         format=format,
+                        show_cluster_name=show_cluster_name,
                         verbose=verbose,
                         cpu_min_value=cpu_min_value,
                         memory_min_value=memory_min_value,
