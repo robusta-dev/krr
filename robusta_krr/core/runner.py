@@ -32,6 +32,9 @@ def custom_print(*objects, rich: bool = True, force: bool = False) -> None:
         print_func(*objects)  # type: ignore
 
 
+class CriticalRunnerException(Exception): ...
+
+
 class Runner:
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
 
@@ -141,11 +144,11 @@ class Runner:
             for resource, recommendation in result.items()
         }
 
-    async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
+    async def _calculate_object_recommendations(self, object: K8sObjectData) -> Optional[RunResult]:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
-            return {resource: ResourceRecommendation.undefined("Prometheus not found") for resource in ResourceType}
+            return None
 
         object.pods = await prometheus_loader.load_pods(object, self._strategy.settings.history_timedelta)
         if object.pods == []:
@@ -213,10 +216,13 @@ class Runner:
                 }
             )
 
-    async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> ResourceScan:
+    async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> Optional[ResourceScan]:
         recommendation = await self._calculate_object_recommendations(k8s_object)
 
         self.__progressbar.progress()
+
+        if recommendation is None:
+            return None
 
         return ResourceScan.calculate(
             k8s_object,
@@ -253,6 +259,8 @@ class Runner:
 
             scans = await asyncio.gather(*scans_tasks)
 
+        successful_scans = [scan for scan in scans if scan is not None]
+
         if len(scans) == 0:
             logger.warning("Current filters resulted in no objects available to scan.")
             logger.warning("Try to change the filters or check if there is anything available.")
@@ -260,10 +268,9 @@ class Runner:
                 logger.warning(
                     "Note that you are using the '*' namespace filter, which by default excludes kube-system."
                 )
-            return Result(
-                scans=[],
-                strategy=StrategyData(name=str(self._strategy).lower(), settings=self._strategy.settings.dict()),
-            )
+            raise CriticalRunnerException("No objects available to scan.")
+        elif len(successful_scans) == 0:
+            raise CriticalRunnerException("No successful scans were made. Check the logs for more information.")
 
         return Result(
             scans=scans,
@@ -274,7 +281,8 @@ class Runner:
             ),
         )
 
-    async def run(self) -> None:
+    async def run(self) -> int:
+        """Run the Runner. The return value is the exit code of the program."""
         self._greet()
 
         try:
@@ -298,7 +306,11 @@ class Runner:
             result = await self._collect_result()
             logger.info("Result collected, displaying...")
             self._process_result(result)
-        except ClusterNotSpecifiedException as e:
-            logger.error(e)
+        except (ClusterNotSpecifiedException, CriticalRunnerException) as e:
+            logger.critical(e)
+            return 1  # Exit with error
         except Exception:
             logger.exception("An unexpected error occurred")
+            return 1  # Exit with error
+        else:
+            return 0  # Exit with success

@@ -47,7 +47,7 @@ class PrometheusMetricsLoader:
         loader = self.get_metrics_service(api_client=self.api_client, cluster=cluster)
         if loader is None:
             raise PrometheusNotFound(
-                "No Prometheus or metrics service found\n"
+                f"Wasn't able to connect to any Prometheus service in {cluster or 'inner'} cluster\n"
                 "Try using port-forwarding and/or setting the url manually (using the -p flag.).\n"
                 "For more information, see 'Giving the Explicit Prometheus URL' at https://github.com/robusta-dev/krr?tab=readme-ov-file#usage"
             )

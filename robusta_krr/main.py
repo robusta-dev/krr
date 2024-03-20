@@ -271,7 +271,8 @@ def load_commands() -> None:
                     logger.exception("Error occured while parsing arguments")
                 else:
                     runner = Runner()
-                    asyncio.run(runner.run())
+                    exit_code = asyncio.run(runner.run())
+                    raise typer.Exit(code=exit_code)
 
             run_strategy.__name__ = strategy_name
             signature = inspect.signature(run_strategy)
