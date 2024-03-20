@@ -42,6 +42,10 @@ class VictoriaMetricsService(PrometheusMetricsService):
 
     service_discovery = VictoriaMetricsDiscovery
 
+    @classmethod
+    def name(cls) -> str:
+        return "Victoria Metrics"
+
     def check_connection(self):
         """
         Checks the connection to Prometheus.
