@@ -2,7 +2,7 @@ import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
@@ -157,7 +157,7 @@ class PrometheusMetricsService(MetricsService):
 
         now = datetime.now()
         result = await self.query_range(
-            "max(container_memory_working_set_bytes)",
+            "max(prometheus_tsdb_head_series)",
             start=now - history_duration,
             end=now,
             step=timedelta(hours=1),
@@ -209,24 +209,56 @@ class PrometheusMetricsService(MetricsService):
 
         days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
         period_literal = f"{days_literal}d"
-        pod_owners: list[str]
+        pod_owners: Iterable[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
         if object.kind in ["Deployment", "Rollout"]:
             replicasets = await self.query(
                 f"""
-                kube_replicaset_owner{{
-                    owner_name="{object.name}",
-                    owner_kind="{object.kind}",
-                    namespace="{object.namespace}"
-                    {cluster_label}
-                }}[{period_literal}]
+                    kube_replicaset_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
                 """
             )
-            pod_owners = [replicaset["metric"]["replicaset"] for replicaset in replicasets]
+            pod_owners = {replicaset["metric"]["replicaset"] for replicaset in replicasets}
             pod_owner_kind = "ReplicaSet"
 
             del replicasets
+
+        elif object.kind == "DeploymentConfig":
+            replication_controllers = await self.query(
+                f"""
+                    kube_replicationcontroller_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                """
+            )
+            pod_owners = {repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers}
+            pod_owner_kind = "ReplicationController"
+
+            del replication_controllers
+
+        elif object.kind == "CronJob":
+            jobs = await self.query(
+                f"""
+                    kube_job_owner{{
+                        owner_name="{object.name}",
+                        owner_kind="{object.kind}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                """
+            )
+            pod_owners = {job["metric"]["job_name"] for job in jobs}
+            pod_owner_kind = "Job"
+
+            del jobs
         else:
             pod_owners = [object.name]
             pod_owner_kind = object.kind
