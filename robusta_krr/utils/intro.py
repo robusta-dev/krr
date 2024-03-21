@@ -15,13 +15,18 @@ def fetch_intro_message() -> str:
         response = requests.get(ONLINE_LINK, timeout=TIMEOUT)
         response.raise_for_status()  # Raises an error for bad responses
         return response.text
-    except Exception:
+    except Exception as e1:
         # If there's any error, fallback to local file
         try:
             with open(LOCAL_LINK, 'r') as file:
                 return file.read()
-        except Exception as e:
-            raise Exception("Failed to load the intro message from both URL and local file.") from e
+        except Exception as e2:
+            return (
+                "[red]Failed to load the intro message.\n"
+                f"Both from the URL: {e1.__class__.__name__} {e1}\n"
+                f"and the local file: {e2.__class__.__name__} {e2}\n"
+                "But as that is not critical, KRR will continue to run without the intro message.[/red]"
+            )
 
 
 async def load_intro_message() -> str:
