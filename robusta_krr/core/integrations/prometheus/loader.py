@@ -64,8 +64,8 @@ class PrometheusMetricsLoader:
                 logger.info(f"{service_name} not found: {e}")
             except ApiException as e:
                 logger.warning(
-                    f"Unable to automatically discover a {service_name} in the cluster. "
-                    f"Try specifying how to connect to Prometheus via cli options: {e}"
+                    f"Unable to automatically discover a {service_name} in the cluster ({e}). "
+                    "Try specifying how to connect to Prometheus via cli options"
                 )
 
         return None
