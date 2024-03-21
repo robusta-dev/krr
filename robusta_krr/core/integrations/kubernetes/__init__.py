@@ -219,6 +219,8 @@ class ClusterLoader:
             for item in ret_single.items:
                 yield item
 
+        logger.debug(f"Found {total_items} {kind} in {self.cluster}")
+
     async def _list_scannable_objects(
         self,
         kind: KindLiteral,
