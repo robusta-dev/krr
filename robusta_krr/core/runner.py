@@ -17,7 +17,7 @@ from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedExceptio
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
-from robusta_krr.utils.logo import ASCII_LOGO
+from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version
 
@@ -65,12 +65,14 @@ class Runner:
 
         return result
 
-    def _greet(self) -> None:
+    async def _greet(self) -> None:
         if settings.quiet:
             return
 
-        custom_print(ASCII_LOGO)
-        custom_print(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
+        intro_message = await load_intro_message()
+
+        custom_print(intro_message)
+        custom_print(f"\nRunning Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
         custom_print(f"Using strategy: {self._strategy}")
         custom_print(f"Using formatter: {settings.format}")
         custom_print("")
@@ -275,7 +277,7 @@ class Runner:
         )
 
     async def run(self) -> None:
-        self._greet()
+        await self._greet()
 
         try:
             settings.load_kubeconfig()
