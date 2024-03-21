@@ -19,7 +19,7 @@ from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
 from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
-from robusta_krr.utils.version import get_version
+from robusta_krr.utils.version import get_version, load_latest_version
 
 logger = logging.getLogger("krr")
 
@@ -65,14 +65,35 @@ class Runner:
 
         return result
 
+    @staticmethod
+    def __parse_version_string(version: str) -> tuple[int, ...]:
+        version_trimmed = version.replace("-dev", "").replace("v", "")
+        return tuple(map(int, version_trimmed.split(".")))
+
+    def __check_newer_version_available(self, current_version: str, latest_version: str) -> bool:
+        try:
+            current_version_parsed = self.__parse_version_string(current_version)
+            latest_version_parsed = self.__parse_version_string(latest_version)
+
+            if current_version_parsed < latest_version_parsed:
+                return True
+        except Exception:
+            logger.exception("An error occurred while checking for a new version")
+            return False
+
     async def _greet(self) -> None:
         if settings.quiet:
             return
 
-        intro_message = await load_intro_message()
+        current_version = get_version()
+        intro_message, latest_version = await asyncio.gather(load_intro_message(), load_latest_version())
 
         custom_print(intro_message)
-        custom_print(f"\nRunning Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
+        custom_print(f"\nRunning Robusta's KRR (Kubernetes Resource Recommender) {current_version}")
+
+        if latest_version is not None and self.__check_newer_version_available(current_version, latest_version):
+            custom_print(f"[yellow bold]A newer version of KRR is available: {latest_version}[/yellow bold]")
+
         custom_print(f"Using strategy: {self._strategy}")
         custom_print(f"Using formatter: {settings.format}")
         custom_print("")
