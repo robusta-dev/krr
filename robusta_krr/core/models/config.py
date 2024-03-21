@@ -102,7 +102,9 @@ class Config(pd.BaseSettings):
         if v == []:
             return "*"
 
-        return [val.capitalize() for val in v]
+        # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
+        # So this will preserve the big and small letters of the resource
+        return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
