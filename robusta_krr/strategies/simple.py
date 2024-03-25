@@ -21,7 +21,6 @@ from robusta_krr.core.integrations.prometheus.metrics import (
     PrometheusMetric,
 )
 
-
 class SimpleStrategySettings(StrategySettings):
     cpu_percentile: float = pd.Field(99, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
     memory_buffer_percentage: float = pd.Field(
@@ -66,7 +65,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
     If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
-    You can override this behaviour by passing the --allow_hpa flag
+    You can override this behaviour by passing the --allow-hpa flag
 
     Learn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]
     """

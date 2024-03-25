@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 from datetime import timedelta
 from prometrix import PrometheusNotFound
+from rich.console import Console
 from slack_sdk import WebClient
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
@@ -89,9 +90,8 @@ class Runner:
             elif settings.slack_output:
                 file_name = settings.slack_output
             with open(file_name, "w") as target_file:
-                sys.stdout = target_file
-                custom_print(formatted, rich=rich, force=True)
-                sys.stdout = sys.stdout
+                console = Console(file=target_file, width=settings.width)
+                console.print(formatted)
             if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)

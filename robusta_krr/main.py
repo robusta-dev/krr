@@ -10,6 +10,7 @@ from uuid import UUID
 import typer
 import urllib3
 from pydantic import ValidationError  # noqa: F401
+from typer.models import OptionInfo
 
 from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
@@ -284,9 +285,9 @@ def load_commands() -> None:
                     inspect.Parameter(
                         name=field_name,
                         kind=inspect.Parameter.KEYWORD_ONLY,
-                        default=typer.Option(
-                            field_meta.default,
-                            f"--{field_name}",
+                        default=OptionInfo(
+                            default=field_meta.default,
+                            param_decls=list(set([f"--{field_name}", f"--{field_name.replace('_', '-')}"])),
                             help=f"{field_meta.field_info.description}",
                             rich_help_panel="Strategy Settings",
                         ),
