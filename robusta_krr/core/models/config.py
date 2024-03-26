@@ -52,6 +52,7 @@ class Config(pd.BaseSettings):
 
     # Logging Settings
     format: str
+    show_cluster_name: bool
     strategy: str
     log_to_stderr: bool
     width: Optional[int] = pd.Field(None, ge=1)
