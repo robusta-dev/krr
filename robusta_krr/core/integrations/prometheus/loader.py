@@ -21,12 +21,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("krr")
 
-METRICS_SERVICES = {
-    "Prometheus": PrometheusMetricsService,
-    "Victoria Metrics": VictoriaMetricsService,
-    "Thanos": ThanosMetricsService,
-}
-
 
 class PrometheusMetricsLoader:
     def __init__(self, *, cluster: Optional[str] = None) -> None:
