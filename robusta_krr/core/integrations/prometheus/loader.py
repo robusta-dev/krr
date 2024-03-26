@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
+from kubernetes.client.exceptions import ApiException
 from prometrix import MetricsNotFound, PrometheusNotFound
 
 from robusta_krr.core.models.config import settings
@@ -38,13 +39,7 @@ class PrometheusMetricsLoader:
         """
 
         self.executor = ThreadPoolExecutor(settings.max_workers)
-        logger.info(f"Prometheus loader max workers: {settings.max_workers}")
-
-        self.api_client = (
-            k8s_config.new_client_from_config(config_file=settings.kubeconfig, context=cluster)
-            if cluster is not None
-            else None
-        )
+        self.api_client = settings.get_kube_client(context=cluster)
         loader = self.get_metrics_service(api_client=self.api_client, cluster=cluster)
         if loader is None:
             raise PrometheusNotFound("No Prometheus or metrics service found")
@@ -67,6 +62,11 @@ class PrometheusMetricsLoader:
                 return loader
             except MetricsNotFound as e:
                 logger.info(f"{service_name} not found: {e}")
+            except ApiException as e:
+                logger.warning(
+                    f"Unable to automatically discover a {service_name} in the cluster ({e}). "
+                    "Try specifying how to connect to Prometheus via cli options"
+                )
 
         return None
 

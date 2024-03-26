@@ -1,0 +1,38 @@
+# Test environment for per-namespace scans using a group object ID (for e.g. Microsoft Entra)
+# The purpose of this setup is to verify that per-namespace features work without cluster level permissions
+# You can test this Group and KRR using:
+# A user named aksdev that's part of the appdev group.
+# krr simple --as aksdev --as-group <appdev-groupID> -n kube-system
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: kube-system
+  name: krr-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: krr-role-binding
+  namespace: kube-system
+subjects:
+- kind: Group
+  # Replace <appdev-groupID> with the actual Group Object ID
+  name: <appdev-groupID>
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: krr-role
+  apiGroup: rbac.authorization.k8s.io
