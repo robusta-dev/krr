@@ -25,9 +25,10 @@ def generate_prometheus_config(
     url: str, headers: dict[str, str], metrics_service: PrometheusMetricsService
 ) -> PrometheusConfig:
     from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+    from .metrics_service.mimir_metrics_service import MimirMetricsService
 
     baseconfig = {
-        "url": url,
+        "url": url + "/prometheus" if isinstance(metrics_service, MimirMetricsService) else url,
         "disable_ssl": not settings.prometheus_ssl_enabled,
         "headers": headers,
     }
