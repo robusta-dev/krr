@@ -22,12 +22,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("krr")
 
-METRICS_SERVICES = {
-    "Prometheus": PrometheusMetricsService,
-    "Victoria Metrics": VictoriaMetricsService,
-    "Thanos": ThanosMetricsService,
-}
-
 
 class PrometheusMetricsLoader:
     def __init__(self, *, cluster: Optional[str] = None) -> None:
@@ -42,24 +36,33 @@ class PrometheusMetricsLoader:
         self.api_client = settings.get_kube_client(context=cluster)
         loader = self.get_metrics_service(api_client=self.api_client, cluster=cluster)
         if loader is None:
-            raise PrometheusNotFound("No Prometheus or metrics service found")
+            raise PrometheusNotFound(
+                f"Wasn't able to connect to any Prometheus service in {cluster or 'inner'} cluster\n"
+                "Try using port-forwarding and/or setting the url manually (using the -p flag.).\n"
+                "For more information, see 'Giving the Explicit Prometheus URL' at https://github.com/robusta-dev/krr?tab=readme-ov-file#usage"
+            )
 
         self.loader = loader
 
-        logger.info(f"{self.loader.name} connected successfully for {cluster or 'default'} cluster")
+        logger.info(f"{self.loader.name()} connected successfully for {cluster or 'default'} cluster")
 
     def get_metrics_service(
         self,
         api_client: Optional[ApiClient] = None,
         cluster: Optional[str] = None,
     ) -> Optional[PrometheusMetricsService]:
-        for service_name, metric_service_class in METRICS_SERVICES.items():
+        if settings.prometheus_url is not None:
+            logger.info("Prometheus URL is specified, will not auto-detect a metrics service")
+            metrics_to_check = [PrometheusMetricsService]
+        else:
+            logger.info("No Prometheus URL is specified, trying to auto-detect a metrics service")
+            metrics_to_check = [VictoriaMetricsService, ThanosMetricsService, PrometheusMetricsService]
+
+        for metric_service_class in metrics_to_check:
+            service_name = metric_service_class.name()
             try:
                 loader = metric_service_class(api_client=api_client, cluster=cluster, executor=self.executor)
                 loader.check_connection()
-                logger.info(f"{service_name} found")
-                loader.validate_cluster_name()
-                return loader
             except MetricsNotFound as e:
                 logger.info(f"{service_name} not found: {e}")
             except ApiException as e:
@@ -67,6 +70,10 @@ class PrometheusMetricsLoader:
                     f"Unable to automatically discover a {service_name} in the cluster ({e}). "
                     "Try specifying how to connect to Prometheus via cli options"
                 )
+            else:
+                logger.info(f"{service_name} found")
+                loader.validate_cluster_name()
+                return loader
 
         return None
 
