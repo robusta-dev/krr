@@ -85,6 +85,7 @@ jobs:
         pyinstaller krr.py
         mkdir -p ./dist/krr/grapheme/data
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
+        cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Zip the application (Unix)
       if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
