@@ -6,6 +6,7 @@ from rich.table import Table
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import RecommendationValue
 from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
+from robusta_krr.core.models.config import settings
 from robusta_krr.utils import resource_units
 
 NONE_LITERAL = "unset"
@@ -86,7 +87,7 @@ def table(result: Result) -> Table:
     cluster_count = len(set(item.object.cluster for item in result.scans))
 
     table.add_column("Number", justify="right", no_wrap=True)
-    if cluster_count > 1:
+    if cluster_count > 1 or settings.show_cluster_name:
         table.add_column("Cluster", style="cyan")
     table.add_column("Namespace", style="cyan")
     table.add_column("Name", style="cyan")

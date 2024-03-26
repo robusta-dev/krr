@@ -54,6 +54,7 @@ class Config(pd.BaseSettings):
 
     # Logging Settings
     format: str
+    show_cluster_name: bool
     strategy: str
     log_to_stderr: bool
     width: Optional[int] = pd.Field(None, ge=1)
@@ -142,7 +143,7 @@ class Config(pd.BaseSettings):
         else:
             self.inside_cluster = True
 
-    def get_kube_client(self, context: Optional[str]=None):
+    def get_kube_client(self, context: Optional[str] = None):
         api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
         if self.impersonate_user is not None:
             # trick copied from https://github.com/kubernetes-client/python/issues/362
