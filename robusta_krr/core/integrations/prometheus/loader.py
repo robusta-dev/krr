@@ -32,6 +32,7 @@ class PrometheusMetricsLoader:
         """
 
         self.executor = ThreadPoolExecutor(settings.max_workers)
+        logger.info(f"Prometheus loader max workers: {settings.max_workers}")
 
         self.api_client = (
             k8s_config.new_client_from_config(config_file=settings.kubeconfig, context=cluster)

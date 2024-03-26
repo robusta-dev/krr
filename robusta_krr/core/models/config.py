@@ -52,6 +52,7 @@ class Config(pd.BaseSettings):
 
     # Logging Settings
     format: str
+    show_cluster_name: bool
     strategy: str
     log_to_stderr: bool
     width: Optional[int] = pd.Field(None, ge=1)
@@ -65,7 +66,6 @@ class Config(pd.BaseSettings):
     # Internal
     inside_cluster: bool = False
     _logging_console: Optional[Console] = pd.PrivateAttr(None)
-    _result_console: Optional[Console] = pd.PrivateAttr(None)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -131,12 +131,6 @@ class Config(pd.BaseSettings):
         if getattr(self, "_logging_console") is None:
             self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
         return self._logging_console
-
-    @property
-    def result_console(self) -> Console:
-        if getattr(self, "_result_console") is None:
-            self._result_console = Console(file=sys.stdout, width=self.width)
-        return self._result_console
 
     def load_kubeconfig(self) -> None:
         try:
