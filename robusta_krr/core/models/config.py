@@ -23,6 +23,8 @@ class Config(pd.BaseSettings):
 
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
+    impersonate_user: Optional[str] = None
+    impersonate_group: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
     resources: Union[list[KindLiteral], Literal["*"]] = pd.Field("*")
     selector: Optional[str] = None
@@ -140,6 +142,15 @@ class Config(pd.BaseSettings):
             self.inside_cluster = False
         else:
             self.inside_cluster = True
+
+    def get_kube_client(self, context: Optional[str] = None):
+        api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
+        if self.impersonate_user is not None:
+            # trick copied from https://github.com/kubernetes-client/python/issues/362
+            api_client.set_default_header("Impersonate-User", self.impersonate_user)
+        if self.impersonate_group is not None:
+            api_client.set_default_header("Impersonate-Group", self.impersonate_group)
+        return api_client
 
     @staticmethod
     def set_config(config: Config) -> None:

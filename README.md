@@ -253,6 +253,8 @@ List as many namespaces as you want with `-n` (in this case, `default` and `ingr
 ```sh
 krr simple -n default -n ingress-nginx
 ```
+
+See [example ServiceAccount and RBAC permissions](./tests/single_namespace_permissions.yaml)
 </details>
 
 <details>
@@ -392,7 +394,6 @@ For discovering Prometheus it scans services for those labels:
 "app=prometheus,component=server"
 "app=prometheus-server"
 "app=prometheus-operator-prometheus"
-"app=prometheus-msteams"
 "app=rancher-monitoring-prometheus"
 "app=prometheus-prometheus"
 ```
