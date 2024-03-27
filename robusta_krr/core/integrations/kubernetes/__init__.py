@@ -34,7 +34,7 @@ HPAKey = tuple[str, str, str]
 
 
 class ClusterLoader:
-    def __init__(self, cluster: Optional[str]=None):
+    def __init__(self, cluster: Optional[str] = None):
         self.cluster = cluster
         # This executor will be running requests to Kubernetes API
         self.executor = ThreadPoolExecutor(settings.max_workers)
@@ -93,7 +93,7 @@ class ClusterLoader:
         )
 
         end = datetime.now()
-        logger.info(f"[merge-test-no-streaming-basic] Listed scannable objects in {self.cluster} in {end - start}")
+        logger.info(f"[merge-test-no-streaming-throttling] Listed scannable objects in {self.cluster} in {end - start}")
 
         for task in tasks:
             for object in task:
@@ -203,43 +203,44 @@ class ClusterLoader:
         if settings.resources == "*":
             return True
         return resource in settings.resources
-    
+
     async def __throttle(self, coro: Awaitable) -> Any:
         throttle_min = 0.6
-        throttle_max = 2.0
+        throttle_max = 4.0
 
         wait = random.uniform(throttle_min, throttle_max)
         await asyncio.sleep(wait)
         return await coro
 
     async def _list_namespaced_or_global_objects(
-        self,
-        kind: KindLiteral,
-        all_namespaces_request: Callable,
-        namespaced_request: Callable
+        self, kind: KindLiteral, all_namespaces_request: Callable, namespaced_request: Callable
     ) -> AsyncIterable[Any]:
         logger.debug(f"Listing {kind}s in {self.cluster}")
         loop = asyncio.get_running_loop()
 
         if settings.namespaces == "*":
             tasks = [
-                loop.run_in_executor(
-                    self.executor,
-                    lambda: all_namespaces_request(
-                        watch=False,
-                        label_selector=settings.selector,
-                    ),
+                self.__throttle(
+                    loop.run_in_executor(
+                        self.executor,
+                        lambda: all_namespaces_request(
+                            watch=False,
+                            label_selector=settings.selector,
+                        ),
+                    )
                 )
             ]
         else:
             tasks = [
-                loop.run_in_executor(
-                    self.executor,
-                    lambda ns=namespace: namespaced_request(
-                        namespace=ns,
-                        watch=False,
-                        label_selector=settings.selector,
-                    ),
+                self.__throttle(
+                    loop.run_in_executor(
+                        self.executor,
+                        lambda ns=namespace: namespaced_request(
+                            namespace=ns,
+                            watch=False,
+                            label_selector=settings.selector,
+                        ),
+                    )
                 )
                 for namespace in settings.namespaces
             ]
@@ -443,6 +444,7 @@ class ClusterLoader:
                 namespaced_request=self.autoscaling_v2.list_namespaced_horizontal_pod_autoscaler,
             ),
         )
+
         def __get_metric(hpa: V2HorizontalPodAutoscaler, metric_name: str) -> Optional[float]:
             return next(
                 (
@@ -452,6 +454,7 @@ class ClusterLoader:
                 ),
                 None,
             )
+
         return {
             (
                 hpa.metadata.namespace,
