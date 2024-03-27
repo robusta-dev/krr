@@ -6,7 +6,7 @@ import sys
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
-from datetime import timedelta
+from datetime import datetime, timedelta
 from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
@@ -283,6 +283,7 @@ class Runner:
 
     async def run(self) -> int:
         """Run the Runner. The return value is the exit code of the program."""
+        start = datetime.now()
         self._greet()
 
         try:
@@ -306,6 +307,8 @@ class Runner:
             result = await self._collect_result()
             logger.info("Result collected, displaying...")
             self._process_result(result)
+            end = datetime.now()
+            logger.info(f"[merge-test-no-streaming-basic] Total running time is {end - start}")
         except (ClusterNotSpecifiedException, CriticalRunnerException) as e:
             logger.critical(e)
             return 1  # Exit with error
