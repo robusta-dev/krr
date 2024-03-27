@@ -58,8 +58,6 @@ class ClusterLoader:
             A list of scannable objects.
         """
 
-        start = datetime.now()
-
         logger.info(f"Listing scannable objects in {self.cluster}")
         logger.debug(f"Namespaces: {settings.namespaces}")
         logger.debug(f"Resources: {settings.resources}")
@@ -68,21 +66,7 @@ class ClusterLoader:
 
         # https://stackoverflow.com/questions/55299564/join-multiple-async-generators-in-python
         # This will merge all the streams from all the cluster loaders into a single stream
-        # async for object in async_gen_merge(
-        #     self._list_deployments(),
-        #     self._list_rollouts(),
-        #     self._list_deploymentconfig(),
-        #     self._list_all_statefulsets(),
-        #     self._list_all_daemon_set(),
-        #     self._list_all_jobs(),
-        #     self._list_all_cronjobs(),
-        # ):
-        #     # NOTE: By default we will filter out kube-system namespace
-        #     if settings.namespaces == "*" and object.namespace == "kube-system":
-        #         continue
-        #     yield object
-
-        tasks = await asyncio.gather(
+        async for object in async_gen_merge(
             self._list_deployments(),
             self._list_rollouts(),
             self._list_deploymentconfig(),
@@ -90,17 +74,11 @@ class ClusterLoader:
             self._list_all_daemon_set(),
             self._list_all_jobs(),
             self._list_all_cronjobs(),
-        )
-
-        end = datetime.now()
-        logger.info(f"[merge-test-no-streaming-basic] Listed scannable objects in {self.cluster} in {end - start}")
-
-        for task in tasks:
-            for object in task:
-                # NOTE: By default we will filter out kube-system namespace
-                if settings.namespaces == "*" and object.namespace == "kube-system":
-                    continue
-                yield object
+        ):
+            # NOTE: By default we will filter out kube-system namespace
+            if settings.namespaces == "*" and object.namespace == "kube-system":
+                continue
+            yield object
 
     async def _list_jobs_for_cronjobs(self, namespace: str) -> list[V1Job]:
         if namespace not in self.__jobs_for_cronjobs:
@@ -268,7 +246,7 @@ class ClusterLoader:
         if not self.__kind_available[kind]:
             return
 
-        result = []
+        # result = []
         try:
             async for item in self._list_namespaced_or_global_objects(kind, all_namespaces_request, namespaced_request):
                 if filter_workflows is not None and not filter_workflows(item):
@@ -279,8 +257,8 @@ class ClusterLoader:
                     containers = await containers
 
                 for container in containers:
-                    # yield self.__build_scannable_object(item, container, kind)
-                    result.append(self.__build_scannable_object(item, container, kind))
+                    yield self.__build_scannable_object(item, container, kind)
+                    # result.append(self.__build_scannable_object(item, container, kind))
         except ApiException as e:
             if kind in ("Rollout", "DeploymentConfig") and e.status in [400, 401, 403, 404]:
                 if self.__kind_available[kind]:
@@ -290,7 +268,7 @@ class ClusterLoader:
                 logger.exception(f"Error {e.status} listing {kind} in cluster {self.cluster}: {e.reason}")
                 logger.error("Will skip this object type and continue.")
 
-        return result
+        # return result
 
     def _list_deployments(self) -> AsyncIterable[K8sObjectData]:
         return self._list_scannable_objects(
