@@ -20,10 +20,9 @@ def async_gen_merge(*aiters: AsyncIterable[T]) -> AsyncIterable[T]:
                 await queue.put(item)
         except Exception:
             logger.exception(f"Error in async generator {aiter}")
-            iters_remaining.discard(aiter)
-            await queue.put(None)
         finally:
             iters_remaining.discard(aiter)
+            await queue.put(None)
 
     async def merged():
         while iters_remaining or not queue.empty():
