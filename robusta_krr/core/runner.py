@@ -308,7 +308,7 @@ class Runner:
             logger.info("Result collected, displaying...")
             self._process_result(result)
             end = datetime.now()
-            logger.info(f"[merge-test-no-streaming-basic] Total running time is {end - start}")
+            logger.info(f"[merge-test-streaming-basic] Total running time is {end - start}")
         except (ClusterNotSpecifiedException, CriticalRunnerException) as e:
             logger.critical(e)
             return 1  # Exit with error
