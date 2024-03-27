@@ -26,7 +26,7 @@ def async_gen_merge(*aiters: AsyncIterable[T]) -> AsyncIterable[T]:
             iters_remaining.discard(aiter)
 
     async def merged():
-        while iters_remaining:
+        while iters_remaining or not queue.empty():
             item = await queue.get()
 
             if item is None:
