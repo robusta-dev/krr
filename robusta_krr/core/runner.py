@@ -78,7 +78,7 @@ class Runner:
             if current_version_parsed < latest_version_parsed:
                 return True
         except Exception:
-            logger.exception("An error occurred while checking for a new version")
+            logger.debug("An error occurred while checking for a new version", exc_info=True)
             return False
 
     async def _greet(self) -> None:
@@ -90,12 +90,10 @@ class Runner:
 
         custom_print(intro_message)
         custom_print(f"\nRunning Robusta's KRR (Kubernetes Resource Recommender) {current_version}")
-
-        if latest_version is not None and self.__check_newer_version_available(current_version, latest_version):
-            custom_print(f"[yellow bold]A newer version of KRR is available: {latest_version}[/yellow bold]")
-
         custom_print(f"Using strategy: {self._strategy}")
         custom_print(f"Using formatter: {settings.format}")
+        if latest_version is not None and self.__check_newer_version_available(current_version, latest_version):
+            custom_print(f"[yellow bold]A newer version of KRR is available: {latest_version}[/yellow bold]")
         custom_print("")
 
     def _process_result(self, result: Result) -> None:
