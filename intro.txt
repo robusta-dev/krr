@@ -1,0 +1,12 @@
+[bold magenta]
+ _____       _               _          _  _______  _____
+|  __ \     | |             | |        | |/ /  __ \|  __ \
+| |__) |___ | |__  _   _ ___| |_ __ _  | ' /| |__) | |__) |
+|  _  // _ \| '_ \| | | / __| __/ _` | |  < |  _  /|  _  /
+| | \ \ (_) | |_) | |_| \__ \ || (_| | | . \| | \ \| | \ \
+|_|  \_\___/|_.__/ \__,_|___/\__\__,_| |_|\_\_|  \_\_|  \_\
+
+
+Thanks for using Robusta KRR. If you have any questions or feedback, please feel free to reach out to us at
+https://github.com/robusta-dev/krr/issues
+[/bold magenta]
