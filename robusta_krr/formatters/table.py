@@ -110,7 +110,7 @@ def table(result: Result) -> Table:
             full_info_row = j == 0
 
             cells: list[Any] = [f"[{item.severity.color}]{i + 1}.[/{item.severity.color}]"]
-            if cluster_count > 1:
+            if cluster_count > 1 or settings.show_cluster_name:
                 cells.append(item.object.cluster if full_info_row else "")
             cells += [
                 item.object.namespace if full_info_row else "",
