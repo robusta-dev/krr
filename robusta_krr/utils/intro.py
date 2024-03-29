@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from .version import get_version
 
 
-ONLINE_LINK = 'https://api.robusta.dev/krr/intro'
+ONLINE_LINK = 'https://stg.api.robusta.dev/krr/intro'
 LOCAL_LINK = './intro.txt'
 TIMEOUT = 0.5
 
