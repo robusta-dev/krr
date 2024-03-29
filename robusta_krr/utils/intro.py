@@ -2,6 +2,8 @@ import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
+from .version import get_version
+
 
 ONLINE_LINK = 'https://api.robusta.dev/krr/intro'
 LOCAL_LINK = './intro.txt'
@@ -12,7 +14,7 @@ TIMEOUT = 0.5
 def fetch_intro_message() -> str:
     try:
         # Attempt to get the message from the URL
-        response = requests.get(ONLINE_LINK, timeout=TIMEOUT)
+        response = requests.get(ONLINE_LINK, params={"version": get_version()}, timeout=TIMEOUT)
         response.raise_for_status()  # Raises an error for bad responses
         result = response.json()
         return result['message']
