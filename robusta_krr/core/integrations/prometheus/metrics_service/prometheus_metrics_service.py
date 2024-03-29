@@ -34,13 +34,13 @@ class PrometheusDiscovery(MetricsServiceDiscovery):
 
         return super().find_url(
             selectors=[
-                "app.kubernetes.io/name=prometheus,app.kubernetes.io/component=server",
                 "app=kube-prometheus-stack-prometheus",
                 "app=prometheus,component=server",
                 "app=prometheus-server",
                 "app=prometheus-operator-prometheus",
                 "app=rancher-monitoring-prometheus",
                 "app=prometheus-prometheus",
+                "app.kubernetes.io/name=prometheus,app.kubernetes.io/component=server",
             ]
         )
 
