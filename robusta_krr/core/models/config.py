@@ -135,18 +135,11 @@ class Config(pd.BaseSettings):
         return self._logging_console
 
     def load_kubeconfig(self) -> None:
-        # Load kubeconfig first if it is provided
-        if self.kubeconfig or self.context:
-            config.load_kube_config(config_file=self.kubeconfig, context=self.context)
-            self.inside_cluster = False
-            return
-
         try:
-            config.load_incluster_config()
-        except ConfigException:
             config.load_kube_config(config_file=self.kubeconfig, context=self.context)
             self.inside_cluster = False
-        else:
+        except ConfigException:
+            config.load_incluster_config()
             self.inside_cluster = True
 
     def get_kube_client(self, context: Optional[str] = None):
