@@ -137,6 +137,7 @@ class PrometheusMetricsService(MetricsService):
             logger.warning(
                 f"No label specified, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
             )
+            return
         if cluster_label not in cluster_names:
             logger.warning(
                 f"Label {cluster_label} does not exist, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
