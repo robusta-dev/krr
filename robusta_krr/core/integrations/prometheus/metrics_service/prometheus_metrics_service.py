@@ -134,11 +134,11 @@ class PrometheusMetricsService(MetricsService):
             return
 
         if not cluster_label:
-            raise ClusterNotSpecifiedException(
+            logger.warning(
                 f"No label specified, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
             )
         if cluster_label not in cluster_names:
-            raise ClusterNotSpecifiedException(
+            logger.warning(
                 f"Label {cluster_label} does not exist, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
             )
 
@@ -146,7 +146,7 @@ class PrometheusMetricsService(MetricsService):
         try:
             return self.prometheus.get_label_values(label_name=settings.prometheus_label)
         except PrometheusApiClientException:
-            logger.error("Labels api not present on prometheus client")
+            logger.warning("Labels api not present on prometheus client")
             return []
 
     async def get_history_range(self, history_duration: timedelta) -> tuple[datetime, datetime]:
