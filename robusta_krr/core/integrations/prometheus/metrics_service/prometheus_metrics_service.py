@@ -124,6 +124,7 @@ class PrometheusMetricsService(MetricsService):
 
     def validate_cluster_name(self):
         if not settings.prometheus_cluster_label and not settings.prometheus_label:
+            # non centralized prometheus
             return
 
         cluster_label = settings.prometheus_cluster_label
@@ -133,11 +134,13 @@ class PrometheusMetricsService(MetricsService):
             # there is only one cluster of metrics in this prometheus
             return
 
-        if not cluster_label:
+        if not settings.prometheus_cluster_label:
+            # centralized prometheus with multiple clusters with no cluster name configured
             logger.warning(
                 f"No label specified, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
             )
             return
+
         if cluster_label not in cluster_names:
             logger.warning(
                 f"Label {cluster_label} does not exist, Rerun krr with the flag `-l <cluster>` where <cluster> is one of {cluster_names}"
