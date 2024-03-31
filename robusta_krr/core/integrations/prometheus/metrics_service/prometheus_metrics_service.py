@@ -40,6 +40,7 @@ class PrometheusDiscovery(MetricsServiceDiscovery):
                 "app=prometheus-operator-prometheus",
                 "app=rancher-monitoring-prometheus",
                 "app=prometheus-prometheus",
+                "app.kubernetes.io/name=prometheus,app.kubernetes.io/component=server",
             ]
         )
 
