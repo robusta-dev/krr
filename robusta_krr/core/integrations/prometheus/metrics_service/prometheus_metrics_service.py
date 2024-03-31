@@ -145,9 +145,9 @@ class PrometheusMetricsService(MetricsService):
     def get_cluster_names(self) -> Optional[List[str]]:
         try:
             return self.prometheus.get_label_values(label_name=settings.prometheus_label)
-        except PrometheusApiClientException:
-            logger.warning("Labels api not present on prometheus client")
-            return []
+        except Exception:
+            logger.warning("Failed to get cluster names from prometheus")
+        return []
 
     async def get_history_range(self, history_duration: timedelta) -> tuple[datetime, datetime]:
         """
