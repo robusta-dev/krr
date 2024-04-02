@@ -208,7 +208,9 @@ class Runner:
         try:
             history_range = await prometheus_loader.get_history_range(timedelta(hours=5))
         except ValueError:
-            logger.exception(f"Was not able to get history range for cluster {cluster}")
+            logger.warning(
+                f"Was not able to get history range for cluster {cluster}. This is not critical, will try continue."
+            )
             self.errors.append(
                 {
                     "name": "HistoryRangeError",
@@ -220,13 +222,13 @@ class Runner:
         enough_data = self._strategy.settings.history_range_enough(history_range)
 
         if not enough_data:
-            logger.error(f"Not enough history available for cluster {cluster}.")
+            logger.warning(f"Not enough history available for cluster {cluster}.")
             try_after = history_range[0] + self._strategy.settings.history_timedelta
 
-            logger.error(
+            logger.warning(
                 "If the cluster is freshly installed, it might take some time for the enough data to be available."
             )
-            logger.error(
+            logger.warning(
                 f"Enough data is estimated to be available after {try_after}, "
                 "but will try to calculate recommendations anyway."
             )
@@ -302,7 +304,7 @@ class Runner:
             ),
         )
 
-    async def run(self) -> None:
+    async def run(self) -> int:
         """Run the Runner. The return value is the exit code of the program."""
         await self._greet()
 
@@ -311,7 +313,7 @@ class Runner:
         except Exception as e:
             logger.error(f"Could not load kubernetes configuration: {e}")
             logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
-            return
+            return 1  # Exit with error
 
         try:
             # eks has a lower step limit than other types of prometheus, it will throw an error
