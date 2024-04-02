@@ -146,6 +146,9 @@ class Config(pd.BaseSettings):
             self.inside_cluster = True
 
     def get_kube_client(self, context: Optional[str] = None):
+        if context is None:
+            return None
+
         api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
         if self.impersonate_user is not None:
             # trick copied from https://github.com/kubernetes-client/python/issues/362
