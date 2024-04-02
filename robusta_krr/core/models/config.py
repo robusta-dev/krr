@@ -80,10 +80,12 @@ class Config(pd.BaseSettings):
     def validate_prometheus_url(cls, v: Optional[str]):
         if v is None:
             return None
-        
+
         if not v.startswith("https://") and not v.startswith("http://"):
             raise Exception("--prometheus-url must start with https:// or http://")
-        
+
+        v = v.removesuffix("/")
+
         return v
 
     @pd.validator("prometheus_other_headers", pre=True)
