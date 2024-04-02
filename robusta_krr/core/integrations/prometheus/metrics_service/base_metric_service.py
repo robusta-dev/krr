@@ -27,9 +27,9 @@ class MetricsService(abc.ABC):
     def check_connection(self):
         ...
 
-    @property
-    def name(self) -> str:
-        classname = self.__class__.__name__
+    @classmethod
+    def name(cls) -> str:
+        classname = cls.__name__
         return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
 
     @abc.abstractmethod

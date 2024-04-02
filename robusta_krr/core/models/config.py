@@ -23,6 +23,8 @@ class Config(pd.BaseSettings):
 
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
+    impersonate_user: Optional[str] = None
+    impersonate_group: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
     resources: Union[list[KindLiteral], Literal["*"]] = pd.Field("*")
     selector: Optional[str] = None
@@ -45,14 +47,17 @@ class Config(pd.BaseSettings):
     eks_service_name: Optional[str] = pd.Field(None)
     eks_managed_prom_region: Optional[str] = pd.Field(None)
     coralogix_token: Optional[str] = pd.Field(None)
+    openshift: bool = pd.Field(False)
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
 
     # Logging Settings
     format: str
+    show_cluster_name: bool
     strategy: str
     log_to_stderr: bool
+    width: Optional[int] = pd.Field(None, ge=1)
 
     # Outputs Settings
     file_output: Optional[str] = pd.Field(None)
@@ -62,15 +67,26 @@ class Config(pd.BaseSettings):
 
     # Internal
     inside_cluster: bool = False
-    console: Optional[Console] = None
+    _logging_console: Optional[Console] = pd.PrivateAttr(None)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.console = Console(stderr=self.log_to_stderr)
 
     @property
     def Formatter(self) -> formatters.FormatterFunc:
         return formatters.find(self.format)
+
+    @pd.validator("prometheus_url")
+    def validate_prometheus_url(cls, v: Optional[str]):
+        if v is None:
+            return None
+
+        if not v.startswith("https://") and not v.startswith("http://"):
+            raise Exception("--prometheus-url must start with https:// or http://")
+
+        v = v.removesuffix("/")
+
+        return v
 
     @pd.validator("prometheus_other_headers", pre=True)
     def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
@@ -91,7 +107,9 @@ class Config(pd.BaseSettings):
         if v == []:
             return "*"
 
-        return [val.lower() for val in v]
+        # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
+        # So this will preserve the big and small letters of the resource
+        return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
@@ -112,14 +130,31 @@ class Config(pd.BaseSettings):
     def context(self) -> Optional[str]:
         return self.clusters[0] if self.clusters != "*" and self.clusters else None
 
+    @property
+    def logging_console(self) -> Console:
+        if getattr(self, "_logging_console") is None:
+            self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
+        return self._logging_console
+
     def load_kubeconfig(self) -> None:
         try:
-            config.load_incluster_config()
-        except ConfigException:
             config.load_kube_config(config_file=self.kubeconfig, context=self.context)
             self.inside_cluster = False
-        else:
+        except ConfigException:
+            config.load_incluster_config()
             self.inside_cluster = True
+
+    def get_kube_client(self, context: Optional[str] = None):
+        if context is None:
+            return None
+
+        api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
+        if self.impersonate_user is not None:
+            # trick copied from https://github.com/kubernetes-client/python/issues/362
+            api_client.set_default_header("Impersonate-User", self.impersonate_user)
+        if self.impersonate_group is not None:
+            api_client.set_default_header("Impersonate-Group", self.impersonate_group)
+        return api_client
 
     @staticmethod
     def set_config(config: Config) -> None:
@@ -130,7 +165,7 @@ class Config(pd.BaseSettings):
             level="NOTSET",
             format="%(message)s",
             datefmt="[%X]",
-            handlers=[RichHandler(console=Console(file=sys.stderr if settings.log_to_stderr else sys.stdout))],
+            handlers=[RichHandler(console=config.logging_console)],
         )
         logging.getLogger("").setLevel(logging.CRITICAL)
         logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)

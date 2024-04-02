@@ -132,3 +132,4 @@ dmypy.json
 
 .DS_Store
 robusta_lib
+.idea

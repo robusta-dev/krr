@@ -5,7 +5,7 @@ import pydantic as pd
 import robusta_krr
 from robusta_krr.api.models import K8sObjectData, MetricsPodData, ResourceRecommendation, ResourceType, RunResult
 from robusta_krr.api.strategies import BaseStrategy, StrategySettings
-from robusta_krr.core.integrations.prometheus.metrics import MaxCPULoader, MaxMemoryLoader
+from robusta_krr.core.integrations.prometheus.metrics import MaxMemoryLoader, PercentileCPULoader
 
 
 # Providing description to the settings will make it available in the CLI help
@@ -22,7 +22,7 @@ class CustomStrategy(BaseStrategy[CustomStrategySettings]):
 
     display_name = "custom"  # The name of the strategy
     rich_console = True  # Whether to use rich console for the CLI
-    metrics = [MaxCPULoader, MaxMemoryLoader]  # The metrics to use for the strategy
+    metrics = [PercentileCPULoader(90), MaxMemoryLoader]  # The metrics to use for the strategy
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
         return {

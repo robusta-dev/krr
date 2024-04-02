@@ -10,6 +10,7 @@ from uuid import UUID
 import typer
 import urllib3
 from pydantic import ValidationError  # noqa: F401
+from typer.models import OptionInfo
 
 from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
@@ -38,7 +39,7 @@ def __process_type(_T: type) -> type:
     elif _T is Optional:
         return Optional[{__process_type(_T.__args__[0])}]  # type: ignore
     else:
-        return str  # It the type is unknown, just use str and let pydantic handle it
+        return str  # If the type is unknown, just use str and let pydantic handle it
 
 
 def load_commands() -> None:
@@ -52,6 +53,18 @@ def load_commands() -> None:
                     "--kubeconfig",
                     "-k",
                     help="Path to kubeconfig file. If not provided, will attempt to find it.",
+                    rich_help_panel="Kubernetes Settings",
+                ),
+                impersonate_user: Optional[str] = typer.Option(
+                    None,
+                    "--as",
+                    help="Impersonate a user, just like `kubectl --as`. For example, system:serviceaccount:default:krr-account.",
+                    rich_help_panel="Kubernetes Settings",
+                ),
+                impersonate_group: Optional[str] = typer.Option(
+                    None,
+                    "--as-group",
+                    help="Impersonate a user inside of a group, just like `kubectl --as-group`. For example, system:authenticated.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 clusters: List[str] = typer.Option(
@@ -72,14 +85,14 @@ def load_commands() -> None:
                     None,
                     "--namespace",
                     "-n",
-                    help="List of namespaces to run on. By default, will run on all namespaces.",
+                    help="List of namespaces to run on. By default, will run on all namespaces except 'kube-system'.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 resources: List[str] = typer.Option(
                     None,
                     "--resource",
                     "-r",
-                    help="List of resources to run on (Deployment, StatefullSet, DaemonSet, Job, Rollout). By default, will run on all resources. Case insensitive.",
+                    help="List of resources to run on (Deployment, StatefulSet, DaemonSet, Job, Rollout). By default, will run on all resources. Case insensitive.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 selector: Optional[str] = typer.Option(
@@ -170,6 +183,13 @@ def load_commands() -> None:
                     help="Adds the token needed to query Coralogix managed prometheus.",
                     rich_help_panel="Prometheus Coralogix Settings",
                 ),
+                openshift: bool = typer.Option(
+                    False,
+                    "--openshift",
+                    help="Used when running by Robusta inside an OpenShift cluster.",
+                    rich_help_panel="Prometheus Openshift Settings",
+                    hidden=True,
+                ),
                 cpu_min_value: int = typer.Option(
                     10,
                     "--cpu-min",
@@ -196,6 +216,9 @@ def load_commands() -> None:
                     help=f"Output formatter ({', '.join(formatters.list_available())})",
                     rich_help_panel="Logging Settings",
                 ),
+                show_cluster_name: bool = typer.Option(
+                    False, "--show-cluster-name", help="In table output, always show the cluster name even for a single cluster", rich_help_panel="Output Settings"
+                ),
                 verbose: bool = typer.Option(
                     False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
                 ),
@@ -204,6 +227,12 @@ def load_commands() -> None:
                 ),
                 log_to_stderr: bool = typer.Option(
                     False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"
+                ),
+                width: Optional[int] = typer.Option(
+                    None,
+                    "--width",
+                    help="Width of the output. Will use console width by default.",
+                    rich_help_panel="Logging Settings",
                 ),
                 file_output: Optional[str] = typer.Option(
                     None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"
@@ -221,6 +250,8 @@ def load_commands() -> None:
                 try:
                     config = Config(
                         kubeconfig=kubeconfig,
+                        impersonate_user=impersonate_user,
+                        impersonate_group=impersonate_group,
                         clusters="*" if all_clusters else clusters,
                         namespaces="*" if "*" in namespaces else namespaces,
                         resources="*" if "*" in resources else resources,
@@ -238,13 +269,16 @@ def load_commands() -> None:
                         eks_secret_key=eks_secret_key,
                         eks_service_name=eks_service_name,
                         coralogix_token=coralogix_token,
+                        openshift=openshift,
                         max_workers=max_workers,
                         format=format,
+                        show_cluster_name=show_cluster_name,
                         verbose=verbose,
                         cpu_min_value=cpu_min_value,
                         memory_min_value=memory_min_value,
                         quiet=quiet,
                         log_to_stderr=log_to_stderr,
+                        width=width,
                         file_output=file_output,
                         slack_output=slack_output,
                         strategy=_strategy_name,
@@ -255,7 +289,8 @@ def load_commands() -> None:
                     logger.exception("Error occured while parsing arguments")
                 else:
                     runner = Runner()
-                    asyncio.run(runner.run())
+                    exit_code = asyncio.run(runner.run())
+                    raise typer.Exit(code=exit_code)
 
             run_strategy.__name__ = strategy_name
             signature = inspect.signature(run_strategy)
@@ -265,9 +300,9 @@ def load_commands() -> None:
                     inspect.Parameter(
                         name=field_name,
                         kind=inspect.Parameter.KEYWORD_ONLY,
-                        default=typer.Option(
-                            field_meta.default,
-                            f"--{field_name}",
+                        default=OptionInfo(
+                            default=field_meta.default,
+                            param_decls=list(set([f"--{field_name}", f"--{field_name.replace('_', '-')}"])),
                             help=f"{field_meta.field_info.description}",
                             rich_help_panel="Strategy Settings",
                         ),

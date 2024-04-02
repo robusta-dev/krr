@@ -95,6 +95,19 @@ def mock_prometheus_load_pods():
 
 
 @pytest.fixture(autouse=True, scope="session")
+def mock_prometheus_get_history_range():
+    async def get_history_range(self, history_duration: timedelta) -> tuple[datetime, datetime]:
+        now = datetime.now()
+        start = now - history_duration
+        return start, now
+
+    with patch(
+        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.get_history_range", get_history_range
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True, scope="session")
 def mock_prometheus_init():
     with patch("robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.__init__", return_value=None):
         yield

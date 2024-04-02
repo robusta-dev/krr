@@ -6,8 +6,9 @@ import sys
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
-
+from datetime import timedelta
 from prometrix import PrometheusNotFound
+from rich.console import Console
 from slack_sdk import WebClient
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
@@ -16,12 +17,23 @@ from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedExceptio
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
-from robusta_krr.utils.logo import ASCII_LOGO
-from robusta_krr.utils.print import print
+from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
-from robusta_krr.utils.version import get_version
+from robusta_krr.utils.version import get_version, load_latest_version
 
 logger = logging.getLogger("krr")
+
+
+def custom_print(*objects, rich: bool = True, force: bool = False) -> None:
+    """
+    A wrapper around `rich.print` that prints only if `settings.quiet` is False.
+    """
+    print_func = settings.logging_console.print if rich else print
+    if not settings.quiet or force:
+        print_func(*objects)  # type: ignore
+
+
+class CriticalRunnerException(Exception): ...
 
 
 class Runner:
@@ -32,6 +44,8 @@ class Runner:
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = settings.create_strategy()
+
+        self.errors: list[dict] = []
 
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(settings.max_workers)
@@ -54,31 +68,54 @@ class Runner:
 
         return result
 
-    def _greet(self) -> None:
+    @staticmethod
+    def __parse_version_string(version: str) -> tuple[int, ...]:
+        version_trimmed = version.replace("-dev", "").replace("v", "")
+        return tuple(map(int, version_trimmed.split(".")))
+
+    def __check_newer_version_available(self, current_version: str, latest_version: str) -> bool:
+        try:
+            current_version_parsed = self.__parse_version_string(current_version)
+            latest_version_parsed = self.__parse_version_string(latest_version)
+
+            if current_version_parsed < latest_version_parsed:
+                return True
+        except Exception:
+            logger.debug("An error occurred while checking for a new version", exc_info=True)
+            return False
+
+    async def _greet(self) -> None:
         if settings.quiet:
             return
 
-        print(ASCII_LOGO)
-        print(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
-        print(f"Using strategy: {self._strategy}")
-        print(f"Using formatter: {settings.format}")
-        print("")
+        current_version = get_version()
+        intro_message, latest_version = await asyncio.gather(load_intro_message(), load_latest_version())
+
+        custom_print(intro_message)
+        custom_print(f"\nRunning Robusta's KRR (Kubernetes Resource Recommender) {current_version}")
+        custom_print(f"Using strategy: {self._strategy}")
+        custom_print(f"Using formatter: {settings.format}")
+        if latest_version is not None and self.__check_newer_version_available(current_version, latest_version):
+            custom_print(f"[yellow bold]A newer version of KRR is available: {latest_version}[/yellow bold]")
+        custom_print("")
 
     def _process_result(self, result: Result) -> None:
+        result.errors = self.errors
+
         Formatter = settings.Formatter
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
-        print(formatted, rich=rich, force=True)
+        custom_print(formatted, rich=rich, force=True)
+
         if settings.file_output or settings.slack_output:
             if settings.file_output:
                 file_name = settings.file_output
             elif settings.slack_output:
                 file_name = settings.slack_output
             with open(file_name, "w") as target_file:
-                sys.stdout = target_file
-                print(formatted, rich=rich, force=True)
-                sys.stdout = sys.stdout
+                console = Console(file=target_file, width=settings.width)
+                console.print(formatted)
             if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)
@@ -128,11 +165,11 @@ class Runner:
             for resource, recommendation in result.items()
         }
 
-    async def _calculate_object_recommendations(self, object: K8sObjectData) -> RunResult:
+    async def _calculate_object_recommendations(self, object: K8sObjectData) -> Optional[RunResult]:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
-            return {resource: ResourceRecommendation.undefined("Prometheus not found") for resource in ResourceType}
+            return None
 
         object.pods = await prometheus_loader.load_pods(object, self._strategy.settings.history_timedelta)
         if object.pods == []:
@@ -140,13 +177,12 @@ class Runner:
             object.pods = await self._k8s_loader.load_pods(object)
 
             # NOTE: Kubernetes API returned pods, but Prometheus did not
+            # This might happen with fast executing jobs
             if object.pods != []:
                 object.add_warning("NoPrometheusPods")
                 logger.warning(
-                    f"Was not able to load any pods for {object} from Prometheus.\n\t"
-                    "This could mean that Prometheus is missing some required metrics.\n\t"
-                    "Loaded pods from Kubernetes API instead.\n\t"
-                    "See more info at https://github.com/robusta-dev/krr#requirements "
+                    f"Was not able to load any pods for {object} from Prometheus. "
+                    "Loaded pods from Kubernetes API instead."
                 )
 
         metrics = await prometheus_loader.gather_data(
@@ -164,10 +200,52 @@ class Runner:
         logger.info(f"Calculated recommendations for {object} (using {len(metrics)} metrics)")
         return self._format_result(result)
 
-    async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> ResourceScan:
+    async def _check_data_availability(self, cluster: Optional[str]) -> None:
+        prometheus_loader = self._get_prometheus_loader(cluster)
+        if prometheus_loader is None:
+            return
+
+        try:
+            history_range = await prometheus_loader.get_history_range(timedelta(hours=5))
+        except ValueError:
+            logger.warning(
+                f"Was not able to get history range for cluster {cluster}. This is not critical, will try continue."
+            )
+            self.errors.append(
+                {
+                    "name": "HistoryRangeError",
+                }
+            )
+            return
+
+        logger.debug(f"History range for {cluster}: {history_range}")
+        enough_data = self._strategy.settings.history_range_enough(history_range)
+
+        if not enough_data:
+            logger.warning(f"Not enough history available for cluster {cluster}.")
+            try_after = history_range[0] + self._strategy.settings.history_timedelta
+
+            logger.warning(
+                "If the cluster is freshly installed, it might take some time for the enough data to be available."
+            )
+            logger.warning(
+                f"Enough data is estimated to be available after {try_after}, "
+                "but will try to calculate recommendations anyway."
+            )
+            self.errors.append(
+                {
+                    "name": "NotEnoughHistoryAvailable",
+                    "retry_after": try_after,
+                }
+            )
+
+    async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> Optional[ResourceScan]:
         recommendation = await self._calculate_object_recommendations(k8s_object)
 
         self.__progressbar.progress()
+
+        if recommendation is None:
+            return None
 
         return ResourceScan.calculate(
             k8s_object,
@@ -182,12 +260,19 @@ class Runner:
         clusters = await self._k8s_loader.list_clusters()
         if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
-            # In this scenario we dont yet support determining which metrics belong to which cluster so the reccomendation can be incorrect
+            # In this scenario we dont yet support determining
+            # which metrics belong to which cluster so the reccomendation can be incorrect
             raise ClusterNotSpecifiedException(
-                f"Cannot scan multiple clusters for this prometheus, Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
+                f"Cannot scan multiple clusters for this prometheus, "
+                f"Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
             )
 
         logger.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
+
+        if clusters is None:
+            await self._check_data_availability(None)
+        else:
+            await asyncio.gather(*[self._check_data_availability(cluster) for cluster in clusters])
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             scans_tasks = [
@@ -197,6 +282,8 @@ class Runner:
 
             scans = await asyncio.gather(*scans_tasks)
 
+        successful_scans = [scan for scan in scans if scan is not None]
+
         if len(scans) == 0:
             logger.warning("Current filters resulted in no objects available to scan.")
             logger.warning("Try to change the filters or check if there is anything available.")
@@ -204,10 +291,9 @@ class Runner:
                 logger.warning(
                     "Note that you are using the '*' namespace filter, which by default excludes kube-system."
                 )
-            return Result(
-                scans=[],
-                strategy=StrategyData(name=str(self._strategy).lower(), settings=self._strategy.settings.dict()),
-            )
+            raise CriticalRunnerException("No objects available to scan.")
+        elif len(successful_scans) == 0:
+            raise CriticalRunnerException("No successful scans were made. Check the logs for more information.")
 
         return Result(
             scans=scans,
@@ -218,15 +304,16 @@ class Runner:
             ),
         )
 
-    async def run(self) -> None:
-        self._greet()
+    async def run(self) -> int:
+        """Run the Runner. The return value is the exit code of the program."""
+        await self._greet()
 
         try:
             settings.load_kubeconfig()
         except Exception as e:
             logger.error(f"Could not load kubernetes configuration: {e}")
             logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
-            return
+            return 1  # Exit with error
 
         try:
             # eks has a lower step limit than other types of prometheus, it will throw an error
@@ -240,8 +327,13 @@ class Runner:
                 self._strategy.settings.timeframe_duration = min_step
 
             result = await self._collect_result()
+            logger.info("Result collected, displaying...")
             self._process_result(result)
-        except ClusterNotSpecifiedException as e:
-            logger.error(e)
+        except (ClusterNotSpecifiedException, CriticalRunnerException) as e:
+            logger.critical(e)
+            return 1  # Exit with error
         except Exception:
             logger.exception("An unexpected error occurred")
+            return 1  # Exit with error
+        else:
+            return 0  # Exit with success

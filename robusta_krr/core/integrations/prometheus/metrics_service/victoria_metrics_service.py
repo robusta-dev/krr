@@ -17,14 +17,22 @@ class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
         Returns:
             Optional[str]: The discovered Victoria Metrics URL, or None if not found.
         """
-        return super().find_url(
+        url = super().find_url(
             selectors=[
                 "app.kubernetes.io/name=vmsingle",
                 "app.kubernetes.io/name=victoria-metrics-single",
-                "app.kubernetes.io/name=vmselect",
-                "app=vmselect",
             ]
         )
+        if url is None:
+            url = super().find_url(
+                selectors=[
+                    "app.kubernetes.io/name=vmselect",
+                    "app=vmselect",
+                ]
+            )
+            if url is not None:
+                url = f"{url}/select/0/prometheus/"
+        return url
 
 
 class VictoriaMetricsService(PrometheusMetricsService):
@@ -33,6 +41,10 @@ class VictoriaMetricsService(PrometheusMetricsService):
     """
 
     service_discovery = VictoriaMetricsDiscovery
+
+    @classmethod
+    def name(cls) -> str:
+        return "Victoria Metrics"
 
     def check_connection(self):
         """
