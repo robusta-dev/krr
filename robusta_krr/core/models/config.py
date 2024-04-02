@@ -80,10 +80,12 @@ class Config(pd.BaseSettings):
     def validate_prometheus_url(cls, v: Optional[str]):
         if v is None:
             return None
-        
+
         if not v.startswith("https://") and not v.startswith("http://"):
             raise Exception("--prometheus-url must start with https:// or http://")
-        
+
+        v = v.removesuffix("/")
+
         return v
 
     @pd.validator("prometheus_other_headers", pre=True)
@@ -143,6 +145,9 @@ class Config(pd.BaseSettings):
             self.inside_cluster = True
 
     def get_kube_client(self, context: Optional[str] = None):
+        if context is None:
+            return None
+
         api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
         if self.impersonate_user is not None:
             # trick copied from https://github.com/kubernetes-client/python/issues/362

@@ -17,9 +17,9 @@ from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedExceptio
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
-from robusta_krr.utils.logo import ASCII_LOGO
+from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
-from robusta_krr.utils.version import get_version
+from robusta_krr.utils.version import get_version, load_latest_version
 
 logger = logging.getLogger("krr")
 
@@ -68,14 +68,35 @@ class Runner:
 
         return result
 
-    def _greet(self) -> None:
+    @staticmethod
+    def __parse_version_string(version: str) -> tuple[int, ...]:
+        version_trimmed = version.replace("-dev", "").replace("v", "")
+        return tuple(map(int, version_trimmed.split(".")))
+
+    def __check_newer_version_available(self, current_version: str, latest_version: str) -> bool:
+        try:
+            current_version_parsed = self.__parse_version_string(current_version)
+            latest_version_parsed = self.__parse_version_string(latest_version)
+
+            if current_version_parsed < latest_version_parsed:
+                return True
+        except Exception:
+            logger.debug("An error occurred while checking for a new version", exc_info=True)
+            return False
+
+    async def _greet(self) -> None:
         if settings.quiet:
             return
 
-        custom_print(ASCII_LOGO)
-        custom_print(f"Running Robusta's KRR (Kubernetes Resource Recommender) {get_version()}")
+        current_version = get_version()
+        intro_message, latest_version = await asyncio.gather(load_intro_message(), load_latest_version())
+
+        custom_print(intro_message)
+        custom_print(f"\nRunning Robusta's KRR (Kubernetes Resource Recommender) {current_version}")
         custom_print(f"Using strategy: {self._strategy}")
         custom_print(f"Using formatter: {settings.format}")
+        if latest_version is not None and self.__check_newer_version_available(current_version, latest_version):
+            custom_print(f"[yellow bold]A newer version of KRR is available: {latest_version}[/yellow bold]")
         custom_print("")
 
     def _process_result(self, result: Result) -> None:
@@ -187,7 +208,9 @@ class Runner:
         try:
             history_range = await prometheus_loader.get_history_range(timedelta(hours=5))
         except ValueError:
-            logger.exception(f"Was not able to get history range for cluster {cluster}")
+            logger.warning(
+                f"Was not able to get history range for cluster {cluster}. This is not critical, will try continue."
+            )
             self.errors.append(
                 {
                     "name": "HistoryRangeError",
@@ -199,13 +222,13 @@ class Runner:
         enough_data = self._strategy.settings.history_range_enough(history_range)
 
         if not enough_data:
-            logger.error(f"Not enough history available for cluster {cluster}.")
+            logger.warning(f"Not enough history available for cluster {cluster}.")
             try_after = history_range[0] + self._strategy.settings.history_timedelta
 
-            logger.error(
+            logger.warning(
                 "If the cluster is freshly installed, it might take some time for the enough data to be available."
             )
-            logger.error(
+            logger.warning(
                 f"Enough data is estimated to be available after {try_after}, "
                 "but will try to calculate recommendations anyway."
             )
@@ -283,14 +306,14 @@ class Runner:
 
     async def run(self) -> int:
         """Run the Runner. The return value is the exit code of the program."""
-        self._greet()
+        await self._greet()
 
         try:
             settings.load_kubeconfig()
         except Exception as e:
             logger.error(f"Could not load kubernetes configuration: {e}")
             logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
-            return
+            return 1  # Exit with error
 
         try:
             # eks has a lower step limit than other types of prometheus, it will throw an error
