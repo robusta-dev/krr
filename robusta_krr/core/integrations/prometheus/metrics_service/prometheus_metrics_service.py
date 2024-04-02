@@ -40,6 +40,7 @@ class PrometheusDiscovery(MetricsServiceDiscovery):
                 "app=prometheus-operator-prometheus",
                 "app=rancher-monitoring-prometheus",
                 "app=prometheus-prometheus",
+                "app.kubernetes.io/name=prometheus,app.kubernetes.io/component=server",
             ]
         )
 
@@ -60,7 +61,7 @@ class PrometheusMetricsService(MetricsService):
     ) -> None:
         super().__init__(api_client=api_client, cluster=cluster, executor=executor)
 
-        logger.info(f"Connecting to {self.name} for {self.cluster} cluster")
+        logger.info(f"Trying to connect to {self.name()} for {self.cluster} cluster")
 
         self.auth_header = settings.prometheus_auth_header
         self.ssl_enabled = settings.prometheus_ssl_enabled
@@ -82,11 +83,10 @@ class PrometheusMetricsService(MetricsService):
 
         if not self.url:
             raise PrometheusNotFound(
-                f"{self.name} instance could not be found while scanning in {self.cluster} cluster.\n"
-                "\tTry using port-forwarding and/or setting the url manually (using the -p flag.)."
+                f"{self.name()} instance could not be found while scanning in {self.cluster} cluster."
             )
 
-        logger.info(f"Using {self.name} at {self.url} for cluster {cluster or 'default'}")
+        logger.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 
         headers = settings.prometheus_other_headers
 
@@ -182,7 +182,7 @@ class PrometheusMetricsService(MetricsService):
         """
         logger.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
 
-        metric_loader = LoaderClass(self.prometheus, self.name, self.executor)
+        metric_loader = LoaderClass(self.prometheus, self.name(), self.executor)
         data = await metric_loader.load_data(object, period, step)
 
         if len(data) == 0:
