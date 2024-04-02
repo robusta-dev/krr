@@ -30,6 +30,7 @@ class MimirMetricsService(PrometheusMetricsService):
 
     service_discovery = MimirMetricsDiscovery
     url_postfix = "/prometheus"
+    additional_headers = {"X-Scope-OrgID": "anonymous"}
 
     def check_connection(self):
         """

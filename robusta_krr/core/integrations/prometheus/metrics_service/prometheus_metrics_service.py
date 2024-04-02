@@ -52,6 +52,7 @@ class PrometheusMetricsService(MetricsService):
 
     service_discovery: type[MetricsServiceDiscovery] = PrometheusDiscovery
     url_postfix: str = ""
+    additional_headers: dict[str, str] = {}
 
     def __init__(
         self,
@@ -92,10 +93,7 @@ class PrometheusMetricsService(MetricsService):
         logger.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 
         headers = settings.prometheus_other_headers
-        # FIXME: not the right place, Mimir specific
-        headers.update(
-            {"X-Scope-OrgID": "anonymous"}
-        )
+        headers |= self.additional_headers
 
         if self.auth_header:
             headers |= {"Authorization": self.auth_header}
