@@ -51,6 +51,7 @@ class PrometheusMetricsService(MetricsService):
     """
 
     service_discovery: type[MetricsServiceDiscovery] = PrometheusDiscovery
+    url_postfix: str = ""
 
     def __init__(
         self,
@@ -85,6 +86,8 @@ class PrometheusMetricsService(MetricsService):
             raise PrometheusNotFound(
                 f"{self.name()} instance could not be found while scanning in {self.cluster} cluster."
             )
+
+        self.url += self.url_postfix
 
         logger.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 

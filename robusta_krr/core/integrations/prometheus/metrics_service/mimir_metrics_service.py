@@ -29,6 +29,7 @@ class MimirMetricsService(PrometheusMetricsService):
     """
 
     service_discovery = MimirMetricsDiscovery
+    url_postfix = "/prometheus"
 
     def check_connection(self):
         """
