@@ -16,12 +16,12 @@ from robusta_krr.core.models.objects import K8sObjectData, PodData
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
+from .metrics_service.mimir_metrics_service import MimirMetricsService
 
 if TYPE_CHECKING:
     from robusta_krr.core.abstract.strategies import BaseStrategy, MetricsPodData
 
 logger = logging.getLogger("krr")
-
 
 class PrometheusMetricsLoader:
     def __init__(self, *, cluster: Optional[str] = None) -> None:
@@ -56,7 +56,7 @@ class PrometheusMetricsLoader:
             metrics_to_check = [PrometheusMetricsService]
         else:
             logger.info("No Prometheus URL is specified, trying to auto-detect a metrics service")
-            metrics_to_check = [VictoriaMetricsService, ThanosMetricsService, PrometheusMetricsService]
+            metrics_to_check = [VictoriaMetricsService, ThanosMetricsService, MimirMetricsService, PrometheusMetricsService]
 
         for metric_service_class in metrics_to_check:
             service_name = metric_service_class.name()
