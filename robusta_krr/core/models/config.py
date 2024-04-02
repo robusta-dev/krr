@@ -138,11 +138,10 @@ class Config(pd.BaseSettings):
 
     def load_kubeconfig(self) -> None:
         try:
-            config.load_incluster_config()
-        except ConfigException:
             config.load_kube_config(config_file=self.kubeconfig, context=self.context)
             self.inside_cluster = False
-        else:
+        except ConfigException:
+            config.load_incluster_config()
             self.inside_cluster = True
 
     def get_kube_client(self, context: Optional[str] = None):
