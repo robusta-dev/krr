@@ -308,6 +308,9 @@ class Runner:
         """Run the Runner. The return value is the exit code of the program."""
         await self._greet()
 
+        await asyncio.sleep(1000)
+        return 1
+
         try:
             settings.load_kubeconfig()
         except Exception as e:
