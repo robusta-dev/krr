@@ -275,12 +275,8 @@ class Runner:
             await asyncio.gather(*[self._check_data_availability(cluster) for cluster in clusters])
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
-            scans_tasks = [
-                asyncio.create_task(self._gather_object_allocations(k8s_object))
-                async for k8s_object in self._k8s_loader.list_scannable_objects(clusters)
-            ]
-
-            scans = await asyncio.gather(*scans_tasks)
+            workloads = await self._k8s_loader.list_scannable_objects(clusters)
+            scans = await asyncio.gather(*[self._gather_object_allocations(k8s_object) for k8s_object in workloads])
 
         successful_scans = [scan for scan in scans if scan is not None]
 
