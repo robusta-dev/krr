@@ -11,23 +11,71 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from robusta_krr.core.abstract import formatters
-from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 from robusta_krr.core.models.objects import KindLiteral
 
 logger = logging.getLogger("krr")
 
 
-class Config(pd.BaseSettings):
-    quiet: bool = pd.Field(False)
-    verbose: bool = pd.Field(False)
+class Config(pd.BaseModel, extra=pd.Extra.ignore):
+    kubeconfig: Optional[str] = pd.Field(
+        None,
+        typer__param_decls=["--kubeconfig", "-k"],
+        typer__help="Path to kubeconfig file. If not provided, will attempt to find it.",
+        typer__rich_help_panel="Kubernetes Settings",
+    )
+    impersonate_user: Optional[str] = pd.Field(
+        None,
+        typer__param_decls=["--as"],
+        typer__help="Impersonate a user, just like `kubectl --as`. For example, system:serviceaccount:default:krr-account.",
+        typer__rich_help_panel="Kubernetes Settings",
+    )
+    impersonate_group: Optional[str] = pd.Field(
+        None,
+        typer__param_decls=["--as-group"],
+        typer__help="Impersonate a user inside of a group, just like `kubectl --as-group`. For example, system:authenticated.",
+        typer__rich_help_panel="Kubernetes Settings",
+    )
+    clusters: Union[list[str], Literal["*"], None] = pd.Field(
+        None,
+        typer__param_decls=["--context", "--cluster", "-c"],
+        typer__help=(
+            "List of clusters to run on. By default, will run on the current cluster. "
+            "Use --all-clusters to run on all clusters."
+        ),
+        typer__rich_help_panel="Kubernetes Settings",
+    )
+    all_clusters: bool = pd.Field(
+        False,
+        typer__param_decls=["--all-clusters"],
+        typer__help=("Run on all clusters. Overrides --context."),
+        typer__rich_help_panel="Kubernetes Settings",
+    )
+    namespaces: Union[list[str], Literal["*"]] = pd.Field(
+        "*",
+        typer__param_decls=["--namespace", "-n"],
+        typer__help=("List of namespaces to run on. By default, will run on all namespaces except 'kube-system'."),
+        typer__rich_help_panel="Kubernetes Settings",
+    )
+    resources: Union[list[KindLiteral], Literal["*"]] = pd.Field(
+        "*",
+        typer__param_decls=["--resource", "-r"],
+        typer__help=(
+            "List of resources to run on (Deployment, StatefulSet, DaemonSet, Job, Rollout). "
+            "By default, will run on all resources. Case insensitive."
+        ),
+        typer__rich_help_panel="Kubernetes Settings",
+    )
+    selector: Optional[str] = pd.Field(
+        None,
+        typer__param_decls=["--context", "--cluster", "-c"],
+        typer__help=(
+            "List of clusters to run on. By default, will run on the current cluster. "
+            "Use --all-clusters to run on all clusters."
+        ),
+        typer__rich_help_panel="Kubernetes Settings",
+    )
 
-    clusters: Union[list[str], Literal["*"], None] = None
-    kubeconfig: Optional[str] = None
-    impersonate_user: Optional[str] = None
-    impersonate_group: Optional[str] = None
-    namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
-    resources: Union[list[KindLiteral], Literal["*"]] = pd.Field("*")
-    selector: Optional[str] = None
+    # TODO: Other ones
 
     # Value settings
     cpu_min_value: int = pd.Field(10, ge=0)  # in millicores
@@ -53,17 +101,16 @@ class Config(pd.BaseSettings):
     max_workers: int = pd.Field(6, ge=1)
 
     # Logging Settings
-    format: str
-    show_cluster_name: bool
-    strategy: str
-    log_to_stderr: bool
+    format: str = pd.Field("table")
+    show_cluster_name: bool = pd.Field(False)
+    log_to_stderr: bool = pd.Field(False)
     width: Optional[int] = pd.Field(None, ge=1)
+    quiet: bool = pd.Field(False)
+    verbose: bool = pd.Field(False)
 
     # Outputs Settings
     file_output: Optional[str] = pd.Field(None)
     slack_output: Optional[str] = pd.Field(None)
-
-    other_args: dict[str, Any]
 
     # Internal
     inside_cluster: bool = False
@@ -76,20 +123,23 @@ class Config(pd.BaseSettings):
     def Formatter(self) -> formatters.FormatterFunc:
         return formatters.find(self.format)
 
-    @pd.validator("prometheus_url")
-    def validate_prometheus_url(cls, v: Optional[str]):
-        if v is None:
-            return None
+    # @pd.validator("prometheus_url")
+    # def validate_prometheus_url(cls, v: Optional[str]):
+    #     if v is None:
+    #         return None
 
-        if not v.startswith("https://") and not v.startswith("http://"):
-            raise Exception("--prometheus-url must start with https:// or http://")
+    #     if not v.startswith("https://") and not v.startswith("http://"):
+    #         raise Exception("--prometheus-url must start with https:// or http://")
 
-        v = v.removesuffix("/")
+    #     v = v.removesuffix("/")
 
-        return v
+    #     return v
 
     @pd.validator("prometheus_other_headers", pre=True)
     def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
+        if headers is None:
+            return {}
+
         if isinstance(headers, dict):
             return headers
 
@@ -102,29 +152,19 @@ class Config(pd.BaseSettings):
 
         return [val.lower() for val in v]
 
-    @pd.validator("resources", pre=True)
-    def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
-        if v == []:
-            return "*"
+    # @pd.validator("resources", pre=True)
+    # def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
+    #     if v == []:
+    #         return "*"
 
-        # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
-        # So this will preserve the big and small letters of the resource
-        return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
+    #     # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
+    #     # So this will preserve the big and small letters of the resource
+    #     return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
 
-    def create_strategy(self) -> AnyStrategy:
-        StrategyType = AnyStrategy.find(self.strategy)
-        StrategySettingsType = StrategyType.get_settings_type()
-        return StrategyType(StrategySettingsType(**self.other_args))  # type: ignore
-
-    @pd.validator("strategy")
-    def validate_strategy(cls, v: str) -> str:
-        BaseStrategy.find(v)  # NOTE: raises if strategy is not found
-        return v
-
-    @pd.validator("format")
-    def validate_format(cls, v: str) -> str:
-        formatters.find(v)  # NOTE: raises if strategy is not found
-        return v
+    # @pd.validator("format")
+    # def validate_format(cls, v: str) -> str:
+    #     formatters.find(v)  # NOTE: raises if formatter is not found
+    #     return v
 
     @property
     def context(self) -> Optional[str]:
