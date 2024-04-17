@@ -59,6 +59,7 @@ class PrometheusMetric(BaseMetric):
     query_type: QueryType = QueryType.Query
     filtering: bool = True
     pods_batch_size: Optional[int] = 50
+    warning_on_no_data: bool = True
 
     def __init__(
         self,

@@ -1,3 +1,9 @@
+"""
+    This strategy is a version of a simple strategy that we might want to set as a default strategy for the user.
+    It is the same as the simple strategy, but it also uses OOMKilled events and memory limits to calculate memory recommendations.
+    Currently, it is in a testing mode and may not work as expected.
+"""
+
 from datetime import timedelta
 
 import numpy as np
@@ -19,7 +25,9 @@ from robusta_krr.core.integrations.prometheus.metrics import (
     MemoryAmountLoader,
     PercentileCPULoader,
     PrometheusMetric,
+    MaxOOMKilledMemoryLoader,
 )
+
 
 class SimpleStrategySettings(StrategySettings):
     cpu_percentile: float = pd.Field(99, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
@@ -29,14 +37,21 @@ class SimpleStrategySettings(StrategySettings):
     points_required: int = pd.Field(
         100, ge=1, description="The number of data points required to make a recommendation for a resource."
     )
-    allow_hpa: bool = pd.Field(False, description="Whether to calculate recommendations even when there is an HPA scaler defined on that resource.")
+    allow_hpa: bool = pd.Field(
+        False,
+        description="Whether to calculate recommendations even when there is an HPA scaler defined on that resource.",
+    )
+    use_oomkill_data: bool = pd.Field(
+        False,
+        description="Whether to use OOMKilled data to calculate memory recommendations. Unstable and experimental.",
+    )
 
-    def calculate_memory_proposal(self, data: PodsTimeData) -> float:
+    def calculate_memory_proposal(self, data: PodsTimeData, max_oomkill: float = 0) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
             return float("NaN")
 
-        return np.max(data_) * (1 + self.memory_buffer_percentage / 100)
+        return max(np.max(data_), max_oomkill) * (1 + self.memory_buffer_percentage / 100)
 
     def calculate_cpu_proposal(self, data: PodsTimeData) -> float:
         if len(data) == 0:
@@ -75,7 +90,17 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     @property
     def metrics(self) -> list[type[PrometheusMetric]]:
-        return [PercentileCPULoader(self.settings.cpu_percentile), MaxMemoryLoader, CPUAmountLoader, MemoryAmountLoader]
+        metrics = [
+            PercentileCPULoader(self.settings.cpu_percentile),
+            MaxMemoryLoader,
+            CPUAmountLoader,
+            MemoryAmountLoader,
+        ]
+
+        if self.settings.use_oomkill_data:
+            metrics.append(MaxOOMKilledMemoryLoader)
+
+        return metrics
 
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
@@ -91,7 +116,11 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if total_points_count < self.settings.points_required:
             return ResourceRecommendation.undefined(info="Not enough data")
 
-        if object_data.hpa is not None and object_data.hpa.target_cpu_utilization_percentage is not None and not self.settings.allow_hpa:
+        if (
+            object_data.hpa is not None
+            and object_data.hpa.target_cpu_utilization_percentage is not None
+            and not self.settings.allow_hpa
+        ):
             return ResourceRecommendation.undefined(info="HPA detected")
 
         cpu_usage = self.settings.calculate_cpu_proposal(data)
@@ -102,6 +131,16 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     ) -> ResourceRecommendation:
         data = history_data["MaxMemoryLoader"]
 
+        if self.settings.use_oomkill_data:
+            max_oomkill_data = history_data["MaxOOMKilledMemoryLoader"]
+            max_oomkill_value = (
+                np.max([values[0, 1] for values in max_oomkill_data.values()]) if len(max_oomkill_data) > 0 else 0
+            )
+            if max_oomkill_value != 0:
+                print(max_oomkill_data)
+        else:
+            max_oomkill_value = 0
+
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
@@ -111,10 +150,14 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if total_points_count < self.settings.points_required:
             return ResourceRecommendation.undefined(info="Not enough data")
 
-        if object_data.hpa is not None and object_data.hpa.target_memory_utilization_percentage is not None and not self.settings.allow_hpa:
+        if (
+            object_data.hpa is not None
+            and object_data.hpa.target_memory_utilization_percentage is not None
+            and not self.settings.allow_hpa
+        ):
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        memory_usage = self.settings.calculate_memory_proposal(data)
+        memory_usage = self.settings.calculate_memory_proposal(data, max_oomkill_value)
         return ResourceRecommendation(request=memory_usage, limit=memory_usage)
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:

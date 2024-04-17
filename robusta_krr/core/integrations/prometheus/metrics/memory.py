@@ -76,6 +76,8 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
     A metric loader for loading the maximum memory limits that were surpassed by the OOMKilled event.
     """
 
+    warning_on_no_data = False
+
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
@@ -88,7 +90,7 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
                         pod=~"{pods_selector}",
                         container="{object.container}"
                         {cluster_label}
-                    }} * on(pod, container) group_left(reason)
+                    }} * on(pod, container, job) group_left(reason)
                     kube_pod_container_status_last_terminated_reason{{
                         reason="OOMKilled",
                         namespace="{object.namespace}",
