@@ -84,20 +84,25 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
         return f"""
             max_over_time(
                 max(
-                    kube_pod_container_resource_limits{{
-                        resource="memory",
-                        namespace="{object.namespace}",
-                        pod=~"{pods_selector}",
-                        container="{object.container}"
-                        {cluster_label}
-                    }} * on(pod, container, job) group_left(reason)
-                    kube_pod_container_status_last_terminated_reason{{
-                        reason="OOMKilled",
-                        namespace="{object.namespace}",
-                        pod=~"{pods_selector}",
-                        container="{object.container}"
-                        {cluster_label}
-                    }}
+                    max(
+                        kube_pod_container_resource_limits{{
+                            resource="memory",
+                            namespace="{object.namespace}",
+                            pod=~"{pods_selector}",
+                            container="{object.container}"
+                            {cluster_label}
+                        }} 
+                    ) by (pod, container, job)
+                    * on(pod, container, job) group_left(reason)
+                    max(
+                        kube_pod_container_status_last_terminated_reason{{
+                            reason="OOMKilled",
+                            namespace="{object.namespace}",
+                            pod=~"{pods_selector}",
+                            container="{object.container}"
+                            {cluster_label}
+                        }}
+                    ) by (pod, container, job, reason)
                 ) by (container, pod, job)
                 [{duration}:{step}]
             )

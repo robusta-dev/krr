@@ -127,7 +127,10 @@ class PrometheusMetric(BaseMetric):
             return response["result"]
         else:
             # regular query, lighter on preformance
-            response = self.prometheus.safe_custom_query(query=data.query)
+            try:
+                response = self.prometheus.safe_custom_query(query=data.query)
+            except Exception as e:
+                raise ValueError(f"Failed to run query: {data.query}") from e
             results = response["result"]
             # format the results to return the same format as custom_query_range
             for result in results:
