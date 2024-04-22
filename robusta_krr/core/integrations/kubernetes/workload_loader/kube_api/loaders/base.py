@@ -6,21 +6,12 @@ from typing import Any, Iterable, Optional, Union
 
 from kubernetes import client  # type: ignore
 from kubernetes.client.api_client import ApiClient  # type: ignore
-from kubernetes.client.models import (  # type: ignore
-    V1Container,
-    V1DaemonSet,
-    V1Deployment,
-    V1Job,
-    V1Pod,
-    V1PodList,
-    V1StatefulSet,
-)
+from kubernetes.client.models import V1Container, V1PodList  # type: ignore
 
 from robusta_krr.core.models.objects import K8sWorkload, KindLiteral, PodData
 
 logger = logging.getLogger("krr")
 
-AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
 HPAKey = tuple[str, str, str]
 
 
@@ -112,9 +103,7 @@ class BaseKindLoader(abc.ABC):
             label_filters += [f"{label[0]}={label[1]}" for label in selector.match_labels.items()]
 
         if selector.match_expressions is not None:
-            label_filters += [
-                cls._get_match_expression_filter(expression) for expression in selector.match_expressions
-            ]
+            label_filters += [cls._get_match_expression_filter(expression) for expression in selector.match_expressions]
 
         if label_filters == []:
             # NOTE: This might mean that we have DeploymentConfig,

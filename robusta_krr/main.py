@@ -55,6 +55,12 @@ def load_commands() -> None:
                     help="Path to kubeconfig file. If not provided, will attempt to find it.",
                     rich_help_panel="Kubernetes Settings",
                 ),
+                workload_loader: str = typer.Option(
+                    "kubeapi",
+                    "--workload",
+                    help="Workload loader to use (kubeapi, prometheus).",
+                    rich_help_panel="Kubernetes Settings",
+                ),
                 impersonate_user: Optional[str] = typer.Option(
                     None,
                     "--as",
@@ -250,6 +256,7 @@ def load_commands() -> None:
                 try:
                     config = Config(
                         kubeconfig=kubeconfig,
+                        workload_loader=workload_loader,
                         impersonate_user=impersonate_user,
                         impersonate_group=impersonate_group,
                         clusters="*" if all_clusters else clusters,

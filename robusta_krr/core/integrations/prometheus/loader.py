@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("krr")
 
+
 class PrometheusMetricsLoader:
     def __init__(self, *, cluster: Optional[str] = None) -> None:
         """
@@ -39,7 +40,8 @@ class PrometheusMetricsLoader:
             raise PrometheusNotFound(
                 f"Wasn't able to connect to any Prometheus service in {cluster or 'inner'} cluster\n"
                 "Try using port-forwarding and/or setting the url manually (using the -p flag.).\n"
-                "For more information, see 'Giving the Explicit Prometheus URL' at https://github.com/robusta-dev/krr?tab=readme-ov-file#usage"
+                "For more information, see 'Giving the Explicit Prometheus URL' at "
+                "https://github.com/robusta-dev/krr?tab=readme-ov-file#usage"
             )
 
         self.loader = loader

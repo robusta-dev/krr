@@ -4,11 +4,8 @@ from robusta_krr.core.models.objects import K8sWorkload, PodData
 
 
 class BaseWorkloadLoader(abc.ABC):
-    def __init__(self, cluster: Optional[str] = None) -> None:
-        self.cluster = cluster
-
     @abc.abstractmethod
-    async def list_workloads(self, clusters: Optional[list[str]]) -> list[K8sWorkload]:
+    async def list_workloads(self) -> list[K8sWorkload]:
         pass
 
     @abc.abstractmethod

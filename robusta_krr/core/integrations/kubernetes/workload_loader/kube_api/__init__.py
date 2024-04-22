@@ -11,7 +11,6 @@ from kubernetes.client.models import V1Container, V2HorizontalPodAutoscaler  # t
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sWorkload, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
-from robusta_krr.utils.object_like_dict import ObjectLikeDict
 
 from ..base import BaseWorkloadLoader
 from .loaders import (
@@ -41,8 +40,8 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader):
         CronJobLoader,
     ]
 
-    def __init__(self, cluster: Optional[str] = None):
-        super().__init__(cluster)
+    def __init__(self, cluster: Optional[str] = None) -> None:
+        self.cluster = cluster
 
         # This executor will be running requests to Kubernetes API
         self.executor = ThreadPoolExecutor(settings.max_workers)
@@ -88,7 +87,7 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader):
     async def list_pods(self, object: K8sWorkload) -> list[PodData]:
         return await self._workload_loaders[object.kind].list_pods(object)
 
-    def __build_scannable_object(self, item: Any, container: V1Container, kind: Optional[str] = None) -> K8sWorkload:
+    def _build_scannable_object(self, item: Any, container: V1Container, kind: Optional[str] = None) -> K8sWorkload:
         name = item.metadata.name
         namespace = item.metadata.namespace
         kind = kind or item.__class__.__name__[2:]
@@ -160,7 +159,7 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader):
                 if asyncio.iscoroutine(containers):
                     containers = await containers
 
-                result.extend(self.__build_scannable_object(item, container, kind) for container in containers)
+                result.extend(self._build_scannable_object(item, container, kind) for container in containers)
         except ApiException as e:
             if kind in ("Rollout", "DeploymentConfig") and e.status in [400, 401, 403, 404]:
                 if self._kind_available[kind]:
