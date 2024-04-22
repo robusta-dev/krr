@@ -5,10 +5,10 @@ from unittest.mock import AsyncMock, patch
 import numpy as np
 import pytest
 
-from robusta_krr.api.models import K8sObjectData, PodData, ResourceAllocations
+from robusta_krr.api.models import K8sWorkload, PodData, ResourceAllocations
 from robusta_krr.strategies.simple import SimpleStrategy, SimpleStrategySettings
 
-TEST_OBJECT = K8sObjectData(
+TEST_OBJECT = K8sWorkload(
     cluster="mock-cluster",
     name="mock-object-1",
     container="mock-container-1",

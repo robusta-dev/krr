@@ -35,7 +35,7 @@ PodWarning = Literal[
 ]
 
 
-class K8sObjectData(pd.BaseModel):
+class K8sWorkload(pd.BaseModel):
     # NOTE: Here None means that we are running inside the cluster
     cluster: Optional[str]
     name: str
@@ -80,7 +80,7 @@ class K8sObjectData(pd.BaseModel):
         else:
             return self._api_resource.spec.selector
 
-    def split_into_batches(self, n: int) -> list[K8sObjectData]:
+    def split_into_batches(self, n: int) -> list[K8sWorkload]:
         """
         Batch this object into n objects, splitting the pods into batches of size n.
         """
@@ -89,7 +89,7 @@ class K8sObjectData(pd.BaseModel):
             return [self]
 
         return [
-            K8sObjectData(
+            K8sWorkload(
                 cluster=self.cluster,
                 name=self.name,
                 container=self.container,

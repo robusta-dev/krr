@@ -11,7 +11,7 @@ from kubernetes.client.exceptions import ApiException
 from prometrix import MetricsNotFound, PrometheusNotFound
 
 from robusta_krr.core.models.config import settings
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sWorkload, PodData
 
 from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
@@ -82,7 +82,7 @@ class PrometheusMetricsLoader:
     ) -> Optional[tuple[datetime.datetime, datetime.datetime]]:
         return await self.loader.get_history_range(history_duration)
 
-    async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
+    async def load_pods(self, object: K8sWorkload, period: datetime.timedelta) -> list[PodData]:
         try:
             return await self.loader.load_pods(object, period)
         except Exception as e:
@@ -91,7 +91,7 @@ class PrometheusMetricsLoader:
 
     async def gather_data(
         self,
-        object: K8sObjectData,
+        object: K8sWorkload,
         strategy: BaseStrategy,
         period: datetime.timedelta,
         *,

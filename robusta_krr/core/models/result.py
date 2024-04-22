@@ -6,7 +6,7 @@ import pydantic as pd
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sWorkload
 from robusta_krr.core.models.severity import Severity
 
 
@@ -22,12 +22,12 @@ class ResourceRecommendation(pd.BaseModel):
 
 
 class ResourceScan(pd.BaseModel):
-    object: K8sObjectData
+    object: K8sWorkload
     recommended: ResourceRecommendation
     severity: Severity
 
     @classmethod
-    def calculate(cls, object: K8sObjectData, recommendation: ResourceAllocations) -> ResourceScan:
+    def calculate(cls, object: K8sWorkload, recommendation: ResourceAllocations) -> ResourceScan:
         recommendation_processed = ResourceRecommendation(requests={}, limits={}, info={})
 
         for resource_type in ResourceType:

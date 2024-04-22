@@ -1,4 +1,4 @@
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sWorkload
 
 from .base import PrometheusMetric, QueryType
 
@@ -10,7 +10,7 @@ class MemoryLoader(PrometheusMetric):
 
     query_type: QueryType = QueryType.QueryRange
 
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+    def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
@@ -30,7 +30,7 @@ class MaxMemoryLoader(PrometheusMetric):
     A metric loader for loading max memory usage metrics.
     """
 
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+    def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
@@ -53,7 +53,7 @@ class MemoryAmountLoader(PrometheusMetric):
     A metric loader for loading memory points count.
     """
 
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+    def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""

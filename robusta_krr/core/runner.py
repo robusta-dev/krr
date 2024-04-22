@@ -12,10 +12,10 @@ from rich.console import Console
 from slack_sdk import WebClient
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
-from robusta_krr.core.integrations.kubernetes import KubernetesLoader
+from robusta_krr.core.integrations.kubernetes import ClusterWorkloadsLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
 from robusta_krr.core.models.config import settings
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sWorkload
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
 from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
@@ -40,7 +40,7 @@ class Runner:
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
 
     def __init__(self) -> None:
-        self._k8s_loader = KubernetesLoader()
+        self._k8s_loader = ClusterWorkloadsLoader()
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
         self._strategy = settings.create_strategy()
@@ -165,7 +165,7 @@ class Runner:
             for resource, recommendation in result.items()
         }
 
-    async def _calculate_object_recommendations(self, object: K8sObjectData) -> Optional[RunResult]:
+    async def _calculate_object_recommendations(self, object: K8sWorkload) -> Optional[RunResult]:
         prometheus_loader = self._get_prometheus_loader(object.cluster)
 
         if prometheus_loader is None:
@@ -239,7 +239,7 @@ class Runner:
                 }
             )
 
-    async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> Optional[ResourceScan]:
+    async def _gather_object_allocations(self, k8s_object: K8sWorkload) -> Optional[ResourceScan]:
         recommendation = await self._calculate_object_recommendations(k8s_object)
 
         self.__progressbar.progress()
@@ -275,7 +275,7 @@ class Runner:
             await asyncio.gather(*[self._check_data_availability(cluster) for cluster in clusters])
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
-            workloads = await self._k8s_loader.list_scannable_objects(clusters)
+            workloads = await self._k8s_loader.list_workloads(clusters)
             scans = await asyncio.gather(*[self._gather_object_allocations(k8s_object) for k8s_object in workloads])
 
         successful_scans = [scan for scan in scans if scan is not None]

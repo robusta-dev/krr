@@ -11,7 +11,7 @@ from prometrix import PrometheusNotFound, get_custom_prometheus_connect
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.integrations import openshift
 from robusta_krr.core.models.config import settings
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sWorkload, PodData
 from robusta_krr.utils.batched import batched
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
@@ -177,7 +177,7 @@ class PrometheusMetricsService(MetricsService):
 
     async def gather_data(
         self,
-        object: K8sObjectData,
+        object: K8sWorkload,
         LoaderClass: type[PrometheusMetric],
         period: timedelta,
         step: timedelta = timedelta(minutes=30),
@@ -202,7 +202,7 @@ class PrometheusMetricsService(MetricsService):
 
         return data
 
-    async def load_pods(self, object: K8sObjectData, period: timedelta) -> list[PodData]:
+    async def load_pods(self, object: K8sWorkload, period: timedelta) -> list[PodData]:
         """
         List pods related to the object and add them to the object's pods list.
         Args:

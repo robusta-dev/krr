@@ -23,6 +23,7 @@ class Config(pd.BaseSettings):
 
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
+    workload_loader: Literal["kubeapi", "prometheus"] = pd.Field("kubeapi")
     impersonate_user: Optional[str] = None
     impersonate_group: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")

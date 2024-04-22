@@ -7,7 +7,7 @@ from kubernetes.client.api_client import ApiClient
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import settings
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sWorkload
 
 from ..metrics import PrometheusMetric
 
@@ -39,7 +39,7 @@ class MetricsService(abc.ABC):
     @abc.abstractmethod
     async def gather_data(
         self,
-        object: K8sObjectData,
+        object: K8sWorkload,
         LoaderClass: type[PrometheusMetric],
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
