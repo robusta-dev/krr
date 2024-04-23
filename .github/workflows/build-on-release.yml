@@ -78,8 +78,17 @@ jobs:
       env:
         GITHUB_REF_NAME: ${{ github.ref_name }}
 
+    - name: Build with PyInstaller
+      if: matrix.os == 'macos-latest'
+      shell: bash
+      run: |
+        pyinstaller --target-architecture universal2 krr.py
+        mkdir -p ./dist/krr/grapheme/data
+        cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
+        cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Build with PyInstaller
+      if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
         pyinstaller krr.py
