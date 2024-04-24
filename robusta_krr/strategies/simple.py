@@ -43,7 +43,10 @@ class SimpleStrategySettings(StrategySettings):
     )
     use_oomkill_data: bool = pd.Field(
         False,
-        description="Whether to use OOMKilled data to calculate memory recommendations. Unstable and experimental.",
+        description="Whether to use OOMKilled data to calculate memory recommendations (experimental).",
+    )
+    oom_memory_buffer_percentage: float = pd.Field(
+        25, gt=0, description="The percentage of added buffer to the max memory limit surpassed by OOMKilled event."
     )
 
     def calculate_memory_proposal(self, data: PodsTimeData, max_oomkill: float = 0) -> float:
@@ -51,7 +54,10 @@ class SimpleStrategySettings(StrategySettings):
         if len(data_) == 0:
             return float("NaN")
 
-        return max(np.max(data_), max_oomkill) * (1 + self.memory_buffer_percentage / 100)
+        return max(
+            np.max(data_) * (1 + self.memory_buffer_percentage / 100),
+            max_oomkill * (1 + self.oom_memory_buffer_percentage / 100),
+        )
 
     def calculate_cpu_proposal(self, data: PodsTimeData) -> float:
         if len(data) == 0:
@@ -130,6 +136,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
         data = history_data["MaxMemoryLoader"]
+        info: list[str] = []
 
         if self.settings.use_oomkill_data:
             max_oomkill_data = history_data["MaxOOMKilledMemoryLoader"]
@@ -137,7 +144,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
                 np.max([values[0, 1] for values in max_oomkill_data.values()]) if len(max_oomkill_data) > 0 else 0
             )
             if max_oomkill_value != 0:
-                print(max_oomkill_data)
+                info.append("OOMKill detected")
         else:
             max_oomkill_value = 0
 
@@ -158,7 +165,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             return ResourceRecommendation.undefined(info="HPA detected")
 
         memory_usage = self.settings.calculate_memory_proposal(data, max_oomkill_value)
-        return ResourceRecommendation(request=memory_usage, limit=memory_usage)
+        return ResourceRecommendation(request=memory_usage, limit=memory_usage, info=", ".join(info) if info else None)
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
         return {

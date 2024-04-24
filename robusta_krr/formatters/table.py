@@ -53,7 +53,7 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
         + " -> "
         + _format(recommended.value)
         + f"[/{severity.color}]"
-        + (f" [grey27]({info})[/grey27]" if info else "")
+        + (f"\n[grey27]({info})[/grey27]" if info else "")
     )
 
 
