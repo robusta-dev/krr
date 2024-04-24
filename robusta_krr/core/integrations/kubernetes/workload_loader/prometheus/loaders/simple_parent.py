@@ -43,6 +43,26 @@ class SimpleParentLoader(BaseKindLoader):
             key = metric["namespace"], metric["owner_name"], metric["owner_kind"]
             workloads[key].append(metric["pod"])
 
+        # NOTE: We do not show jobs that are a part of a cronjob, so we filter them out
+        job_workloads = [name for (_, name, kind) in workloads if kind == "Job"]
+        if job_workloads != []:
+            cronjobs = await self.connector.loader.query(
+                f"""
+                    count by (namespace, job_name) (
+                        kube_job_owner{{
+                            {self.cluster_selector}
+                            {namespace_selector},
+                            owner_kind="CronJob"
+                        }}
+                    )
+                """
+            )
+            for cronjob in cronjobs:
+                metric = cronjob["metric"]
+                key = (metric["namespace"], metric["job_name"], "Job")
+                if key in workloads:
+                    del workloads[key]
+
         workloads_containers = dict(
             zip(
                 workloads.keys(),
