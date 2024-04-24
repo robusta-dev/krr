@@ -2,30 +2,36 @@ import asyncio
 import itertools
 import logging
 
+from collections import Counter
 
-from robusta_krr.core.integrations.prometheus.loader import PrometheusMetricsLoader
+
+from robusta_krr.core.integrations.prometheus.connector import PrometheusConnector
 from robusta_krr.core.models.config import settings
-from robusta_krr.core.integrations.prometheus.metrics_service.prometheus_metrics_service import PrometheusMetricsService
-from robusta_krr.core.models.objects import K8sWorkload, PodData
+from robusta_krr.core.models.objects import K8sWorkload
 from ..base import BaseWorkloadLoader
-from .loaders import BaseKindLoader, DeploymentLoader
+from .loaders import BaseKindLoader, DoubleParentLoader, SimpleParentLoader
 
 
 logger = logging.getLogger("krr")
 
 
 class PrometheusWorkloadLoader(BaseWorkloadLoader):
-    workloads: list[type[BaseKindLoader]] = [DeploymentLoader]
+    workloads: list[type[BaseKindLoader]] = [DoubleParentLoader, SimpleParentLoader]
 
-    def __init__(self, cluster: str, metric_loader: PrometheusMetricsLoader) -> None:
+    def __init__(self, cluster: str, metric_loader: PrometheusConnector) -> None:
         self.cluster = cluster
         self.metric_service = metric_loader
         self.loaders = [loader(metric_loader) for loader in self.workloads]
 
     async def list_workloads(self) -> list[K8sWorkload]:
-        return itertools.chain(await asyncio.gather(*[loader.list_workloads(settings.namespaces, "") for loader in self.loaders]))
+        workloads = list(
+            itertools.chain(
+                *await asyncio.gather(*[loader.list_workloads(settings.namespaces) for loader in self.loaders])
+            )
+        )
 
-    async def list_pods(self, object: K8sWorkload) -> list[PodData]:
-        # This should not be implemented, as implementation will repeat PrometheusMetricsLoader.load_pods
-        # As this method is ment to be a fallback, repeating the same logic will not be beneficial
-        raise NotImplementedError
+        kind_counts = Counter([workload.kind for workload in workloads])
+        for kind, count in kind_counts.items():
+            logger.info(f"Found {count} {kind} in {self.cluster}")
+
+        return workloads

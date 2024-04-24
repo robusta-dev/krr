@@ -17,7 +17,7 @@ from kubernetes.client.models import (
     V2HorizontalPodAutoscaler,
 )
 
-from robusta_krr.core.integrations.prometheus.loader import PrometheusMetricsLoader
+from robusta_krr.core.integrations.prometheus.connector import PrometheusConnector
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sWorkload, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
@@ -37,8 +37,8 @@ class ClusterConnector:
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
 
     def __init__(self) -> None:
-        self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
-        self._metrics_service_loaders_error_logged: set[Exception] = set()
+        self._prometheus_connectors: dict[Optional[str], Union[PrometheusConnector, Exception]] = {}
+        self._connector_errors: set[Exception] = set()
 
     async def list_clusters(self) -> Optional[list[str]]:
         """List all clusters.
@@ -80,22 +80,22 @@ class ClusterConnector:
 
         return [context["name"] for context in contexts if context["name"] in settings.clusters]
     
-    def get_prometheus_loader(self, cluster: Optional[str]) -> Optional[PrometheusMetricsLoader]:
-        if cluster not in self._metrics_service_loaders:
+    def get_prometheus(self, cluster: Optional[str]) -> Optional[PrometheusConnector]:
+        if cluster not in self._prometheus_connectors:
             try:
-                self._metrics_service_loaders[cluster] = PrometheusMetricsLoader(cluster=cluster)
+                logger.debug(f"Creating Prometheus connector for cluster {cluster}")
+                self._prometheus_connectors[cluster] = PrometheusConnector(cluster=cluster)
             except Exception as e:
-                self._metrics_service_loaders[cluster] = e
+                self._prometheus_connectors[cluster] = e
 
-        result = self._metrics_service_loaders[cluster]
+        result = self._prometheus_connectors[cluster]
         if isinstance(result, self.EXPECTED_EXCEPTIONS):
-            if result not in self._metrics_service_loaders_error_logged:
-                self._metrics_service_loaders_error_logged.add(result)
+            if result not in self._connector_errors:
+                self._connector_errors.add(result)
                 logger.error(str(result))
             return None
         elif isinstance(result, Exception):
             raise result
-
         return result
 
     def _try_create_cluster_loader(self, cluster: Optional[str]) -> Optional[BaseWorkloadLoader]:
@@ -103,7 +103,7 @@ class ClusterConnector:
             if settings.workload_loader == "kubeapi":
                 return KubeAPIWorkloadLoader(cluster=cluster)
             elif settings.workload_loader == "prometheus":
-                cluster_loader = self.get_prometheus_loader(cluster)
+                cluster_loader = self.get_prometheus(cluster)
                 if cluster_loader is not None:
                     return PrometheusWorkloadLoader(cluster=cluster, metric_loader=cluster_loader)
                 else:

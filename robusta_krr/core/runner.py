@@ -6,13 +6,13 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 from datetime import timedelta
-from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
-from robusta_krr.core.integrations.kubernetes import ClusterConnector, KubeAPIWorkloadLoader
-from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
+from robusta_krr.core.integrations.kubernetes.workload_loader import IListPodsFallback
+from robusta_krr.core.integrations.kubernetes import ClusterConnector
+from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sWorkload
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
@@ -144,14 +144,15 @@ class Runner:
         }
 
     async def _calculate_object_recommendations(self, object: K8sWorkload) -> Optional[RunResult]:
-        prometheus_loader = self._get_prometheus_loader(object.cluster)
+        prometheus_loader = self.connector.get_prometheus(object.cluster)
 
         if prometheus_loader is None:
             return None
 
         object.pods = await prometheus_loader.load_pods(object, self.strategy.settings.history_timedelta)
-        if object.pods == [] and isinstance(self.connector, KubeAPIWorkloadLoader):
-            # Fallback to Kubernetes API
+        if object.pods == [] and isinstance(self.connector, IListPodsFallback):
+            # Fallback to IListPodsFallback if Prometheus did not return any pods
+            # IListPodsFallback is implemented by the Kubernetes API connector
             object.pods = await self.connector.load_pods(object)
 
             # NOTE: Kubernetes API returned pods, but Prometheus did not
@@ -179,7 +180,7 @@ class Runner:
         return self._format_result(result)
 
     async def _check_data_availability(self, cluster: Optional[str]) -> None:
-        prometheus_loader = self.connector.get_prometheus_loader(cluster)
+        prometheus_loader = self.connector.get_prometheus(cluster)
         if prometheus_loader is None:
             return
 

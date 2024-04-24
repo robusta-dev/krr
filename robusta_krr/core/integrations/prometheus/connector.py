@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger("krr")
 
 
-class PrometheusMetricsLoader:
+class PrometheusConnector:
     def __init__(self, *, cluster: Optional[str] = None) -> None:
         """
         Initializes the Prometheus Loader.
@@ -34,6 +34,7 @@ class PrometheusMetricsLoader:
         """
 
         self.executor = ThreadPoolExecutor(settings.max_workers)
+        self.cluster = cluster
         self.api_client = settings.get_kube_client(context=cluster)
         loader = self.get_metrics_service(api_client=self.api_client, cluster=cluster)
         if loader is None:
@@ -46,7 +47,7 @@ class PrometheusMetricsLoader:
 
         self.loader = loader
 
-        logger.info(f"{self.loader.name()} connected successfully for {cluster or 'default'} cluster")
+        logger.info(f"{self.loader.name()} connected successfully for {cluster or 'inner'} cluster")
 
     def get_metrics_service(
         self,

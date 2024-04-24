@@ -1,19 +1,9 @@
 from .base import BaseKindLoader
-from .cronjobs import CronJobLoader
-from .daemonsets import DaemonSetLoader
-from .deploymentconfigs import DeploymentConfigLoader
-from .deployments import DeploymentLoader
-from .jobs import JobLoader
-from .rollouts import RolloutLoader
-from .statefulsets import StatefulSetLoader
+from .double_parent import DoubleParentLoader
+from .simple_parent import SimpleParentLoader
 
 __all__ = [
     "BaseKindLoader",
-    "CronJobLoader",
-    "DeploymentLoader",
-    "DaemonSetLoader",
-    "DeploymentConfigLoader",
-    "JobLoader",
-    "RolloutLoader",
-    "StatefulSetLoader",
+    "DoubleParentLoader",
+    "SimpleParentLoader",
 ]

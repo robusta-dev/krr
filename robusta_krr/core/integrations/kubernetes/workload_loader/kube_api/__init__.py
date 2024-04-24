@@ -12,7 +12,7 @@ from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sWorkload, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 
-from ..base import BaseWorkloadLoader
+from ..base import BaseWorkloadLoader, IListPodsFallback
 from .loaders import (
     BaseKindLoader,
     CronJobLoader,
@@ -29,7 +29,7 @@ logger = logging.getLogger("krr")
 HPAKey = tuple[str, str, str]
 
 
-class KubeAPIWorkloadLoader(BaseWorkloadLoader):
+class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
     workload_loaders: list[BaseKindLoader] = [
         DeploymentLoader,
         RolloutLoader,
@@ -176,10 +176,12 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader):
         res = await self._list_namespaced_or_global_objects(
             kind="HPA-v1",
             all_namespaces_request=lambda **kwargs: loop.run_in_executor(
-                self.autoscaling_v1.list_horizontal_pod_autoscaler_for_all_namespaces(**kwargs),
+                self.executor,
+                lambda: self.autoscaling_v1.list_horizontal_pod_autoscaler_for_all_namespaces(**kwargs),
             ),
             namespaced_request=lambda **kwargs: loop.run_in_executor(
-                self.autoscaling_v1.list_namespaced_horizontal_pod_autoscaler(**kwargs),
+                self.executor,
+                lambda: self.autoscaling_v1.list_namespaced_horizontal_pod_autoscaler(**kwargs),
             ),
         )
 
@@ -205,10 +207,12 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader):
         res = await self._list_namespaced_or_global_objects(
             kind="HPA-v2",
             all_namespaces_request=lambda **kwargs: loop.run_in_executor(
-                self.executor, self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces(**kwargs)
+                self.executor,
+                lambda: self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces(**kwargs),
             ),
             namespaced_request=lambda **kwargs: loop.run_in_executor(
-                self.autoscaling_v2.list_namespaced_horizontal_pod_autoscaler(**kwargs),
+                self.executor,
+                lambda: self.autoscaling_v2.list_namespaced_horizontal_pod_autoscaler(**kwargs),
             ),
         )
 

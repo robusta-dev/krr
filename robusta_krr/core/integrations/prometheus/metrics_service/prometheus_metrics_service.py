@@ -112,10 +112,14 @@ class PrometheusMetricsService(MetricsService):
 
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            self.executor,
-            lambda: self.prometheus.safe_custom_query(query=query)["result"],
-        )
+        try:
+            return await loop.run_in_executor(
+                self.executor,
+                lambda: self.prometheus.safe_custom_query(query=query)["result"],
+            )
+        except PrometheusApiClientException as e:
+            logger.error(f"Error while querying Prometheus: {query}")
+            raise e
 
     async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> dict:
         loop = asyncio.get_running_loop()

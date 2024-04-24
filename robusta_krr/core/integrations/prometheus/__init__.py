@@ -1,3 +1,3 @@
-from .loader import PrometheusMetricsLoader
+from .connector import PrometheusConnector
 from .metrics_service.prometheus_metrics_service import PrometheusDiscovery, PrometheusNotFound
 from .prometheus_utils import ClusterNotSpecifiedException
