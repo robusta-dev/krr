@@ -54,10 +54,10 @@ class BaseKindLoader(abc.ABC):
             f"""
                 avg by(resource) (
                     kube_pod_container_resource_limits{{
-                        {self.cluster_selector}
                         namespace="{namespace}",
                         pod=~"{'|'.join(pods)}",
                         container="{container_name}"
+                        {self.cluster_selector}
                     }}
                 )
             """
@@ -66,10 +66,10 @@ class BaseKindLoader(abc.ABC):
             f"""
                 avg by(resource) (
                     kube_pod_container_resource_requests{{
-                        {self.cluster_selector}
                         namespace="{namespace}",
                         pod=~"{'|'.join(pods)}",
                         container="{container_name}"
+                        {self.cluster_selector}
                     }}
                 )
             """
@@ -94,8 +94,8 @@ class BaseKindLoader(abc.ABC):
             f"""
                 count by (container) (
                     kube_pod_container_info{{
-                        {self.cluster_selector}
                         pod=~"{'|'.join(pods)}"
+                        {self.cluster_selector}
                     }}
                 )
             """
