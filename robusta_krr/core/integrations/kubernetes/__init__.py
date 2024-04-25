@@ -136,7 +136,7 @@ class ClusterConnector:
 
         if self.cluster_loaders == {}:
             logger.error("Could not load any cluster.")
-            return
+            return []
 
         return [
             object
