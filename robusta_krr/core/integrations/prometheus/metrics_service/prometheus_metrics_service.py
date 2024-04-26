@@ -95,7 +95,9 @@ class PrometheusMetricsService(MetricsService):
         headers = settings.prometheus_other_headers
         headers |= self.additional_headers
 
-        if self.auth_header:
+        if settings.coralogix_token:
+            headers |= {"Authorization": f"Bearer {settings.coralogix_token}"}
+        elif self.auth_header:
             headers |= {"Authorization": self.auth_header}
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])

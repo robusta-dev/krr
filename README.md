@@ -490,10 +490,10 @@ Additional optional parameters are:
 <details id="coralogix-managed-prometheus">
 <summary>Coralogix Managed Prometheus</summary>
 
-For Coralogix managed Prometheus you need to specify your Prometheus link and add the flag coralogix_token with your Logs Query Key
+For Coralogix managed Prometheus you need to specify your Prometheus link and add the flag coralogix_token with your Logs Query Key. You can find a correct url in [Coralogix Endpoint Docs](https://coralogix.com/docs/coralogix-endpoints/).
 
 ```sh
-python krr.py simple -p "https://prom-api.coralogix..." --coralogix_token
+python krr.py simple -p "https://ng-api-http.<domain>/metrics" --coralogix-token <your_token>
 ```
 
 <p ><a href="#scanning-with-a-centralized-prometheus">See here about configuring labels for centralized prometheus</a></p>
