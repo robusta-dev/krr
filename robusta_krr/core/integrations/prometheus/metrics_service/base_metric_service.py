@@ -13,28 +13,13 @@ from ..metrics import PrometheusMetric
 
 
 class MetricsService(abc.ABC):
-    def __init__(
-        self,
-        api_client: Optional[ApiClient] = None,
-        cluster: Optional[str] = None,
-        executor: Optional[ThreadPoolExecutor] = None,
-    ) -> None:
-        self.api_client = api_client
-        self.cluster = cluster or "default"
-        self.executor = executor
-
     @abc.abstractmethod
     def check_connection(self):
-        ...
-
-    @classmethod
-    def name(cls) -> str:
-        classname = cls.__name__
-        return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
+        pass
 
     @abc.abstractmethod
     def get_cluster_names(self) -> Optional[List[str]]:
-        ...
+        pass
 
     @abc.abstractmethod
     async def gather_data(
@@ -44,7 +29,12 @@ class MetricsService(abc.ABC):
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> PodsTimeData:
-        ...
+        pass
+
+    @classmethod
+    def name(cls) -> str:
+        classname = cls.__name__
+        return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
 
     def get_prometheus_cluster_label(self) -> str:
         """

@@ -56,14 +56,15 @@ class PrometheusMetricsService(MetricsService):
 
     def __init__(
         self,
-        *,
+        url: str,
         cluster: Optional[str] = None,
-        api_client: Optional[ApiClient] = None,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
-        super().__init__(api_client=api_client, cluster=cluster, executor=executor)
+        self.url = url + self.url_postfix
+        self.cluster = cluster
+        self.executor = executor or ThreadPoolExecutor(settings.max_workers)
 
-        logger.info(f"Trying to connect to {self.name()} for {self.cluster} cluster")
+        logger.info(f"Trying to connect to {self.name()}" + self._for_cluster_postfix)
 
         self.auth_header = settings.prometheus_auth_header
         self.ssl_enabled = settings.prometheus_ssl_enabled
@@ -85,12 +86,12 @@ class PrometheusMetricsService(MetricsService):
 
         if not self.url:
             raise PrometheusNotFound(
-                f"{self.name()} instance could not be found while scanning in {self.cluster} cluster."
+                f"{self.name()} instance could not be found while scanning" + self._for_cluster_postfix
             )
 
         self.url += self.url_postfix
 
-        logger.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
+        logger.info(f"Using {self.name()} at {self.url}" + self._for_cluster_postfix)
 
         headers = settings.prometheus_other_headers
         headers |= self.additional_headers
@@ -309,3 +310,8 @@ class PrometheusMetricsService(MetricsService):
             del pods_status_result
 
         return list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})
+
+    @property
+    def _for_cluster_postfix(self) -> str:
+        """The string postfix to be used in logging messages."""
+        return (f" for {self.cluster} cluster" if self.cluster else "")

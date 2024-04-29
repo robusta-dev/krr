@@ -5,13 +5,14 @@ import sys
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
-from kubernetes import config
+from kubernetes import config, client
 from kubernetes.config.config_exception import ConfigException
 from rich.console import Console
 from rich.logging import RichHandler
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+from robusta_krr.core.integrations.kubernetes.workload_loader.base import BaseClusterLoader
 from robusta_krr.core.models.objects import KindLiteral
 
 logger = logging.getLogger("krr")
@@ -137,6 +138,20 @@ class Config(pd.BaseSettings):
             self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
         return self._logging_console
 
+    @property
+    def cluster_loader(self) -> BaseClusterLoader:
+        from robusta_krr.core.integrations.kubernetes.workload_loader import (
+            KubeAPIClusterLoader,
+            PrometheusClusterLoader,
+        )
+
+        if settings.workload_loader == "kubeapi":
+            return KubeAPIClusterLoader()
+        elif settings.workload_loader == "prometheus":
+            return PrometheusClusterLoader()
+        else:
+            raise NotImplementedError(f"Workload loader {settings.workload_loader} is not implemented")
+
     def load_kubeconfig(self) -> None:
         try:
             config.load_kube_config(config_file=self.kubeconfig, context=self.context)
@@ -145,7 +160,7 @@ class Config(pd.BaseSettings):
             config.load_incluster_config()
             self.inside_cluster = True
 
-    def get_kube_client(self, context: Optional[str] = None):
+    def get_kube_client(self, context: Optional[str] = None) -> client.ApiClient:
         if context is None:
             return None
 

@@ -25,7 +25,13 @@ from robusta_krr.utils.object_like_dict import ObjectLikeDict
 from prometrix import PrometheusNotFound
 
 from . import config_patch as _
-from .workload_loader import BaseWorkloadLoader, KubeAPIWorkloadLoader, PrometheusWorkloadLoader
+from .workload_loader import (
+    BaseWorkloadLoader,
+    PrometheusWorkloadLoader,
+    BaseClusterLoader,
+    KubeAPIClusterLoader,
+    PrometheusClusterLoader,
+)
 
 logger = logging.getLogger("krr")
 
@@ -40,81 +46,23 @@ class ClusterConnector:
         self._prometheus_connectors: dict[Optional[str], Union[PrometheusConnector, Exception]] = {}
         self._connector_errors: set[Exception] = set()
 
-    async def list_clusters(self) -> Optional[list[str]]:
-        """List all clusters.
-
-        Returns:
-            A list of clusters.
-        """
-
-        if settings.inside_cluster:
-            logger.debug("Working inside the cluster")
-            return None
-
-        try:
-            contexts, current_context = config.list_kube_config_contexts(settings.kubeconfig)
-        except config.ConfigException:
-            if settings.clusters is not None and settings.clusters != "*":
-                logger.warning("Could not load context from kubeconfig.")
-                logger.warning(f"Falling back to clusters from CLI: {settings.clusters}")
-                return settings.clusters
-            else:
-                logger.error(
-                    "Could not load context from kubeconfig. "
-                    "Please check your kubeconfig file or pass -c flag with the context name."
-                )
-            return None
-
-        logger.debug(f"Found {len(contexts)} clusters: {', '.join([context['name'] for context in contexts])}")
-        logger.debug(f"Current cluster: {current_context['name']}")
-
-        logger.debug(f"Configured clusters: {settings.clusters}")
-
-        # None, empty means current cluster
-        if not settings.clusters:
-            return [current_context["name"]]
-
-        # * means all clusters
-        if settings.clusters == "*":
-            return [context["name"] for context in contexts]
-
-        return [context["name"] for context in contexts if context["name"] in settings.clusters]
-    
     def get_prometheus(self, cluster: Optional[str]) -> Optional[PrometheusConnector]:
-        if cluster not in self._prometheus_connectors:
-            try:
-                logger.debug(f"Creating Prometheus connector for cluster {cluster}")
-                self._prometheus_connectors[cluster] = PrometheusConnector(cluster=cluster)
-            except Exception as e:
-                self._prometheus_connectors[cluster] = e
+        if settings.workload_loader == "kubeapi":
+            logger.debug(f"Creating Prometheus connector for cluster {cluster}")
+        elif settings.workload_loader == "prometheus":
+            logger.debug(f"Creating Prometheus connector")
+            # NOTE: With prometheus workload loader we can only have one Prometheus provided in parameters
+            # so in case of multiple clusters in one Prometheus (centralized version) 
+            # for each cluster we will have the same PrometheusConnector (keyed by None)
+            cluster = None
 
-        result = self._prometheus_connectors[cluster]
-        if isinstance(result, self.EXPECTED_EXCEPTIONS):
-            if result not in self._connector_errors:
-                self._connector_errors.add(result)
-                logger.error(str(result))
-            return None
-        elif isinstance(result, Exception):
-            raise result
-        return result
+        
 
-    def _try_create_cluster_loader(self, cluster: Optional[str]) -> Optional[BaseWorkloadLoader]:
+    def _create_cluster_loader(self) -> BaseClusterLoader:
         try:
-            if settings.workload_loader == "kubeapi":
-                return KubeAPIWorkloadLoader(cluster=cluster)
-            elif settings.workload_loader == "prometheus":
-                cluster_loader = self.get_prometheus(cluster)
-                if cluster_loader is not None:
-                    return PrometheusWorkloadLoader(cluster=cluster, metric_loader=cluster_loader)
-                else:
-                    logger.error(
-                        f"Could not load Prometheus for cluster {cluster} and will skip it." 
-                        "Not possible to load workloads through Prometheus without connection to Prometheus."
-                    )
-            else:
-                raise NotImplementedError(f"Workload loader {settings.workload_loader} is not implemented")
+
         except Exception as e:
-            logger.error(f"Could not load cluster {cluster} and will skip it: {e}")
+            logger.error(f"Could not connect to cluster loader and will skip it: {e}")
 
         return None
 

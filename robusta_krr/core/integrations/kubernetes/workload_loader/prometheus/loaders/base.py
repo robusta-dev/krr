@@ -37,8 +37,8 @@ class BaseKindLoader(abc.ABC):
 
     kinds: list[KindLiteral] = []
 
-    def __init__(self, connector: PrometheusConnector) -> None:
-        self.connector = connector
+    def __init__(self, prometheus: PrometheusConnector) -> None:
+        self.prometheus = prometheus
         self.cluster_selector = PrometheusMetric.get_prometheus_cluster_label()
 
     @property
@@ -50,7 +50,7 @@ class BaseKindLoader(abc.ABC):
         pass
 
     async def _parse_allocation(self, namespace: str, pods: list[str], container_name: str) -> ResourceAllocations:
-        limits = await self.connector.loader.query(
+        limits = await self.prometheus.loader.query(
             f"""
                 avg by(resource) (
                     kube_pod_container_resource_limits{{
@@ -62,7 +62,7 @@ class BaseKindLoader(abc.ABC):
                 )
             """
         )
-        requests = await self.connector.loader.query(
+        requests = await self.prometheus.loader.query(
             f"""
                 avg by(resource) (
                     kube_pod_container_resource_requests{{
@@ -90,7 +90,7 @@ class BaseKindLoader(abc.ABC):
         return ResourceAllocations(requests=requests_values, limits=limits_values)
 
     async def _list_containers_in_pods(self, pods: list[str]) -> set[str]:
-        containers = await self.connector.loader.query(
+        containers = await self.prometheus.loader.query(
             f"""
                 count by (container) (
                     kube_pod_container_info{{

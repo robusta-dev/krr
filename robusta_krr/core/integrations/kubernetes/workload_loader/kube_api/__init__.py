@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, Callable, Optional
 
-from kubernetes import client  # type: ignore
+from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException  # type: ignore
 from kubernetes.client.models import V1Container, V2HorizontalPodAutoscaler  # type: ignore
 
@@ -12,7 +14,7 @@ from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sWorkload, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 
-from ..base import BaseWorkloadLoader, IListPodsFallback
+from ..base import BaseWorkloadLoader, IListPodsFallback, BaseClusterLoader
 from .loaders import (
     BaseKindLoader,
     CronJobLoader,
@@ -29,8 +31,53 @@ logger = logging.getLogger("krr")
 HPAKey = tuple[str, str, str]
 
 
+class KubeAPIClusterLoader(BaseClusterLoader):
+    # NOTE: For KubeAPIClusterLoader we have to first connect to read kubeconfig
+    # We do not need to connect to Prometheus from here, as we query all data from Kubernetes API
+    # Also here we might have different Prometeus instances for different clusters
+    
+    def __init__(self) -> None:
+        self.api_client = settings.get_kube_client()
+
+    async def list_clusters(self) -> Optional[list[str]]:
+        if settings.inside_cluster:
+            logger.debug("Working inside the cluster")
+            return None
+
+        try:
+            contexts, current_context = config.list_kube_config_contexts(settings.kubeconfig)
+        except config.ConfigException:
+            if settings.clusters is not None and settings.clusters != "*":
+                logger.warning("Could not load context from kubeconfig.")
+                logger.warning(f"Falling back to clusters from CLI: {settings.clusters}")
+                return settings.clusters
+            else:
+                logger.error(
+                    "Could not load context from kubeconfig. "
+                    "Please check your kubeconfig file or pass -c flag with the context name."
+                )
+            return None
+
+        logger.debug(f"Found {len(contexts)} clusters: {', '.join([context['name'] for context in contexts])}")
+        logger.debug(f"Current cluster: {current_context['name']}")
+        logger.debug(f"Configured clusters: {settings.clusters}")
+
+        # None, empty means current cluster
+        if not settings.clusters:
+            return [current_context["name"]]
+
+        # * means all clusters
+        if settings.clusters == "*":
+            return [context["name"] for context in contexts]
+
+        return [context["name"] for context in contexts if context["name"] in settings.clusters]
+
+    async def connect_cluster(self, cluster: str) -> KubeAPIWorkloadLoader:
+        return KubeAPIWorkloadLoader(cluster)
+
+
 class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
-    workload_loaders: list[BaseKindLoader] = [
+    kind_loaders: list[BaseKindLoader] = [
         DeploymentLoader,
         RolloutLoader,
         DeploymentConfigLoader,
@@ -40,7 +87,7 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
         CronJobLoader,
     ]
 
-    def __init__(self, cluster: Optional[str] = None) -> None:
+    def __init__(self, cluster: Optional[str]) -> None:
         self.cluster = cluster
 
         # This executor will be running requests to Kubernetes API
@@ -53,7 +100,7 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
         self._kind_available: defaultdict[KindLiteral, bool] = defaultdict(lambda: True)
         self._hpa_list: dict[HPAKey, HPAData] = {}
         self._workload_loaders: dict[KindLiteral, BaseKindLoader] = {
-            loader.kind: loader(self.api_client, self.executor) for loader in self.workload_loaders
+            loader.kind: loader(self.api_client, self.executor) for loader in self.kind_loaders
         }
 
     async def list_workloads(self) -> list[K8sWorkload]:

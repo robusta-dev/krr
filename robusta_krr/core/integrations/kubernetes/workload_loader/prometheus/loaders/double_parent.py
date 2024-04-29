@@ -53,7 +53,7 @@ class DoubleParentLoader(BaseKindLoader):
         subowner_label = subowner_kind.lower() if subowner_kind != "Job" else "job_name"
 
         # Replica is for ReplicaSet and/or ReplicationController
-        subowners = await self.connector.loader.query(
+        subowners = await self.prometheus.loader.query(
             f"""
                 count by (namespace, owner_name, {subowner_label}, owner_kind) (
                     {metric_name} {{
@@ -91,7 +91,7 @@ class DoubleParentLoader(BaseKindLoader):
     async def _list_pods_of_subowner(
         self, namespace: str, name: str, kind: str, subowner_kind: str, subowner_names: list[str]
     ) -> list[K8sWorkload]:
-        pods = await self.connector.loader.query(
+        pods = await self.prometheus.loader.query(
             f"""
                 count by (namespace, owner_name, owner_kind, pod) (
                     kube_pod_owner{{
@@ -111,7 +111,7 @@ class DoubleParentLoader(BaseKindLoader):
 
         return [
             K8sWorkload(
-                cluster=self.connector.cluster,
+                cluster=self.prometheus.cluster,
                 namespace=namespace,
                 name=name,
                 kind=kind,

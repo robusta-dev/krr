@@ -1,5 +1,13 @@
-from .base import BaseWorkloadLoader, IListPodsFallback
-from .kube_api import KubeAPIWorkloadLoader
-from .prometheus import PrometheusWorkloadLoader
+from .base import BaseWorkloadLoader, IListPodsFallback, BaseClusterLoader
+from .kube_api import KubeAPIWorkloadLoader, KubeAPIClusterLoader
+from .prometheus import PrometheusWorkloadLoader, PrometheusClusterLoader
 
-__all__ = ["BaseWorkloadLoader", "IListPodsFallback", "KubeAPIWorkloadLoader", "PrometheusWorkloadLoader"]
+__all__ = [
+    "BaseWorkloadLoader",
+    "IListPodsFallback",
+    "KubeAPIWorkloadLoader",
+    "PrometheusWorkloadLoader",
+    "BaseClusterLoader",
+    "KubeAPIClusterLoader",
+    "PrometheusClusterLoader",
+]

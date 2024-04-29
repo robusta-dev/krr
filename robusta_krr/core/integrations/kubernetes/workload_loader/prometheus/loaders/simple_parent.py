@@ -22,7 +22,7 @@ class SimpleParentLoader(BaseKindLoader):
             ('namespace=~"' + "|".join(namespaces) + '"') if namespaces != "*" else 'namespace!="kube-system"'
         )
 
-        results = await self.connector.loader.query(
+        results = await self.prometheus.loader.query(
             f"""
                 count by (namespace, owner_name, owner_kind, pod) (
                     kube_pod_owner{{
@@ -46,7 +46,7 @@ class SimpleParentLoader(BaseKindLoader):
         # NOTE: We do not show jobs that are a part of a cronjob, so we filter them out
         job_workloads = [name for (_, name, kind) in workloads if kind == "Job"]
         if job_workloads != []:
-            cronjobs = await self.connector.loader.query(
+            cronjobs = await self.prometheus.loader.query(
                 f"""
                     count by (namespace, job_name) (
                         kube_job_owner{{
@@ -72,7 +72,7 @@ class SimpleParentLoader(BaseKindLoader):
 
         return [
             K8sWorkload(
-                cluster=self.connector.cluster,
+                cluster=self.prometheus.cluster,
                 namespace=namespace,
                 name=name,
                 kind=kind,

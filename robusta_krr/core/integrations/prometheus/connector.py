@@ -49,6 +49,14 @@ class PrometheusConnector:
 
         logger.info(f"{self.loader.name()} connected successfully for {cluster or 'inner'} cluster")
 
+    @classmethod
+    def discover(cls, api_client: ApiClient) -> PrometheusConnector:
+        return cls()
+
+    @classmethod
+    def connect(cls, cluster: str) -> PrometheusConnector:
+        return cls(cluster=cluster)
+
     def get_metrics_service(
         self,
         api_client: Optional[ApiClient] = None,
