@@ -103,7 +103,7 @@ Read more about [how KRR works](#how-krr-works) and [KRR vs Kubernetes VPA](#dif
 
 ### Requirements
 
-KRR requires Prometheus 2.26+ and [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics).
+KRR requires Prometheus 2.26+, [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) & [cAdvisor](https://github.com/google/cadvisor).
 
 <details>
   <summary>Which metrics does KRR need?</summary>
