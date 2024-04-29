@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import numpy as np
 import pytest
@@ -26,15 +26,6 @@ TEST_OBJECT = K8sObjectData(
 )
 
 
-class AsyncIter:
-    def __init__(self, items):
-        self.items = items
-
-    async def __aiter__(self):
-        for item in self.items:
-            yield item
-
-
 @pytest.fixture(autouse=True, scope="session")
 def mock_list_clusters():
     with patch(
@@ -48,7 +39,7 @@ def mock_list_clusters():
 def mock_list_scannable_objects():
     with patch(
         "robusta_krr.core.integrations.kubernetes.KubernetesLoader.list_scannable_objects",
-        new=MagicMock(return_value=AsyncIter([TEST_OBJECT])),
+        new=AsyncMock(return_value=[TEST_OBJECT]),
     ):
         yield
 
