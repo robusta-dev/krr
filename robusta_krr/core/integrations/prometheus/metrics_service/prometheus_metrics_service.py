@@ -196,9 +196,10 @@ class PrometheusMetricsService(MetricsService):
             elif "Memory" in LoaderClass.__name__:
                 object.add_warning("NoPrometheusMemoryMetrics")
 
-            logger.warning(
-                f"{metric_loader.service_name} returned no {metric_loader.__class__.__name__} metrics for {object}"
-            )
+            if LoaderClass.warning_on_no_data:
+                logger.warning(
+                    f"{metric_loader.service_name} returned no {metric_loader.__class__.__name__} metrics for {object}"
+                )
 
         return data
 
