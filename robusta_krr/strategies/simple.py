@@ -112,6 +112,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
         # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
         # As CPUAmountLoader returns only the last value (1 point), [0, 1] is used to get the value
+        # So each pod is string with pod name, and values is numpy array of shape (N, 2)
         data_count = {pod: values[0, 1] for pod, values in history_data["CPUAmountLoader"].items()}
         total_points_count = sum(data_count.values())
 
@@ -139,6 +140,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             max_oomkill_data = history_data["MaxOOMKilledMemoryLoader"]
             # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
             # As MaxOOMKilledMemoryLoader returns only the last value (1 point), [0, 1] is used to get the value
+            # So each value is numpy array of shape (N, 2)
             max_oomkill_value = (
                 np.max([values[0, 1] for values in max_oomkill_data.values()]) if len(max_oomkill_data) > 0 else 0
             )
@@ -152,6 +154,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
         # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
         # As MemoryAmountLoader returns only the last value (1 point), [0, 1] is used to get the value
+        # So each pod is string with pod name, and values is numpy array of shape (N, 2)
         data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
         total_points_count = sum(data_count.values())
 
