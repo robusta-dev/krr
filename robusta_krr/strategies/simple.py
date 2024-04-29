@@ -1,9 +1,3 @@
-"""
-    This strategy is a version of a simple strategy that we might want to set as a default strategy for the user.
-    It is the same as the simple strategy, but it also uses OOMKilled events and memory limits to calculate memory recommendations.
-    Currently, it is in a testing mode and may not work as expected.
-"""
-
 from datetime import timedelta
 
 import numpy as np
@@ -43,10 +37,10 @@ class SimpleStrategySettings(StrategySettings):
     )
     use_oomkill_data: bool = pd.Field(
         False,
-        description="Whether to use OOMKilled data to calculate memory recommendations (experimental).",
+        description="Whether to bump the memory when OOMKills are detected (experimental).",
     )
     oom_memory_buffer_percentage: float = pd.Field(
-        25, gt=0, description="The percentage of added buffer to the max memory limit surpassed by OOMKilled event."
+        25, gt=0, description="What percentage to increase the memory when there are OOMKill events."
     )
 
     def calculate_memory_proposal(self, data: PodsTimeData, max_oomkill: float = 0) -> float:
@@ -116,6 +110,8 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
+        # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
+        # As CPUAmountLoader returns only the last value (1 point), [0, 1] is used to get the value
         data_count = {pod: values[0, 1] for pod, values in history_data["CPUAmountLoader"].items()}
         total_points_count = sum(data_count.values())
 
@@ -136,21 +132,26 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
         data = history_data["MaxMemoryLoader"]
-        info: list[str] = []
+
+        oomkill_detected = False
 
         if self.settings.use_oomkill_data:
             max_oomkill_data = history_data["MaxOOMKilledMemoryLoader"]
+            # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
+            # As MaxOOMKilledMemoryLoader returns only the last value (1 point), [0, 1] is used to get the value
             max_oomkill_value = (
                 np.max([values[0, 1] for values in max_oomkill_data.values()]) if len(max_oomkill_data) > 0 else 0
             )
             if max_oomkill_value != 0:
-                info.append("OOMKill detected")
+                oomkill_detected = True
         else:
             max_oomkill_value = 0
 
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
+        # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
+        # As MemoryAmountLoader returns only the last value (1 point), [0, 1] is used to get the value
         data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
         total_points_count = sum(data_count.values())
 
@@ -165,7 +166,9 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             return ResourceRecommendation.undefined(info="HPA detected")
 
         memory_usage = self.settings.calculate_memory_proposal(data, max_oomkill_value)
-        return ResourceRecommendation(request=memory_usage, limit=memory_usage, info=", ".join(info) if info else None)
+        return ResourceRecommendation(
+            request=memory_usage, limit=memory_usage, info="OOMKill detected" if oomkill_detected else None
+        )
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
         return {
