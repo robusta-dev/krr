@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 import logging
 import math
 import os
@@ -8,12 +9,13 @@ from typing import Optional, Union
 from datetime import timedelta
 from rich.console import Console
 from slack_sdk import WebClient
+from prometrix import PrometheusNotFound
 
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
-from robusta_krr.core.integrations.kubernetes.workload_loader import IListPodsFallback
-from robusta_krr.core.integrations.kubernetes import ClusterConnector
+from robusta_krr.core.abstract.workload_loader import IListPodsFallback
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException
 from robusta_krr.core.models.config import settings
+from robusta_krr.core.models.exceptions import CriticalRunnerException
 from robusta_krr.core.models.objects import K8sWorkload
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
 from robusta_krr.utils.intro import load_intro_message
@@ -33,12 +35,8 @@ def custom_print(*objects, rich: bool = True, force: bool = False) -> None:
         print_func(*objects)  # type: ignore
 
 
-class CriticalRunnerException(Exception): ...
-
-
 class Runner:
     def __init__(self) -> None:
-        self.connector = ClusterConnector()
         self.strategy = settings.create_strategy()
 
         self.errors: list[dict] = []
@@ -144,16 +142,18 @@ class Runner:
         }
 
     async def _calculate_object_recommendations(self, object: K8sWorkload) -> Optional[RunResult]:
-        prometheus_loader = self.connector.get_prometheus(object.cluster)
+        prometheus = self.connector.get_prometheus(object.cluster)
 
-        if prometheus_loader is None:
+        if prometheus is None:
             return None
 
-        object.pods = await prometheus_loader.load_pods(object, self.strategy.settings.history_timedelta)
-        if object.pods == [] and isinstance(self.connector, IListPodsFallback):
+        cluster_loader = self.connector.get_workload_loader(object.cluster)
+
+        object.pods = await prometheus.load_pods(object, self.strategy.settings.history_timedelta)
+        if object.pods == [] and isinstance(cluster_loader, IListPodsFallback):
             # Fallback to IListPodsFallback if Prometheus did not return any pods
             # IListPodsFallback is implemented by the Kubernetes API connector
-            object.pods = await self.connector.load_pods(object)
+            object.pods = await cluster_loader.load_pods(object)
 
             # NOTE: Kubernetes API returned pods, but Prometheus did not
             # This might happen with fast executing jobs
@@ -164,7 +164,7 @@ class Runner:
                     "Loaded pods from Kubernetes API instead."
                 )
 
-        metrics = await prometheus_loader.gather_data(
+        metrics = await prometheus.gather_data(
             object,
             self.strategy,
             self.strategy.settings.history_timedelta,
@@ -179,10 +179,18 @@ class Runner:
         logger.info(f"Calculated recommendations for {object} (using {len(metrics)} metrics)")
         return self._format_result(result)
 
-    async def _check_data_availability(self, cluster: Optional[str]) -> None:
-        prometheus_loader = self.connector.get_prometheus(cluster)
-        if prometheus_loader is None:
-            return
+    async def _check_cluster(self, cluster: Optional[str]) -> bool:
+        try:
+            prometheus_loader = self.connector.get_prometheus(cluster)
+        except PrometheusNotFound:
+            logger.error(
+                f"Wasn't able to connect to any Prometheus service"
+                f' for cluster {cluster}' if cluster is not None else ""
+                "\nTry using port-forwarding and/or setting the url manually (using the -p flag.).\n"
+                "For more information, see 'Giving the Explicit Prometheus URL' at "
+                "https://github.com/robusta-dev/krr?tab=readme-ov-file#usage"
+            )
+            return False
 
         try:
             history_range = await prometheus_loader.get_history_range(timedelta(hours=5))
@@ -195,7 +203,7 @@ class Runner:
                     "name": "HistoryRangeError",
                 }
             )
-            return
+            return True  # We can try to continue without history range
 
         logger.debug(f"History range for {cluster}: {history_range}")
         enough_data = self.strategy.settings.history_range_enough(history_range)
@@ -217,6 +225,8 @@ class Runner:
                     "retry_after": try_after,
                 }
             )
+
+        return True
 
     async def _gather_object_allocations(self, k8s_object: K8sWorkload) -> Optional[ResourceScan]:
         recommendation = await self._calculate_object_recommendations(k8s_object)
@@ -248,14 +258,36 @@ class Runner:
 
         logger.info(f'Using clusters: {clusters if clusters is not None else "inner cluster"}')
 
+        # This is for code clarity. All functions take str | None as cluster parameter
         if clusters is None:
-            await self._check_data_availability(None)
-        else:
-            await asyncio.gather(*[self._check_data_availability(cluster) for cluster in clusters])
+            clusters = [None]
+
+        checks = await asyncio.gather(*[self._check_cluster(cluster) for cluster in clusters])
+        clusters = [cluster for cluster, check in zip(clusters, checks) if check]
+
+        if clusters == []:
+            raise CriticalRunnerException("No clusters available to scan.")
+
+        workload_loaders = {cluster: self.connector.try_get_workload_loader(cluster) for cluster in clusters}
+
+        # NOTE: we filter out None values as they are clusters that we could not connect to
+        workload_loaders = {cluster: loader for cluster, loader in workload_loaders.items() if loader is not None}
+
+        if workload_loaders == {}:
+            raise CriticalRunnerException("Could not connect to any cluster.")
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
-            workloads = await self.connector.list_workloads(clusters)
+            # We gather all workloads from all clusters in parallel (asyncio.gather)
+            # Then we chain all workloads together (itertools.chain)
+            workloads = list(
+                itertools.chain(*await asyncio.gather(*[loader.list_workloads() for loader in workload_loaders.values()]))
+            )
+            # Then we gather all recommendations for all workloads in parallel (asyncio.gather)
             scans = await asyncio.gather(*[self._gather_object_allocations(k8s_object) for k8s_object in workloads])
+            # NOTE: Previously we were streaming workloads to
+            # calculate recommendations as soon as they were available (not waiting for all workloads to be loaded),
+            # but it gave minor performance improvements (most of the time was spent on calculating recommendations)
+            # So we decided to do those two steps sequentially to simplify the code
 
         successful_scans = [scan for scan in scans if scan is not None]
 
@@ -284,13 +316,6 @@ class Runner:
         await self._greet()
 
         try:
-            settings.load_kubeconfig()
-        except Exception as e:
-            logger.error(f"Could not load kubernetes configuration: {e}")
-            logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
-            return 1  # Exit with error
-
-        try:
             # eks has a lower step limit than other types of prometheus, it will throw an error
             step_count = self.strategy.settings.history_duration * 60 / self.strategy.settings.timeframe_duration
             if settings.eks_managed_prom and step_count > 11000:
@@ -300,6 +325,8 @@ class Runner:
                     f"Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}."
                 )
                 self.strategy.settings.timeframe_duration = min_step
+
+            self.connector = settings.create_cluster_loader()
 
             result = await self._collect_result()
             logger.info("Result collected, displaying...")

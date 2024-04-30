@@ -5,7 +5,6 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Optional
 
-from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
 from kubernetes.client.exceptions import ApiException
 from prometrix import MetricsNotFound, PrometheusNotFound
@@ -35,58 +34,56 @@ class PrometheusConnector:
 
         self.executor = ThreadPoolExecutor(settings.max_workers)
         self.cluster = cluster
-        self.api_client = settings.get_kube_client(context=cluster)
-        loader = self.get_metrics_service(api_client=self.api_client, cluster=cluster)
-        if loader is None:
-            raise PrometheusNotFound(
-                f"Wasn't able to connect to any Prometheus service in {cluster or 'inner'} cluster\n"
-                "Try using port-forwarding and/or setting the url manually (using the -p flag.).\n"
-                "For more information, see 'Giving the Explicit Prometheus URL' at "
-                "https://github.com/robusta-dev/krr?tab=readme-ov-file#usage"
-            )
 
-        self.loader = loader
-
-        logger.info(f"{self.loader.name()} connected successfully for {cluster or 'inner'} cluster")
-
-    @classmethod
-    def discover(cls, api_client: ApiClient) -> PrometheusConnector:
-        return cls()
-
-    @classmethod
-    def connect(cls, cluster: str) -> PrometheusConnector:
-        return cls(cluster=cluster)
-
-    def get_metrics_service(
-        self,
-        api_client: Optional[ApiClient] = None,
-        cluster: Optional[str] = None,
-    ) -> Optional[PrometheusMetricsService]:
-        if settings.prometheus_url is not None:
-            logger.info("Prometheus URL is specified, will not auto-detect a metrics service")
-            metrics_to_check = [PrometheusMetricsService]
-        else:
-            logger.info("No Prometheus URL is specified, trying to auto-detect a metrics service")
-            metrics_to_check = [VictoriaMetricsService, ThanosMetricsService, MimirMetricsService, PrometheusMetricsService]
+    def discover(self, api_client: ApiClient) -> None:
+        """Try to automatically discover a Prometheus service."""
+        metrics_to_check: list[PrometheusMetricsService] = [
+            VictoriaMetricsService,
+            ThanosMetricsService,
+            MimirMetricsService,
+            PrometheusMetricsService,
+        ]
 
         for metric_service_class in metrics_to_check:
-            service_name = metric_service_class.name()
+            logger.info(f"Trying to find {metric_service_class.name()}{self._for_cluster_postfix}")
             try:
-                loader = metric_service_class(api_client=api_client, cluster=cluster, executor=self.executor)
-                loader.check_connection()
-            except MetricsNotFound as e:
-                logger.info(f"{service_name} not found: {e}")
-            except ApiException as e:
-                logger.warning(
-                    f"Unable to automatically discover a {service_name} in the cluster ({e}). "
-                    "Try specifying how to connect to Prometheus via cli options"
-                )
+                loader = metric_service_class.discover(api_client=api_client)
+                self._connect(loader)
+            except Exception:
+                logger.info(f"Wasn't able to find {metric_service_class.name()}{self._for_cluster_postfix}")
             else:
-                logger.info(f"{service_name} found")
-                loader.validate_cluster_name()
-                return loader
+                return
 
-        return None
+        raise PrometheusNotFound
+
+    def connect(self, url: Optional[str] = None) -> None:
+        """Connect to a Prometheus service using a URL."""
+        try:
+            loader = PrometheusMetricsService(url=url)
+            self._connect(loader)
+        except Exception as e:
+            logger.warning(f"Unable to connect to Prometheus using the provided URL ({e})")
+            raise e
+        else:
+            logger.info(f"{loader.name()} connected successfully")
+
+    def _connect(self, loader: PrometheusMetricsService) -> None:
+        service_name = loader.name()
+        try:
+            loader.check_connection()
+        except MetricsNotFound as e:
+            logger.info(f"{service_name} not found: {e}")
+            raise PrometheusNotFound(f"Wasn't able to connect to {service_name}" + self._for_cluster_postfix)
+        except ApiException as e:
+            logger.warning(
+                f"Unable to automatically discover a {service_name}{self._for_cluster_postfix} ({e}). "
+                "Try specifying how to connect to Prometheus via cli options"
+            )
+            raise e
+        else:
+            logger.info(f"{service_name} found")
+            loader.validate_cluster_name()
+            self.loader = loader
 
     async def get_history_range(
         self, history_duration: datetime.timedelta
@@ -125,3 +122,8 @@ class PrometheusConnector:
             MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, step)
             for MetricLoader in strategy.metrics
         }
+
+    @property
+    def _for_cluster_postfix(self) -> str:
+        """The string postfix to be used in logging messages."""
+        return f" for {self.cluster} cluster" if self.cluster else ""

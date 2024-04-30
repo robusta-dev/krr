@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional
+from typing_extensions import Self
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
@@ -59,15 +62,17 @@ class PrometheusMetricsService(MetricsService):
         url: str,
         cluster: Optional[str] = None,
         executor: Optional[ThreadPoolExecutor] = None,
+        api_client: Optional[ApiClient] = None,
     ) -> None:
         self.url = url + self.url_postfix
         self.cluster = cluster
         self.executor = executor or ThreadPoolExecutor(settings.max_workers)
-
-        logger.info(f"Trying to connect to {self.name()}" + self._for_cluster_postfix)
+        self.api_client = api_client
 
         self.auth_header = settings.prometheus_auth_header
         self.ssl_enabled = settings.prometheus_ssl_enabled
+
+        logger.info(f"Using {self.name()} at {self.url}" + self._for_cluster_postfix)
 
         if settings.openshift:
             logging.info("Openshift flag is set, trying to load token from service account.")
@@ -79,20 +84,6 @@ class PrometheusMetricsService(MetricsService):
             else:
                 logging.warning("Openshift token is not found, trying to connect without it.")
 
-        self.prometheus_discovery = self.service_discovery(api_client=self.api_client)
-
-        self.url = settings.prometheus_url
-        self.url = self.url or self.prometheus_discovery.find_metrics_url()
-
-        if not self.url:
-            raise PrometheusNotFound(
-                f"{self.name()} instance could not be found while scanning" + self._for_cluster_postfix
-            )
-
-        self.url += self.url_postfix
-
-        logger.info(f"Using {self.name()} at {self.url}" + self._for_cluster_postfix)
-
         headers = settings.prometheus_other_headers
         headers |= self.additional_headers
 
@@ -100,8 +91,22 @@ class PrometheusMetricsService(MetricsService):
             headers |= {"Authorization": self.auth_header}
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
+
         self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
         self.prometheus = get_custom_prometheus_connect(self.prom_config)
+
+    @classmethod
+    def discover(
+        cls,
+        api_client: ApiClient,
+        cluster: Optional[str] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
+    ) -> Self:
+        url = cls.service_discovery(api_client=api_client).find_metrics_url()
+        if not url:
+            raise PrometheusNotFound(f"{cls.name()} instance could not be found while scanning")
+
+        return cls(url, cluster, executor, api_client)
 
     def check_connection(self):
         """
@@ -249,7 +254,9 @@ class PrometheusMetricsService(MetricsService):
                     }}[{period_literal}]
                 """
             )
-            pod_owners = {repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers}
+            pod_owners = {
+                repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers
+            }
             pod_owner_kind = "ReplicationController"
 
             del replication_controllers
@@ -314,4 +321,4 @@ class PrometheusMetricsService(MetricsService):
     @property
     def _for_cluster_postfix(self) -> str:
         """The string postfix to be used in logging messages."""
-        return (f" for {self.cluster} cluster" if self.cluster else "")
+        return f" for {self.cluster} cluster" if self.cluster else ""

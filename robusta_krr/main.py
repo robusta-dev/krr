@@ -15,7 +15,7 @@ from typer.models import OptionInfo
 from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import BaseStrategy
-from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.config import Config, LoadingMode
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
 
@@ -55,10 +55,12 @@ def load_commands() -> None:
                     help="Path to kubeconfig file. If not provided, will attempt to find it.",
                     rich_help_panel="Kubernetes Settings",
                 ),
-                workload_loader: str = typer.Option(
-                    "kubeapi",
-                    "--workload",
-                    help="Workload loader to use (kubeapi, prometheus).",
+                mode: LoadingMode = typer.Option(
+                    LoadingMode.KUBEAPI,
+                    "--mode",
+                    "-m",
+                    help="Loading mode. KubeAPI mode requires a kubeconfig and supports auto-discovery. Prometheus mode requires to pass a --prometheus-url.",
+                    case_sensitive=False,
                     rich_help_panel="Kubernetes Settings",
                 ),
                 impersonate_user: Optional[str] = typer.Option(
@@ -138,7 +140,7 @@ def load_commands() -> None:
                     None,
                     "--prometheus-cluster-label",
                     "-l",
-                    help="The label in prometheus for your cluster.(Only relevant for centralized prometheus)",
+                    help="The label in prometheus for your cluster. (Only relevant for centralized prometheus)",
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_label: str = typer.Option(
@@ -256,7 +258,7 @@ def load_commands() -> None:
                 try:
                     config = Config(
                         kubeconfig=kubeconfig,
-                        workload_loader=workload_loader,
+                        mode=mode,
                         impersonate_user=impersonate_user,
                         impersonate_group=impersonate_group,
                         clusters="*" if all_clusters else clusters,

@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 import asyncio
 import itertools
 import logging
 
 from collections import Counter
 
-from pyparsing import Optional
-
+from typing import Optional
+from functools import cache
 
 from robusta_krr.core.integrations.prometheus.connector import PrometheusConnector
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sWorkload
-from ..base import BaseWorkloadLoader, BaseClusterLoader
+from robusta_krr.core.abstract.workload_loader import BaseWorkloadLoader
+from robusta_krr.core.abstract.cluster_loader import BaseClusterLoader
+from robusta_krr.core.models.exceptions import CriticalRunnerException
 from .loaders import BaseKindLoader, DoubleParentLoader, SimpleParentLoader
 
 
@@ -21,20 +25,34 @@ class PrometheusClusterLoader(BaseClusterLoader):
     # NOTE: For PrometheusClusterLoader we have to first connect to Prometheus, as we query all data from it
 
     def __init__(self) -> None:
-        super().__init__()
-        self.prometheus_connector = super().connect_prometheus()
+        self._prometheus_connector = PrometheusConnector()
+        if not settings.prometheus_url:
+            raise CriticalRunnerException(
+                "Prometheus URL is not provided. "
+                "Can not auto-discover Prometheus with `--mode prometheus`. "
+                "Please provide the URL with `--prometheus-url` flag."
+            )
 
-    async def list_clusters(self) -> list[str]:
-        return []
-    
-    async def connect_cluster(self, cluster: str) -> BaseWorkloadLoader:
-        return PrometheusWorkloadLoader(cluster, self.prometheus_connector)
-    
-    def connect_prometheus(self, cluster: Optional[str] = None) -> PrometheusConnector:
+        self._prometheus_connector.connect(settings.prometheus_url)
+
+    async def list_clusters(self) -> Optional[list[str]]:
+        if settings.prometheus_cluster_label is None:
+            return None
+
+        # TODO: We can try to auto-discover clusters by querying Prometheus,
+        # but for that we will need to rework PrometheusMetric.get_prometheus_cluster_label
+        return [settings.prometheus_cluster_label]
+
+    @cache
+    def get_workload_loader(self, cluster: str) -> PrometheusWorkloadLoader:
+        return PrometheusWorkloadLoader(cluster, self._prometheus_connector)
+
+    def get_prometheus(self, cluster: Optional[str]) -> PrometheusConnector:
         # NOTE: With prometheus workload loader we can only have one Prometheus provided in parameters
         # so in case of multiple clusters in one Prometheus (centralized version)
         # for each cluster we will have the same PrometheusConnector (keyed by None)
-        return self.prometheus_connector
+        return self._prometheus_connector
+
 
 class PrometheusWorkloadLoader(BaseWorkloadLoader):
     workloads: list[type[BaseKindLoader]] = [DoubleParentLoader, SimpleParentLoader]
@@ -56,3 +74,5 @@ class PrometheusWorkloadLoader(BaseWorkloadLoader):
             logger.info(f"Found {count} {kind} in {self.cluster}")
 
         return workloads
+
+__all__ = ["PrometheusClusterLoader", "PrometheusWorkloadLoader"]

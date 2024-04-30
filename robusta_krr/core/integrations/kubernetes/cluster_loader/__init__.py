@@ -9,12 +9,18 @@ from typing import Any, Awaitable, Callable, Optional
 from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException  # type: ignore
 from kubernetes.client.models import V1Container, V2HorizontalPodAutoscaler  # type: ignore
+from functools import cache
 
+from robusta_krr.core.integrations.prometheus.connector import PrometheusConnector
+from robusta_krr.core.integrations.prometheus.metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from robusta_krr.core.models.config import settings
+from robusta_krr.core.models.exceptions import CriticalRunnerException
 from robusta_krr.core.models.objects import HPAData, K8sWorkload, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 
-from ..base import BaseWorkloadLoader, IListPodsFallback, BaseClusterLoader
+
+from robusta_krr.core.abstract.workload_loader import BaseWorkloadLoader, IListPodsFallback
+from robusta_krr.core.abstract.cluster_loader import BaseClusterLoader
 from .loaders import (
     BaseKindLoader,
     CronJobLoader,
@@ -37,7 +43,16 @@ class KubeAPIClusterLoader(BaseClusterLoader):
     # Also here we might have different Prometeus instances for different clusters
     
     def __init__(self) -> None:
+        try:
+            settings.load_kubeconfig()
+        except Exception as e:
+            logger.error(f"Could not load kubernetes configuration: {e.__class__.__name__}\n{e}")
+            logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
+            logger.error("Alternatively, try a prometheus-only mode with `--mode prometheus`")
+            raise CriticalRunnerException("Could not load kubernetes configuration") from e
+
         self.api_client = settings.get_kube_client()
+        self._prometheus_connectors: dict[Optional[str], PrometheusConnector] = {}
 
     async def list_clusters(self) -> Optional[list[str]]:
         if settings.inside_cluster:
@@ -72,8 +87,19 @@ class KubeAPIClusterLoader(BaseClusterLoader):
 
         return [context["name"] for context in contexts if context["name"] in settings.clusters]
 
-    async def connect_cluster(self, cluster: str) -> KubeAPIWorkloadLoader:
+    @cache
+    def get_workload_loader(self, cluster: Optional[str]) -> KubeAPIWorkloadLoader:
         return KubeAPIWorkloadLoader(cluster)
+    
+    @cache
+    def get_prometheus(self, cluster: Optional[str]) -> PrometheusConnector:
+        connector = PrometheusConnector(cluster=cluster)
+        if settings.prometheus_url is not None:
+            logger.info(f"Connecting to Prometheus using URL: {settings.prometheus_url}")
+            connector.connect(settings.prometheus_url)
+        else:
+            logger.info(f"Trying to discover PromQL service" + (f" for cluster {cluster}" if cluster else ""))
+            connector.discover(api_client=self.api_client)
 
 
 class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
@@ -131,7 +157,7 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
             if not (settings.namespaces == "*" and object.namespace == "kube-system")
         ]
 
-    async def list_pods(self, object: K8sWorkload) -> list[PodData]:
+    async def load_pods(self, object: K8sWorkload) -> list[PodData]:
         return await self._workload_loaders[object.kind].list_pods(object)
 
     def _build_scannable_object(self, item: Any, container: V1Container, kind: Optional[str] = None) -> K8sWorkload:
@@ -320,4 +346,4 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
             return {}
 
 
-__all__ = ["KubeAPIWorkloadLoader"]
+__all__ = ["KubeAPIWorkloadLoader", "KubeAPIClusterLoader"]
