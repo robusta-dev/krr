@@ -70,6 +70,7 @@ class MemoryAmountLoader(PrometheusMetric):
             )
         """
 
+
 # TODO: Need to battle test if this one is correct.
 class MaxOOMKilledMemoryLoader(PrometheusMetric):
     """
@@ -78,7 +79,7 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
 
     warning_on_no_data = False
 
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+    def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
@@ -91,7 +92,7 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
                             pod=~"{pods_selector}",
                             container="{object.container}"
                             {cluster_label}
-                        }} 
+                        }}
                     ) by (pod, container, job)
                     * on(pod, container, job) group_left(reason)
                     max(

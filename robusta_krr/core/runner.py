@@ -184,8 +184,9 @@ class Runner:
             prometheus_loader = self.connector.get_prometheus(cluster)
         except PrometheusNotFound:
             logger.error(
-                f"Wasn't able to connect to any Prometheus service"
-                f' for cluster {cluster}' if cluster is not None else ""
+                f"Wasn't able to connect to any Prometheus service" f" for cluster {cluster}"
+                if cluster is not None
+                else ""
                 "\nTry using port-forwarding and/or setting the url manually (using the -p flag.).\n"
                 "For more information, see 'Giving the Explicit Prometheus URL' at "
                 "https://github.com/robusta-dev/krr?tab=readme-ov-file#usage"
@@ -205,7 +206,10 @@ class Runner:
             )
             return True  # We can try to continue without history range
 
-        logger.debug(f"History range for {cluster}: {history_range}")
+        logger.debug(
+            f"History range{f' for cluster {cluster}' if cluster else ''}: "
+            f"({history_range[0]})-({history_range[1]})"
+        )
         enough_data = self.strategy.settings.history_range_enough(history_range)
 
         if not enough_data:
@@ -247,7 +251,10 @@ class Runner:
 
     async def _collect_result(self) -> Result:
         clusters = await self.connector.list_clusters()
-        logger.info(f"Clusters available: {', '.join(clusters)}")
+        if clusters is None:
+            logger.info("Can not list clusters, single cluster mode.")
+        else:
+            logger.info(f"Clusters available: {', '.join(clusters)}")
 
         if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
@@ -282,7 +289,9 @@ class Runner:
             # We gather all workloads from all clusters in parallel (asyncio.gather)
             # Then we chain all workloads together (itertools.chain)
             workloads = list(
-                itertools.chain(*await asyncio.gather(*[loader.list_workloads() for loader in workload_loaders.values()]))
+                itertools.chain(
+                    *await asyncio.gather(*[loader.list_workloads() for loader in workload_loaders.values()])
+                )
             )
             # Then we gather all recommendations for all workloads in parallel (asyncio.gather)
             scans = await asyncio.gather(*[self._gather_object_allocations(k8s_object) for k8s_object in workloads])

@@ -208,14 +208,14 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
 
         result = [item for request_result in await asyncio.gather(*requests) for item in request_result.items]
 
-        logger.debug(f"Found {len(result)} {kind} in {self.cluster}")
+        logger.debug(f"Found {len(result)} {kind}" + (f" for cluster {self.cluster}" if self.cluster else ""))
         return result
 
     async def _fetch_workload(self, loader: BaseKindLoader) -> list[K8sWorkload]:
         kind = loader.kind
 
         if not self._should_list_resource(kind):
-            logger.debug(f"Skipping {kind}s in {self.cluster}")
+            logger.debug(f"Skipping {kind}s" + (f" for cluster {self.cluster}" if self.cluster else ""))
             return
 
         if not self._kind_available[kind]:
