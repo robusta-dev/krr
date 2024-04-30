@@ -36,12 +36,22 @@ class PrometheusClusterLoader(BaseClusterLoader):
         self._prometheus_connector.connect(settings.prometheus_url)
 
     async def list_clusters(self) -> Optional[list[str]]:
-        if settings.prometheus_cluster_label is None:
+        if settings.prometheus_label is None:
+            logger.info(
+                "Assuming that Prometheus contains only one cluster."
+            )
+            logger.info("If you have multiple clusters in Prometheus, please provide the `-l` flag.")
             return None
 
-        # TODO: We can try to auto-discover clusters by querying Prometheus,
-        # but for that we will need to rework PrometheusMetric.get_prometheus_cluster_label
-        return [settings.prometheus_cluster_label]
+        clusters = await self.prometheus.loader.query(
+            f"""
+                avg by({settings.prometheus_label}) (
+                    kube_pod_container_resource_limits
+                )
+            """
+        )
+
+        return [cluster["metric"][settings.prometheus_label] for cluster in clusters["data"]["result"]]
 
     @cache
     def get_workload_loader(self, cluster: str) -> PrometheusWorkloadLoader:
@@ -74,5 +84,6 @@ class PrometheusWorkloadLoader(BaseWorkloadLoader):
             logger.info(f"Found {count} {kind} in {self.cluster}")
 
         return workloads
+
 
 __all__ = ["PrometheusClusterLoader", "PrometheusWorkloadLoader"]
