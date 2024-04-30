@@ -89,5 +89,5 @@ class ServiceDiscovery:
 
 class MetricsServiceDiscovery(ServiceDiscovery, ABC):
     @abstractmethod
-    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self) -> Optional[str]:
         pass

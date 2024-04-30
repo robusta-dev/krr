@@ -51,7 +51,6 @@ class KubeAPIClusterLoader(BaseClusterLoader):
             logger.error("Alternatively, try a prometheus-only mode with `--mode prometheus`")
             raise CriticalRunnerException("Could not load kubernetes configuration") from e
 
-        self.api_client = settings.get_kube_client()
         self._prometheus_connectors: dict[Optional[str], PrometheusConnector] = {}
 
     async def list_clusters(self) -> Optional[list[str]]:
@@ -99,7 +98,9 @@ class KubeAPIClusterLoader(BaseClusterLoader):
             connector.connect(settings.prometheus_url)
         else:
             logger.info(f"Trying to discover PromQL service" + (f" for cluster {cluster}" if cluster else ""))
-            connector.discover(api_client=self.api_client)
+            connector.discover(api_client=settings.get_kube_client(cluster))
+
+        return connector
 
 
 class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
