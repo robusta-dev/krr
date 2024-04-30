@@ -247,6 +247,8 @@ class Runner:
 
     async def _collect_result(self) -> Result:
         clusters = await self.connector.list_clusters()
+        logger.info(f"Clusters available: {', '.join(clusters)}")
+
         if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
             # In this scenario we dont yet support determining

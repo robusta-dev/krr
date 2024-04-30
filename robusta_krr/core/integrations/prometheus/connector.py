@@ -58,14 +58,9 @@ class PrometheusConnector:
 
     def connect(self, url: Optional[str] = None) -> None:
         """Connect to a Prometheus service using a URL."""
-        try:
-            loader = PrometheusMetricsService(url=url)
-            self._connect(loader)
-        except Exception as e:
-            logger.warning(f"Unable to connect to Prometheus using the provided URL ({e})")
-            raise e
-        else:
-            logger.info(f"{loader.name()} connected successfully")
+        loader = PrometheusMetricsService(url=url)
+        self._connect(loader)
+        logger.info(f"{loader.name()} connected successfully")
 
     def _connect(self, loader: PrometheusMetricsService) -> None:
         service_name = loader.name()
