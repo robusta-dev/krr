@@ -33,6 +33,12 @@ def __calc_diff(allocated, recommended, selector, multiplier=1) -> str:
         return f"{diff_sign}{_format(abs(diff_val) * multiplier)}"
 
 
+DEFAULT_INFO_COLOR = "grey27"
+INFO_COLORS: dict[str, str] = {
+    "OOMKill detected": "dark_red",
+}
+
+
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
     allocated = getattr(item.object.allocations, selector)[resource]
     info = item.recommended.info.get(resource)
@@ -46,6 +52,12 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
     if diff != "":
         diff = f"({diff}) "
 
+    if info is None:
+        info_formatted = ""
+    else:
+        color = INFO_COLORS.get(info, DEFAULT_INFO_COLOR)
+        info_formatted = f"\n[{color}]({info})[/{color}]"
+
     return (
         diff
         + f"[{severity.color}]"
@@ -53,7 +65,7 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
         + " -> "
         + _format(recommended.value)
         + f"[/{severity.color}]"
-        + (f" [grey27]({info})[/grey27]" if info else "")
+        + info_formatted
     )
 
 
