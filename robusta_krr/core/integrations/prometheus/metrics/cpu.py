@@ -64,7 +64,7 @@ class CPUAmountLoader(PrometheusMetric):
 
     def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
-        res = f"""
+        return f"""
             count_over_time(
                 max(
                     container_cpu_usage_seconds_total{{
@@ -77,5 +77,3 @@ class CPUAmountLoader(PrometheusMetric):
                 [{duration}:{step}]
             )
         """
-
-        raise(Exception(res))
