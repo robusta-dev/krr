@@ -26,7 +26,7 @@ class PrometheusClusterLoader(BaseClusterLoader):
     # NOTE: For PrometheusClusterLoader we have to first connect to Prometheus, as we query all data from it
 
     def __init__(self) -> None:
-        self._prometheus_connector = PrometheusConnector()
+        self.prometheus = PrometheusConnector()
         if not settings.prometheus_url:
             raise CriticalRunnerException(
                 "Prometheus URL is not provided. "
@@ -34,33 +34,33 @@ class PrometheusClusterLoader(BaseClusterLoader):
                 "Please provide the URL with `--prometheus-url` flag."
             )
 
-        self._prometheus_connector.connect(settings.prometheus_url)
+        self.prometheus.connect(settings.prometheus_url)
 
     async def list_clusters(self) -> Optional[list[str]]:
-        if settings.prometheus_label is None:
+        if settings.prometheus_cluster_label is None:
             logger.info("Assuming that Prometheus contains only one cluster.")
             logger.info("If you have multiple clusters in Prometheus, please provide the `-l` flag.")
             return None
 
         clusters = await self.prometheus.loader.query(
             f"""
-                avg by({settings.prometheus_label}) (
+                avg by({settings.prometheus_cluster_label}) (
                     kube_pod_container_resource_limits
                 )
             """
         )
 
-        return [cluster["metric"][settings.prometheus_label] for cluster in clusters["data"]["result"]]
+        return [cluster["metric"][settings.prometheus_cluster_label] for cluster in clusters]
 
     @cache
     def get_workload_loader(self, cluster: str) -> PrometheusWorkloadLoader:
-        return PrometheusWorkloadLoader(cluster, self._prometheus_connector)
+        return PrometheusWorkloadLoader(cluster, self.prometheus)
 
     def get_prometheus(self, cluster: Optional[str]) -> PrometheusConnector:
         # NOTE: With prometheus workload loader we can only have one Prometheus provided in parameters
         # so in case of multiple clusters in one Prometheus (centralized version)
         # for each cluster we will have the same PrometheusConnector (keyed by None)
-        return self._prometheus_connector
+        return self.prometheus
 
 
 class PrometheusWorkloadLoader(BaseWorkloadLoader):
@@ -69,9 +69,7 @@ class PrometheusWorkloadLoader(BaseWorkloadLoader):
     def __init__(self, cluster: str, prometheus: PrometheusConnector) -> None:
         self.cluster = cluster
         self.prometheus = prometheus
-        self.loaders = [loader(prometheus) for loader in self.workloads]
-
-        self.cluster_selector = PrometheusMetric.get_prometheus_cluster_label()
+        self.loaders = [loader(cluster, prometheus) for loader in self.workloads]
 
     async def list_workloads(self) -> list[K8sWorkload]:
         workloads = list(
@@ -98,11 +96,13 @@ class PrometheusWorkloadLoader(BaseWorkloadLoader):
         return workloads
 
     async def __list_hpa(self) -> dict[HPAKey, HPAData]:
+        cluster_selector = f"{settings.prometheus_label}={self.cluster}" if settings.prometheus_label else ""
+
         hpa_metrics, max_replicas, min_replicas, target_metrics = await asyncio.gather(
-            self.prometheus.loader.query("kube_horizontalpodautoscaler_info"),
-            self.prometheus.loader.query("kube_horizontalpodautoscaler_spec_max_replicas"),
-            self.prometheus.loader.query("kube_horizontalpodautoscaler_spec_min_replicas"),
-            self.prometheus.loader.query("kube_horizontalpodautoscaler_spec_target_metric"),
+            self.prometheus.loader.query("kube_horizontalpodautoscaler_info" + cluster_selector),
+            self.prometheus.loader.query("kube_horizontalpodautoscaler_spec_max_replicas" + cluster_selector),
+            self.prometheus.loader.query("kube_horizontalpodautoscaler_spec_min_replicas" + cluster_selector),
+            self.prometheus.loader.query("kube_horizontalpodautoscaler_spec_target_metric" + cluster_selector),
         )
 
         max_replicas_dict = {

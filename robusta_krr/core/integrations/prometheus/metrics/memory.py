@@ -12,14 +12,13 @@ class MemoryLoader(PrometheusMetric):
 
     def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
-        cluster_label = self.get_prometheus_cluster_label()
         return f"""
             max(
                 container_memory_working_set_bytes{{
+                    {object.cluster_selector}
                     namespace="{object.namespace}",
                     pod=~"{pods_selector}",
                     container="{object.container}"
-                    {cluster_label}
                 }}
             ) by (container, pod, job)
         """
@@ -32,15 +31,14 @@ class MaxMemoryLoader(PrometheusMetric):
 
     def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
-        cluster_label = self.get_prometheus_cluster_label()
         return f"""
             max_over_time(
                 max(
                     container_memory_working_set_bytes{{
+                        {object.cluster_selector}
                         namespace="{object.namespace}",
                         pod=~"{pods_selector}",
                         container="{object.container}"
-                        {cluster_label}
                     }}
                 ) by (container, pod, job)
                 [{duration}:{step}]
@@ -55,15 +53,14 @@ class MemoryAmountLoader(PrometheusMetric):
 
     def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
-        cluster_label = self.get_prometheus_cluster_label()
         return f"""
             count_over_time(
                 max(
                     container_memory_working_set_bytes{{
+                        {object.cluster_selector}
                         namespace="{object.namespace}",
                         pod=~"{pods_selector}",
                         container="{object.container}"
-                        {cluster_label}
                     }}
                 ) by (container, pod, job)
                 [{duration}:{step}]
@@ -81,27 +78,26 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
 
     def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
-        cluster_label = self.get_prometheus_cluster_label()
         return f"""
             max_over_time(
                 max(
                     max(
                         kube_pod_container_resource_limits{{
+                            {object.cluster_selector}
                             resource="memory",
                             namespace="{object.namespace}",
                             pod=~"{pods_selector}",
                             container="{object.container}"
-                            {cluster_label}
                         }}
                     ) by (pod, container, job)
                     * on(pod, container, job) group_left(reason)
                     max(
                         kube_pod_container_status_last_terminated_reason{{
+                            {object.cluster_selector}
                             reason="OOMKilled",
                             namespace="{object.namespace}",
                             pod=~"{pods_selector}",
                             container="{object.container}"
-                            {cluster_label}
                         }}
                     ) by (pod, container, job, reason)
                 ) by (container, pod, job)

@@ -12,7 +12,6 @@ from numpy.typing import NDArray
 from robusta_krr.core.models.result import K8sWorkload, ResourceType
 
 if TYPE_CHECKING:
-    from robusta_krr.core.abstract.metrics import BaseMetric  # noqa: F401
     from robusta_krr.core.integrations.prometheus.metrics import PrometheusMetric
 
 SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")

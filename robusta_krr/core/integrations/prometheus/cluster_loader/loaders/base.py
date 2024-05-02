@@ -1,27 +1,20 @@
 import abc
-import asyncio
-from collections import defaultdict
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Iterable, Literal, Optional, Union
 
-from kubernetes import client  # type: ignore
-from kubernetes.client.api_client import ApiClient  # type: ignore
+from typing import Literal, Union
+
 from kubernetes.client.models import (  # type: ignore
-    V1Container,
     V1DaemonSet,
     V1Deployment,
     V1Job,
     V1Pod,
-    V1PodList,
     V1StatefulSet,
 )
 from robusta_krr.core.models.config import settings
 
 from robusta_krr.core.integrations.prometheus.connector import PrometheusConnector
-from robusta_krr.core.integrations.prometheus.metrics.base import PrometheusMetric
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
-from robusta_krr.core.models.objects import K8sWorkload, KindLiteral, PodData
+from robusta_krr.core.models.objects import K8sWorkload, KindLiteral
 
 logger = logging.getLogger("krr")
 
@@ -37,13 +30,23 @@ class BaseKindLoader(abc.ABC):
 
     kinds: list[KindLiteral] = []
 
-    def __init__(self, prometheus: PrometheusConnector) -> None:
+    def __init__(self, cluster: str, prometheus: PrometheusConnector) -> None:
+        self.cluster = cluster
         self.prometheus = prometheus
-        self.cluster_selector = PrometheusMetric.get_prometheus_cluster_label()
 
     @property
     def kinds_to_scan(self) -> list[KindLiteral]:
         return [kind for kind in self.kinds if kind in settings.resources] if settings.resources != "*" else self.kinds
+
+    @property
+    def cluster_selector(self) -> str:
+        if settings.prometheus_label is not None:
+            return f'{settings.prometheus_cluster_label}="{settings.prometheus_label}",'
+
+        if settings.prometheus_cluster_label is None:
+            return ""
+
+        return f'{settings.prometheus_cluster_label}="{self.cluster}",' if self.cluster else ""
 
     @abc.abstractmethod
     def list_workloads(self, namespaces: Union[list[str], Literal["*"]]) -> list[K8sWorkload]:
@@ -54,10 +57,10 @@ class BaseKindLoader(abc.ABC):
             f"""
                 avg by(resource) (
                     kube_pod_container_resource_limits{{
+                        {self.cluster_selector}
                         namespace="{namespace}",
                         pod=~"{'|'.join(pods)}",
                         container="{container_name}"
-                        {self.cluster_selector}
                     }}
                 )
             """
@@ -66,10 +69,10 @@ class BaseKindLoader(abc.ABC):
             f"""
                 avg by(resource) (
                     kube_pod_container_resource_requests{{
+                        {self.cluster_selector}
                         namespace="{namespace}",
                         pod=~"{'|'.join(pods)}",
                         container="{container_name}"
-                        {self.cluster_selector}
                     }}
                 )
             """
@@ -94,8 +97,8 @@ class BaseKindLoader(abc.ABC):
             f"""
                 count by (container) (
                     kube_pod_container_info{{
-                        pod=~"{'|'.join(pods)}"
                         {self.cluster_selector}
+                        pod=~"{'|'.join(pods)}"
                     }}
                 )
             """

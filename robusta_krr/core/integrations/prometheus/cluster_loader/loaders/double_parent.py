@@ -57,9 +57,9 @@ class DoubleParentLoader(BaseKindLoader):
             f"""
                 count by (namespace, owner_name, {subowner_label}, owner_kind) (
                     {metric_name} {{
+                        {self.cluster_selector}
                         {namespace_selector},
                         owner_kind=~"{'|'.join(kinds)}"
-                        {self.cluster_selector}
                     }}
                 )
             """
@@ -95,10 +95,10 @@ class DoubleParentLoader(BaseKindLoader):
             f"""
                 count by (namespace, owner_name, owner_kind, pod) (
                     kube_pod_owner{{
+                        {self.cluster_selector}
                         namespace="{namespace}",
                         owner_name=~"{'|'.join(subowner_names)}",
                         owner_kind="{subowner_kind}"
-                        {self.cluster_selector}
                     }}
                 )
             """
@@ -111,7 +111,7 @@ class DoubleParentLoader(BaseKindLoader):
 
         return [
             K8sWorkload(
-                cluster=self.prometheus.cluster,
+                cluster=self.cluster,
                 namespace=namespace,
                 name=name,
                 kind=kind,

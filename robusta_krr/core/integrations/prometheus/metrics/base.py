@@ -75,18 +75,6 @@ class PrometheusMetric(BaseMetric):
         if self.pods_batch_size is not None and self.pods_batch_size <= 0:
             raise ValueError("pods_batch_size must be positive")
 
-    @staticmethod
-    def get_prometheus_cluster_label() -> str:
-        """
-        Generates the cluster label for querying a centralized Prometheus
-
-        Returns:
-        str: a promql safe label string for querying the cluster.
-        """
-        if settings.prometheus_cluster_label is None:
-            return ""
-        return f', {settings.prometheus_label}="{settings.prometheus_cluster_label}"'
-
     @abc.abstractmethod
     def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         """

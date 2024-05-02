@@ -72,6 +72,18 @@ class K8sWorkload(pd.BaseModel):
         self.warnings.add(warning)
 
     @property
+    def cluster_selector(self) -> str:
+        from robusta_krr.core.models.config import settings
+
+        if settings.prometheus_label is not None:
+            return f'{settings.prometheus_cluster_label}="{settings.prometheus_label}",'
+
+        if settings.prometheus_cluster_label is None:
+            return ""
+
+        return f'{settings.prometheus_cluster_label}="{self.cluster}",' if self.cluster else ""
+
+    @property
     def current_pods_count(self) -> int:
         return len([pod for pod in self.pods if not pod.deleted])
 

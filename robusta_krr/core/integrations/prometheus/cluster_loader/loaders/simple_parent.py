@@ -26,9 +26,9 @@ class SimpleParentLoader(BaseKindLoader):
             f"""
                 count by (namespace, owner_name, owner_kind, pod) (
                     kube_pod_owner{{
+                        {self.cluster_selector}
                         {namespace_selector},
                         owner_kind=~"{'|'.join(self.kinds_to_scan)}"
-                        {self.cluster_selector}
                     }}
                 )
             """
@@ -50,9 +50,9 @@ class SimpleParentLoader(BaseKindLoader):
                 f"""
                     count by (namespace, job_name) (
                         kube_job_owner{{
+                            {self.cluster_selector}
                             {namespace_selector},
                             owner_kind="CronJob"
-                            {self.cluster_selector}
                         }}
                     )
                 """
@@ -72,7 +72,7 @@ class SimpleParentLoader(BaseKindLoader):
 
         return [
             K8sWorkload(
-                cluster=self.prometheus.cluster,
+                cluster=self.cluster,
                 namespace=namespace,
                 name=name,
                 kind=kind,
