@@ -7,6 +7,11 @@ import pytest
 
 from robusta_krr.api.models import K8sWorkload, PodData, ResourceAllocations
 from robusta_krr.strategies.simple import SimpleStrategy, SimpleStrategySettings
+from robusta_krr.core.integrations.prometheus.connector import PrometheusConnector
+from robusta_krr.core.integrations.prometheus.metrics_service.prometheus_metrics_service import PrometheusMetricsService
+from robusta_krr.core.models.config import Config
+from robusta_krr.core.integrations.kubernetes.cluster_loader import KubeAPIClusterLoader, KubeAPIWorkloadLoader
+
 
 TEST_OBJECT = K8sWorkload(
     cluster="mock-cluster",
@@ -28,8 +33,9 @@ TEST_OBJECT = K8sWorkload(
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_list_clusters():
-    with patch(
-        "robusta_krr.core.integrations.kubernetes.KubernetesLoader.list_clusters",
+    with patch.object(
+        KubeAPIClusterLoader,
+        "list_clusters",
         new=AsyncMock(return_value=[TEST_OBJECT.cluster]),
     ):
         yield
@@ -37,8 +43,9 @@ def mock_list_clusters():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_list_scannable_objects():
-    with patch(
-        "robusta_krr.core.integrations.kubernetes.KubernetesLoader.list_scannable_objects",
+    with patch.object(
+        KubeAPIWorkloadLoader,
+        "list_workloads",
         new=AsyncMock(return_value=[TEST_OBJECT]),
     ):
         yield
@@ -46,8 +53,9 @@ def mock_list_scannable_objects():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_load_kubeconfig():
-    with patch("robusta_krr.core.models.config.Config.load_kubeconfig", return_value=None):
-        yield
+    with patch.object(Config, "load_kubeconfig", return_value=None):
+        with patch.object(Config, "get_kube_client", return_value=None):
+            yield
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -60,8 +68,9 @@ def mock_prometheus_loader():
     settings = SimpleStrategySettings()
     strategy = SimpleStrategy(settings)
 
-    with patch(
-        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.gather_data",
+    with patch.object(
+        PrometheusConnector,
+        "gather_data",
         new=AsyncMock(
             return_value={
                 metric.__name__: {pod.name: metric_points_data for pod in TEST_OBJECT.pods}
@@ -75,8 +84,9 @@ def mock_prometheus_loader():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_prometheus_load_pods():
-    with patch(
-        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.load_pods",
+    with patch.object(
+        PrometheusConnector,
+        "load_pods",
         new=AsyncMock(
             return_value=TEST_OBJECT.pods,
         ),
@@ -92,13 +102,15 @@ def mock_prometheus_get_history_range():
         start = now - history_duration
         return start, now
 
-    with patch(
-        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.get_history_range", get_history_range
-    ):
+    with patch.object(PrometheusConnector, "get_history_range", get_history_range):
         yield
 
 
 @pytest.fixture(autouse=True, scope="session")
-def mock_prometheus_init():
-    with patch("robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.__init__", return_value=None):
-        yield
+def mock_prometheus_connector_connect():
+    def _connect(self, loader) -> None:
+        self.loader = loader
+
+    with patch.object(PrometheusConnector, "_connect", _connect):
+        with patch.object(PrometheusMetricsService, "discover", return_value=None):
+            yield
