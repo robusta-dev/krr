@@ -15,7 +15,7 @@ from robusta_krr.core.integrations.prometheus.connector import PrometheusConnect
 from robusta_krr.core.integrations.prometheus.metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.exceptions import CriticalRunnerException
-from robusta_krr.core.models.objects import HPAData, K8sWorkload, KindLiteral, PodData
+from robusta_krr.core.models.objects import HPAData, HPAKey, K8sWorkload, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
 
 
@@ -34,14 +34,12 @@ from .loaders import (
 
 logger = logging.getLogger("krr")
 
-HPAKey = tuple[str, str, str]
-
 
 class KubeAPIClusterLoader(BaseClusterLoader):
     # NOTE: For KubeAPIClusterLoader we have to first connect to read kubeconfig
     # We do not need to connect to Prometheus from here, as we query all data from Kubernetes API
     # Also here we might have different Prometeus instances for different clusters
-    
+
     def __init__(self) -> None:
         try:
             settings.load_kubeconfig()
@@ -89,7 +87,7 @@ class KubeAPIClusterLoader(BaseClusterLoader):
     @cache
     def get_workload_loader(self, cluster: Optional[str]) -> KubeAPIWorkloadLoader:
         return KubeAPIWorkloadLoader(cluster)
-    
+
     @cache
     def get_prometheus(self, cluster: Optional[str]) -> PrometheusConnector:
         connector = PrometheusConnector(cluster=cluster)
@@ -173,7 +171,7 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
             kind=kind,
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
-            hpa=self._hpa_list.get((namespace, kind, name)),
+            hpa=self._hpa_list.get(HPAKey(namespace, kind, name)),
         )
         obj._api_resource = item
         return obj
@@ -260,15 +258,13 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
         )
 
         return {
-            (
+            HPAKey(
                 hpa.metadata.namespace,
                 hpa.spec.scale_target_ref.kind,
                 hpa.spec.scale_target_ref.name,
             ): HPAData(
                 min_replicas=hpa.spec.min_replicas,
                 max_replicas=hpa.spec.max_replicas,
-                current_replicas=hpa.status.current_replicas,
-                desired_replicas=hpa.status.desired_replicas,
                 target_cpu_utilization_percentage=hpa.spec.target_cpu_utilization_percentage,
                 target_memory_utilization_percentage=None,
             )
@@ -301,15 +297,13 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
             )
 
         return {
-            (
+            HPAKey(
                 hpa.metadata.namespace,
                 hpa.spec.scale_target_ref.kind,
                 hpa.spec.scale_target_ref.name,
             ): HPAData(
                 min_replicas=hpa.spec.min_replicas,
                 max_replicas=hpa.spec.max_replicas,
-                current_replicas=hpa.status.current_replicas,
-                desired_replicas=hpa.status.desired_replicas,
                 target_cpu_utilization_percentage=__get_metric(hpa, "cpu"),
                 target_memory_utilization_percentage=__get_metric(hpa, "memory"),
             )

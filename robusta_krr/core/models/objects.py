@@ -19,11 +19,21 @@ class PodData(pd.BaseModel):
         return hash(self.name)
 
 
+class HPAKey(pd.BaseModel):
+    namespace: str
+    kind: str
+    name: str
+
+    class Config:
+        allow_mutation = False
+
+    def __hash__(self) -> int:
+        return hash((self.namespace, self.kind, self.name))
+
+
 class HPAData(pd.BaseModel):
     min_replicas: Optional[int]
     max_replicas: int
-    current_replicas: Optional[int]
-    desired_replicas: int
     target_cpu_utilization_percentage: Optional[float]
     target_memory_utilization_percentage: Optional[float]
 
