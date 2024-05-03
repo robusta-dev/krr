@@ -171,7 +171,7 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
             kind=kind,
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
-            hpa=self._hpa_list.get(HPAKey(namespace, kind, name)),
+            hpa=self._hpa_list.get(HPAKey(namespace=namespace, kind=kind, name=name)),
         )
         obj._api_resource = item
         return obj
@@ -259,9 +259,9 @@ class KubeAPIWorkloadLoader(BaseWorkloadLoader, IListPodsFallback):
 
         return {
             HPAKey(
-                hpa.metadata.namespace,
-                hpa.spec.scale_target_ref.kind,
-                hpa.spec.scale_target_ref.name,
+                namespace=hpa.metadata.namespace,
+                kind=hpa.spec.scale_target_ref.kind,
+                name=hpa.spec.scale_target_ref.name,
             ): HPAData(
                 min_replicas=hpa.spec.min_replicas,
                 max_replicas=hpa.spec.max_replicas,
