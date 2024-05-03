@@ -39,7 +39,7 @@ def generate_prometheus_config(
         credentials = credentials.get_frozen_credentials()
         region = settings.eks_managed_prom_region if settings.eks_managed_prom_region else session.region_name
         access_key = settings.eks_access_key if settings.eks_access_key else credentials.access_key
-        secret_key = settings.eks_secret_key if settings.eks_secret_key else credentials.secret_key
+        secret_key = settings.eks_secret_key.get_secret_value() if settings.eks_secret_key else credentials.secret_key
         service_name = settings.eks_service_name if settings.eks_secret_key else "aps"
         if not region:
             raise Exception("No eks region specified")
@@ -53,7 +53,7 @@ def generate_prometheus_config(
         )
     # coralogix config
     if settings.coralogix_token:
-        return CoralogixPrometheusConfig(**baseconfig, prometheus_token=settings.coralogix_token)
+        return CoralogixPrometheusConfig(**baseconfig, prometheus_token=settings.coralogix_token.get_secret_value())
     if isinstance(metrics_service, VictoriaMetricsService):
         return VictoriaMetricsPrometheusConfig(**baseconfig)
     return PrometheusConfig(**baseconfig)

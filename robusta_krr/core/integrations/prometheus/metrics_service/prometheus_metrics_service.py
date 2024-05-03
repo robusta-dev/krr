@@ -65,7 +65,9 @@ class PrometheusMetricsService(MetricsService):
 
         logger.info(f"Trying to connect to {self.name()} for {self.cluster} cluster")
 
-        self.auth_header = settings.prometheus_auth_header
+        self.auth_header = (
+            settings.prometheus_auth_header.get_secret_value() if settings.prometheus_auth_header else None
+        )
         self.ssl_enabled = settings.prometheus_ssl_enabled
 
         if settings.openshift:
@@ -92,7 +94,7 @@ class PrometheusMetricsService(MetricsService):
 
         logger.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 
-        headers = settings.prometheus_other_headers
+        headers = {k: v.get_secret_value() for k, v in settings.prometheus_other_headers.items()}
         headers |= self.additional_headers
 
         if self.auth_header:
@@ -245,7 +247,9 @@ class PrometheusMetricsService(MetricsService):
                     }}[{period_literal}]
                 """
             )
-            pod_owners = {repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers}
+            pod_owners = {
+                repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers
+            }
             pod_owner_kind = "ReplicationController"
 
             del replication_controllers

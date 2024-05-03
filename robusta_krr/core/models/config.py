@@ -35,18 +35,18 @@ class Config(pd.BaseSettings):
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
-    prometheus_auth_header: Optional[str] = pd.Field(None)
-    prometheus_other_headers: dict[str, str] = pd.Field(default_factory=dict)
+    prometheus_auth_header: Optional[pd.SecretStr] = pd.Field(None)
+    prometheus_other_headers: dict[str, pd.SecretStr] = pd.Field(default_factory=dict)
     prometheus_ssl_enabled: bool = pd.Field(False)
     prometheus_cluster_label: Optional[str] = pd.Field(None)
     prometheus_label: Optional[str] = pd.Field(None)
     eks_managed_prom: bool = pd.Field(False)
     eks_managed_prom_profile_name: Optional[str] = pd.Field(None)
     eks_access_key: Optional[str] = pd.Field(None)
-    eks_secret_key: Optional[str] = pd.Field(None)
+    eks_secret_key: Optional[pd.SecretStr] = pd.Field(None)
     eks_service_name: Optional[str] = pd.Field(None)
     eks_managed_prom_region: Optional[str] = pd.Field(None)
-    coralogix_token: Optional[str] = pd.Field(None)
+    coralogix_token: Optional[pd.SecretStr] = pd.Field(None)
     openshift: bool = pd.Field(False)
 
     # Threading settings
@@ -169,6 +169,10 @@ class Config(pd.BaseSettings):
         )
         logging.getLogger("").setLevel(logging.CRITICAL)
         logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
+
+    @staticmethod
+    def get_config() -> Optional[Config]:
+        return _config
 
 
 # NOTE: This class is just a proxy for _config.
