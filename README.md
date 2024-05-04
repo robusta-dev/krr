@@ -67,7 +67,7 @@ Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resou
 [![Used to send data to KRR](./images/krr-datasources.svg)](#data-source-integrations)
 
 
-_View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Google Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure Managed Prometheus](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus) and [Grafana Cloud](#grafana-cloud-managed-prometheus)_
+_View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Thanos](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Victoria Metrics](#prometheus-victoria-metrics-and-thanos-auto-discovery), [Google Managed Prometheus](./docs/google-cloud-managed-service-for-prometheus.md), [Amazon Managed Prometheus](#amazon-managed-prometheus), [Azure Managed Prometheus](#azure-managed-prometheus), [Coralogix](#coralogix-managed-prometheus),[Grafana Cloud](#grafana-cloud-managed-prometheus) and [Grafana Mimir](#grafana-mimir-auto-discovery)_
 
 
 
@@ -196,6 +196,7 @@ Setup KRR for...
 - [Amazon Managed Prometheus](#amazon-managed-prometheus)
 - [Coralogix Managed Prometheus](#coralogix-managed-prometheus)
 - [Grafana Cloud Managed Prometheus](#grafana-cloud-managed-prometheus)
+- [Grafana Mimir](#grafana-mimir-auto-discovery)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -382,7 +383,6 @@ Find about how KRR tries to find the default Prometheus to connect <a href="#pro
 
 
 
-
 ## Data Source Integrations
 <details id="prometheus-victoria-metrics-and-thanos-auto-discovery"><summary> Prometheus, Victoria Metrics and Thanos auto-discovery</summary>
 
@@ -461,6 +461,14 @@ python krr.py simple --namespace default -p PROMETHEUS_URL --prometheus-auth-hea
 
 </details>
 
+<details id="google-managed-prometheus">
+<summary>Google Managed Prometheus (GMP)</summary>
+
+Please find the detailed GMP usage instructions [here](https://github.com/robusta-dev/krr/blob/main/docs/google-cloud-managed-service-for-prometheus.md)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+</details>
 
 <details id="amazon-managed-prometheus">
 <summary>Amazon Managed Prometheus</summary>
@@ -517,7 +525,20 @@ python krr.py simple -p $PROM_URL --prometheus-auth-header "Bearer ${PROM_USER}:
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 </details>
-</p>
+
+<details id="grafana-mimir-auto-discovery">
+<summary> Grafana Mimir auto-discovery</summary>
+
+By default, KRR will try to auto-discover the running Grafana Mimir.
+
+For discovering Prometheus it scans services for those labels:
+```python
+  "app.kubernetes.io/name=mimir,app.kubernetes.io/component=query-frontend"
+```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+</details>
 
 ## Integrations
 
