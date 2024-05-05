@@ -157,6 +157,18 @@ You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-o
 </details>
 
 <details>
+  <summary>Airgapped Installation (Offline Environments)</summary>
+  
+You can download pre-built binaries from <a href="https://github.com/robusta-dev/krr/releases">Releases</a> or use the prebuilt Docker container. For example, the container for version 1.8.3 is:
+
+```
+us-central1-docker.pkg.dev/genuine-flight-317411/devel/krr:v1.8.3
+```
+
+We do **not** recommend installing KRR from source in airgapped environments due to the headache of installing Python dependencies. Use one of the above methods instead and contact us (via Slack, GitHub issues, or email) if you need assistance.
+</details>
+
+<details>
   <summary>From Source</summary>
 
 1. Make sure you have [Python 3.9](https://www.python.org/downloads/) (or greater) installed
@@ -313,6 +325,16 @@ krr simple --logtostderr -f yaml > result.yaml
   <summary>Centralized Prometheus (multi-cluster)</summary>
   <p ><a href="#scanning-with-a-centralized-prometheus">See below on filtering output from a centralized prometheus, so it matches only one cluster</a></p>
 
+</details>
+
+<details>
+  <summary>Prometheus Authentication</summary>
+
+KRR supports all known authentication schemes for Prometheus, VictoriaMetrics, Coralogix, and other Prometheus compatible metric stores.
+
+Refer to `krr simple --help`, and look at the flags `--prometheus-url`, `--prometheus-auth-header`, `--prometheus-headers` `--prometheus-ssl-enabled`, `--coralogix-token`, and the various `--eks-*` flags.
+
+If you need help, contact us on Slack, email, or by opening a GitHub issue.
 </details>
 
 <details>
