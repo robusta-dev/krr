@@ -7,8 +7,9 @@ from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
 from .prometheus_metrics_service import PrometheusMetricsService
 
+
 class MimirMetricsDiscovery(MetricsServiceDiscovery):
-    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self) -> Optional[str]:
         """
         Finds the Mimir Metrics URL using selectors.
         Args:

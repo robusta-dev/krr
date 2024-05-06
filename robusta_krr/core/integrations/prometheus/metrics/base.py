@@ -15,7 +15,7 @@ from prometrix import CustomPrometheusConnect
 from robusta_krr.core.abstract.metrics import BaseMetric
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import settings
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sWorkload
 
 
 class PrometheusSeries(TypedDict):
@@ -75,19 +75,8 @@ class PrometheusMetric(BaseMetric):
         if self.pods_batch_size is not None and self.pods_batch_size <= 0:
             raise ValueError("pods_batch_size must be positive")
 
-    def get_prometheus_cluster_label(self) -> str:
-        """
-        Generates the cluster label for querying a centralized Prometheus
-
-        Returns:
-        str: a promql safe label string for querying the cluster.
-        """
-        if settings.prometheus_cluster_label is None:
-            return ""
-        return f', {settings.prometheus_label}="{settings.prometheus_cluster_label}"'
-
     @abc.abstractmethod
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+    def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         """
         This method should be implemented by all subclasses to provide a query string to fetch metrics.
 
@@ -152,7 +141,7 @@ class PrometheusMetric(BaseMetric):
         return await loop.run_in_executor(self.executor, lambda: self._query_prometheus_sync(data))
 
     async def load_data(
-        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
+        self, object: K8sWorkload, period: datetime.timedelta, step: datetime.timedelta
     ) -> PodsTimeData:
         """
         Asynchronous method that loads metric data for a specific object.

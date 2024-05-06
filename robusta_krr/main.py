@@ -15,7 +15,7 @@ from typer.models import OptionInfo
 from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import BaseStrategy
-from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.config import Config, LoadingMode
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
 
@@ -53,19 +53,27 @@ def load_commands() -> None:
                     "--kubeconfig",
                     "-k",
                     help="Path to kubeconfig file. If not provided, will attempt to find it.",
+                    rich_help_panel="KubeAPI Mode Settings",
+                ),
+                mode: LoadingMode = typer.Option(
+                    LoadingMode.KUBEAPI,
+                    "--mode",
+                    "-m",
+                    help="Loading mode. KubeAPI mode requires a kubeconfig and supports auto-discovery. Prometheus mode requires to pass a --prometheus-url.",
+                    case_sensitive=False,
                     rich_help_panel="Kubernetes Settings",
                 ),
                 impersonate_user: Optional[str] = typer.Option(
                     None,
                     "--as",
                     help="Impersonate a user, just like `kubectl --as`. For example, system:serviceaccount:default:krr-account.",
-                    rich_help_panel="Kubernetes Settings",
+                    rich_help_panel="KubeAPI Mode Settings",
                 ),
                 impersonate_group: Optional[str] = typer.Option(
                     None,
                     "--as-group",
                     help="Impersonate a user inside of a group, just like `kubectl --as-group`. For example, system:authenticated.",
-                    rich_help_panel="Kubernetes Settings",
+                    rich_help_panel="KubeAPI Mode Settings",
                 ),
                 clusters: List[str] = typer.Option(
                     None,
@@ -73,13 +81,13 @@ def load_commands() -> None:
                     "--cluster",
                     "-c",
                     help="List of clusters to run on. By default, will run on the current cluster. Use --all-clusters to run on all clusters.",
-                    rich_help_panel="Kubernetes Settings",
+                    rich_help_panel="KubeAPI Mode Settings",
                 ),
                 all_clusters: bool = typer.Option(
                     False,
                     "--all-clusters",
                     help="Run on all clusters. Overrides --context.",
-                    rich_help_panel="Kubernetes Settings",
+                    rich_help_panel="KubeAPI Mode Settings",
                 ),
                 namespaces: List[str] = typer.Option(
                     None,
@@ -100,7 +108,7 @@ def load_commands() -> None:
                     "--selector",
                     "-s",
                     help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -s key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.",
-                    rich_help_panel="Kubernetes Settings",
+                    rich_help_panel="KubeAPI Mode Settings",
                 ),
                 prometheus_url: Optional[str] = typer.Option(
                     None,
@@ -132,7 +140,7 @@ def load_commands() -> None:
                     None,
                     "--prometheus-cluster-label",
                     "-l",
-                    help="The label in prometheus for your cluster.(Only relevant for centralized prometheus)",
+                    help="The label in prometheus for your cluster. (Only relevant for centralized prometheus)",
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_label: str = typer.Option(
@@ -250,6 +258,7 @@ def load_commands() -> None:
                 try:
                     config = Config(
                         kubeconfig=kubeconfig,
+                        mode=mode,
                         impersonate_user=impersonate_user,
                         impersonate_group=impersonate_group,
                         clusters="*" if all_clusters else clusters,

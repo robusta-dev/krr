@@ -9,10 +9,9 @@ import numpy as np
 import pydantic as pd
 from numpy.typing import NDArray
 
-from robusta_krr.core.models.result import K8sObjectData, ResourceType
+from robusta_krr.core.models.result import K8sWorkload, ResourceType
 
 if TYPE_CHECKING:
-    from robusta_krr.core.abstract.metrics import BaseMetric  # noqa: F401
     from robusta_krr.core.integrations.prometheus.metrics import PrometheusMetric
 
 SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
@@ -133,7 +132,7 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     # Abstract method that needs to be implemented by subclass.
     # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
     @abc.abstractmethod
-    def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
+    def run(self, history_data: MetricsPodData, object_data: K8sWorkload) -> RunResult:
         pass
 
     # This method is intended to return a strategy by its name.
@@ -167,6 +166,6 @@ __all__ = [
     "StrategySettings",
     "PodsTimeData",
     "MetricsPodData",
-    "K8sObjectData",
+    "K8sWorkload",
     "ResourceType",
 ]

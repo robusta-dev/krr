@@ -81,6 +81,7 @@ class ServiceDiscovery:
             self.find_ingress_host(label_selector)
             ingress_url = self.find_ingress_host(label_selector)
             if ingress_url:
+                logger.debug(f"Found ingress with label selector {label_selector}")
                 return ingress_url
 
         return None
@@ -88,5 +89,5 @@ class ServiceDiscovery:
 
 class MetricsServiceDiscovery(ServiceDiscovery, ABC):
     @abstractmethod
-    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self) -> Optional[str]:
         pass

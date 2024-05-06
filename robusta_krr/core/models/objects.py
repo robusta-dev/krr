@@ -19,11 +19,21 @@ class PodData(pd.BaseModel):
         return hash(self.name)
 
 
+class HPAKey(pd.BaseModel):
+    namespace: str
+    kind: str
+    name: str
+
+    class Config:
+        allow_mutation = False
+
+    def __hash__(self) -> int:
+        return hash((self.namespace, self.kind, self.name))
+
+
 class HPAData(pd.BaseModel):
     min_replicas: Optional[int]
     max_replicas: int
-    current_replicas: Optional[int]
-    desired_replicas: int
     target_cpu_utilization_percentage: Optional[float]
     target_memory_utilization_percentage: Optional[float]
 
@@ -35,7 +45,7 @@ PodWarning = Literal[
 ]
 
 
-class K8sObjectData(pd.BaseModel):
+class K8sWorkload(pd.BaseModel):
     # NOTE: Here None means that we are running inside the cluster
     cluster: Optional[str]
     name: str
@@ -52,11 +62,26 @@ class K8sObjectData(pd.BaseModel):
     def __str__(self) -> str:
         return f"{self.kind} {self.namespace}/{self.name}/{self.container}"
 
+    def __repr__(self) -> str:
+        return f"<K8sWorkload {self}>"
+
     def __hash__(self) -> int:
         return hash(str(self))
 
     def add_warning(self, warning: PodWarning) -> None:
         self.warnings.add(warning)
+
+    @property
+    def cluster_selector(self) -> str:
+        from robusta_krr.core.models.config import settings
+
+        if settings.prometheus_label is not None:
+            return f'{settings.prometheus_cluster_label}="{settings.prometheus_label}",'
+
+        if settings.prometheus_cluster_label is None:
+            return ""
+
+        return f'{settings.prometheus_cluster_label}="{self.cluster}",' if self.cluster else ""
 
     @property
     def current_pods_count(self) -> int:
@@ -80,7 +105,7 @@ class K8sObjectData(pd.BaseModel):
         else:
             return self._api_resource.spec.selector
 
-    def split_into_batches(self, n: int) -> list[K8sObjectData]:
+    def split_into_batches(self, n: int) -> list[K8sWorkload]:
         """
         Batch this object into n objects, splitting the pods into batches of size n.
         """
@@ -89,7 +114,7 @@ class K8sObjectData(pd.BaseModel):
             return [self]
 
         return [
-            K8sObjectData(
+            K8sWorkload(
                 cluster=self.cluster,
                 name=self.name,
                 container=self.container,

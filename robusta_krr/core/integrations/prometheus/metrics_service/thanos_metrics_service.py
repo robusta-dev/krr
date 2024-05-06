@@ -9,7 +9,7 @@ from .prometheus_metrics_service import PrometheusMetricsService
 
 
 class ThanosMetricsDiscovery(MetricsServiceDiscovery):
-    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self) -> Optional[str]:
         """
         Finds the Thanos URL using selectors.
         Args:

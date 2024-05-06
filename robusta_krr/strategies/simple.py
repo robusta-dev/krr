@@ -5,7 +5,7 @@ import pydantic as pd
 
 from robusta_krr.core.abstract.strategies import (
     BaseStrategy,
-    K8sObjectData,
+    K8sWorkload,
     MetricsPodData,
     PodsTimeData,
     ResourceRecommendation,
@@ -103,7 +103,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         return metrics
 
     def __calculate_cpu_proposal(
-        self, history_data: MetricsPodData, object_data: K8sObjectData
+        self, history_data: MetricsPodData, object_data: K8sWorkload
     ) -> ResourceRecommendation:
         data = history_data["PercentileCPULoader"]
 
@@ -130,7 +130,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         return ResourceRecommendation(request=cpu_usage, limit=None)
 
     def __calculate_memory_proposal(
-        self, history_data: MetricsPodData, object_data: K8sObjectData
+        self, history_data: MetricsPodData, object_data: K8sWorkload
     ) -> ResourceRecommendation:
         data = history_data["MaxMemoryLoader"]
 
@@ -173,7 +173,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             request=memory_usage, limit=memory_usage, info="OOMKill detected" if oomkill_detected else None
         )
 
-    def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
+    def run(self, history_data: MetricsPodData, object_data: K8sWorkload) -> RunResult:
         return {
             ResourceType.CPU: self.__calculate_cpu_proposal(history_data, object_data),
             ResourceType.Memory: self.__calculate_memory_proposal(history_data, object_data),

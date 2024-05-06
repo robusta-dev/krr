@@ -9,7 +9,7 @@ from .prometheus_metrics_service import PrometheusMetricsService
 
 
 class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
-    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self) -> Optional[str]:
         """
         Finds the Victoria Metrics URL using selectors.
         Args:

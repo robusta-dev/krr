@@ -1,20 +1,27 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 import sys
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
-from kubernetes import config
+from kubernetes import config, client
 from kubernetes.config.config_exception import ConfigException
 from rich.console import Console
 from rich.logging import RichHandler
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+from robusta_krr.core.abstract.cluster_loader import BaseClusterLoader
 from robusta_krr.core.models.objects import KindLiteral
 
 logger = logging.getLogger("krr")
+
+
+class LoadingMode(str, Enum):
+    KUBEAPI = "kubeapi"
+    PROMETHETUS = "prometheus"
 
 
 class Config(pd.BaseSettings):
@@ -23,6 +30,7 @@ class Config(pd.BaseSettings):
 
     clusters: Union[list[str], Literal["*"], None] = None
     kubeconfig: Optional[str] = None
+    mode: LoadingMode = pd.Field(LoadingMode.KUBEAPI)
     impersonate_user: Optional[str] = None
     impersonate_group: Optional[str] = None
     namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
@@ -136,6 +144,19 @@ class Config(pd.BaseSettings):
             self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
         return self._logging_console
 
+    def create_cluster_loader(self) -> BaseClusterLoader:
+        from robusta_krr.core.integrations.prometheus.cluster_loader import PrometheusClusterLoader
+        from robusta_krr.core.integrations.kubernetes.cluster_loader import KubeAPIClusterLoader
+
+        if settings.mode == LoadingMode.KUBEAPI:
+            logger.info("Connecting using Kubernetes API, will load the kubeconfig.")
+            return KubeAPIClusterLoader()
+        elif settings.mode == LoadingMode.PROMETHETUS:
+            logger.info("Connecting using Prometheus, will load the kubeconfig.")
+            return PrometheusClusterLoader()
+        else:
+            raise NotImplementedError(f"Workload loader {settings.mode} is not implemented")
+
     def load_kubeconfig(self) -> None:
         try:
             config.load_kube_config(config_file=self.kubeconfig, context=self.context)
@@ -144,7 +165,7 @@ class Config(pd.BaseSettings):
             config.load_incluster_config()
             self.inside_cluster = True
 
-    def get_kube_client(self, context: Optional[str] = None):
+    def get_kube_client(self, context: Optional[str] = None) -> client.ApiClient:
         if context is None:
             return None
 

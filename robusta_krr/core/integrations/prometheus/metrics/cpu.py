@@ -1,4 +1,4 @@
-from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.core.models.objects import K8sWorkload
 
 from .base import PrometheusMetric, QueryType
 
@@ -10,17 +10,16 @@ class CPULoader(PrometheusMetric):
 
     query_type: QueryType = QueryType.QueryRange
 
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+    def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
-        cluster_label = self.get_prometheus_cluster_label()
         return f"""
             max(
                 rate(
                     container_cpu_usage_seconds_total{{
+                        {object.cluster_selector}
                         namespace="{object.namespace}",
                         pod=~"{pods_selector}",
                         container="{object.container}"
-                        {cluster_label}
                     }}[{step}]
                 )
             ) by (container, pod, job)
@@ -36,19 +35,18 @@ def PercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
         raise ValueError("percentile must be between 0 and 100")
 
     class PercentileCPULoader(PrometheusMetric):
-        def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
             pods_selector = "|".join(pod.name for pod in object.pods)
-            cluster_label = self.get_prometheus_cluster_label()
             return f"""
                 quantile_over_time(
                     {round(percentile / 100, 2)},
                     max(
                         rate(
                             container_cpu_usage_seconds_total{{
+                                {object.cluster_selector}
                                 namespace="{object.namespace}",
                                 pod=~"{pods_selector}",
                                 container="{object.container}"
-                                {cluster_label}
                             }}[{step}]
                         )
                     ) by (container, pod, job)
@@ -64,17 +62,16 @@ class CPUAmountLoader(PrometheusMetric):
     A metric loader for loading CPU points count.
     """
 
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+    def get_query(self, object: K8sWorkload, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
-        cluster_label = self.get_prometheus_cluster_label()
         return f"""
             count_over_time(
                 max(
                     container_cpu_usage_seconds_total{{
+                        {object.cluster_selector}
                         namespace="{object.namespace}",
                         pod=~"{pods_selector}",
                         container="{object.container}"
-                        {cluster_label}
                     }}
                 ) by (container, pod, job)
                 [{duration}:{step}]

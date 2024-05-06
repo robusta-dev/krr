@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional
+from typing_extensions import Self
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
@@ -11,7 +14,7 @@ from prometrix import PrometheusNotFound, get_custom_prometheus_connect
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.integrations import openshift
 from robusta_krr.core.models.config import settings
-from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.core.models.objects import K8sWorkload, PodData
 from robusta_krr.utils.batched import batched
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
 
@@ -23,7 +26,7 @@ logger = logging.getLogger("krr")
 
 
 class PrometheusDiscovery(MetricsServiceDiscovery):
-    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self) -> Optional[str]:
         """
         Finds the Prometheus URL using selectors.
         Args:
@@ -56,17 +59,20 @@ class PrometheusMetricsService(MetricsService):
 
     def __init__(
         self,
-        *,
+        url: str,
         cluster: Optional[str] = None,
-        api_client: Optional[ApiClient] = None,
         executor: Optional[ThreadPoolExecutor] = None,
+        api_client: Optional[ApiClient] = None,
     ) -> None:
-        super().__init__(api_client=api_client, cluster=cluster, executor=executor)
-
-        logger.info(f"Trying to connect to {self.name()} for {self.cluster} cluster")
+        self.url = url + self.url_postfix
+        self.cluster = cluster
+        self.executor = executor or ThreadPoolExecutor(settings.max_workers)
+        self.api_client = api_client
 
         self.auth_header = settings.prometheus_auth_header
         self.ssl_enabled = settings.prometheus_ssl_enabled
+
+        logger.info(f"Using {self.name()} at {self.url}" + self._for_cluster_postfix)
 
         if settings.openshift:
             logging.info("Openshift flag is set, trying to load token from service account.")
@@ -78,20 +84,6 @@ class PrometheusMetricsService(MetricsService):
             else:
                 logging.warning("Openshift token is not found, trying to connect without it.")
 
-        self.prometheus_discovery = self.service_discovery(api_client=self.api_client)
-
-        self.url = settings.prometheus_url
-        self.url = self.url or self.prometheus_discovery.find_metrics_url()
-
-        if not self.url:
-            raise PrometheusNotFound(
-                f"{self.name()} instance could not be found while scanning in {self.cluster} cluster."
-            )
-
-        self.url += self.url_postfix
-
-        logger.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
-
         headers = settings.prometheus_other_headers
         headers |= self.additional_headers
 
@@ -99,8 +91,22 @@ class PrometheusMetricsService(MetricsService):
             headers |= {"Authorization": self.auth_header}
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
+
         self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
         self.prometheus = get_custom_prometheus_connect(self.prom_config)
+
+    @classmethod
+    def discover(
+        cls,
+        api_client: ApiClient,
+        cluster: Optional[str] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
+    ) -> Self:
+        url = cls.service_discovery(api_client=api_client).find_metrics_url()
+        if not url:
+            raise PrometheusNotFound(f"{cls.name()} instance could not be found while scanning")
+
+        return cls(url, cluster, executor, api_client)
 
     def check_connection(self):
         """
@@ -112,10 +118,14 @@ class PrometheusMetricsService(MetricsService):
 
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            self.executor,
-            lambda: self.prometheus.safe_custom_query(query=query)["result"],
-        )
+        try:
+            return await loop.run_in_executor(
+                self.executor,
+                lambda: self.prometheus.safe_custom_query(query=query)["result"],
+            )
+        except PrometheusApiClientException as e:
+            logger.error(f"Error while querying Prometheus: {query}")
+            raise e
 
     async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> dict:
         loop = asyncio.get_running_loop()
@@ -177,7 +187,7 @@ class PrometheusMetricsService(MetricsService):
 
     async def gather_data(
         self,
-        object: K8sObjectData,
+        object: K8sWorkload,
         LoaderClass: type[PrometheusMetric],
         period: timedelta,
         step: timedelta = timedelta(minutes=30),
@@ -203,7 +213,7 @@ class PrometheusMetricsService(MetricsService):
 
         return data
 
-    async def load_pods(self, object: K8sObjectData, period: timedelta) -> list[PodData]:
+    async def load_pods(self, object: K8sWorkload, period: timedelta) -> list[PodData]:
         """
         List pods related to the object and add them to the object's pods list.
         Args:
@@ -245,7 +255,9 @@ class PrometheusMetricsService(MetricsService):
                     }}[{period_literal}]
                 """
             )
-            pod_owners = {repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers}
+            pod_owners = {
+                repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers
+            }
             pod_owner_kind = "ReplicationController"
 
             del replication_controllers
@@ -306,3 +318,8 @@ class PrometheusMetricsService(MetricsService):
             del pods_status_result
 
         return list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})
+
+    @property
+    def _for_cluster_postfix(self) -> str:
+        """The string postfix to be used in logging messages."""
+        return f" for {self.cluster} cluster" if self.cluster else ""
