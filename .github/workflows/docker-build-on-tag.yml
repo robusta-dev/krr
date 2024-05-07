@@ -1,6 +1,9 @@
 name: Docker Build and Push
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    tags:
+      - '*'
 
 jobs:
   build:
@@ -25,6 +28,6 @@ jobs:
         context: .
         platforms: linux/arm64,linux/amd64
         push: true
-        tags: robustadev/krr:test-image
+        tags: robustadev/krr:${{ github.ref_name }}
         build-args: |
           BUILDKIT_INLINE_CACHE=1
