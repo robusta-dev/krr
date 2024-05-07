@@ -28,6 +28,6 @@ jobs:
         context: .
         platforms: linux/arm64,linux/amd64
         push: true
-        tags: robustadev/krr:${{ github.ref_name }}
+        tags: robustadev/krr:test-image
         build-args: |
           BUILDKIT_INLINE_CACHE=1
