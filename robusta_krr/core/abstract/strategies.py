@@ -111,24 +111,15 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
         self.settings = settings
 
     def __str__(self) -> str:
-        return self._display_name.title()
-
-    @property
-    def _display_name(self) -> str:
-        return getattr(self, "display_name", self.__class__.__name__.lower().removeprefix("strategy"))
+        return self.display_name.title()
 
     @property
     def description(self) -> Optional[str]:
         """
         Generate a description for the strategy.
-        You can use the settings in the description by using the format syntax.
-        Also you can use Rich's markdown syntax to format the description.
+        You can use Rich's markdown syntax to format the description.
         """
-
-        if self.__doc__ is None:
-            return None
-
-        return f"[b]{self} Strategy[/b]\n\n" + dedent(self.__doc__.format_map(self.settings.dict())).strip()
+        raise NotImplementedError()
 
     # Abstract method that needs to be implemented by subclass.
     # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
