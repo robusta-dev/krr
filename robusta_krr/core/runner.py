@@ -293,7 +293,7 @@ class Runner:
 
         return Result(
             scans=scans,
-            description=self._strategy.description,
+            description=f"[b]{self._strategy.display_name.title()} Strategy[/b]\n\n{self._strategy.description}",
             strategy=StrategyData(
                 name=str(self._strategy).lower(),
                 settings=self._strategy.settings.dict(),
