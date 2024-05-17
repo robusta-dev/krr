@@ -11,7 +11,7 @@ from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
 
-from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
+from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult, BaseStrategy
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
 from robusta_krr.core.models.config import settings
@@ -39,11 +39,11 @@ class CriticalRunnerException(Exception): ...
 class Runner:
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
 
-    def __init__(self) -> None:
+    def __init__(self, strategy: BaseStrategy) -> None:
         self._k8s_loader = KubernetesLoader()
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
-        self._strategy = settings.create_strategy()
+        self._strategy = strategy
 
         self.errors: list[dict] = []
 
