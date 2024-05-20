@@ -241,7 +241,7 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
-- Give dev's a YAML snippet to fix the problems KRR finds
+- Give devs a YAML snippet to fix the problems KRR finds
 - Analyze impact using KRR scan history
 
   <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
