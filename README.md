@@ -86,7 +86,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Prometheus Integration**: Get recommendations based on the data you already have
 - **Explainability**: Understand how recommendations were calculated
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
-- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://home.robusta.dev/).
+- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme).
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### Why Use KRR?
@@ -234,21 +234,20 @@ Setup KRR for...
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
-<!-- USAGE EXAMPLES -->
-
 ## Free KRR UI on Robusta SaaS
 
-<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/49ea188f67c545f0ae98508b448d1a8b?sid=66f76710-0aea-4efd-949f-a5b0c234c4f9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme). You can:
 
-
-<a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b?sid=f711a327-725e-4133-8ce5-ce431a06d5e4">
-    <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
-</a>
+- Understand individual app recommendations with app usage history
+- Sort and filter recommendations by namespace, priority, and more
+- Give dev's a YAML snippet to fix the problems KRR finds
+- Analyze impact using KRR scan history
 
   <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
-      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
+      <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
   </a>
+
+<!-- USAGE EXAMPLES -->
 
 
 ## Usage
@@ -406,7 +405,7 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
 
 [_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
 
-Get a free breakdown of KRR recommendations in the [Robusta SaaS](#optional-free-saas-platform).
+Get a free breakdown of KRR recommendations in the [Robusta SaaS](#free-krr-ui-on-robusta-saas).
 
 ### Algorithm
 
@@ -596,7 +595,9 @@ With the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_s
 - Give dev's a YAML snippet to fix the problems KRR finds
 - Analyze impact using KRR scan history
 
-<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/49ea188f67c545f0ae98508b448d1a8b?sid=66f76710-0aea-4efd-949f-a5b0c234c4f9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+  <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
+      <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
+  </a>
 
 </details>
 
