@@ -242,6 +242,15 @@ Setup KRR for...
 <div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/49ea188f67c545f0ae98508b448d1a8b?sid=66f76710-0aea-4efd-949f-a5b0c234c4f9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
 
+<a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b?sid=f711a327-725e-4133-8ce5-ce431a06d5e4">
+    <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
+</a>
+
+  <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
+      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
+  </a>
+
+
 ## Usage
 
 <details>
