@@ -18,17 +18,20 @@
     <br />
     <a href="#installation"><strong>Installation</strong></a>
     .
-    <a href="#usage"><strong>Usage</strong></a>
-    ·
     <a href="#how-krr-works"><strong>How KRR works</strong></a>
     .
     <a href="#slack-integration"><strong>Slack Integration</strong></a>
+    .
+    <a href="#free-krr-ui-on-robusta-saas"><strong>KRR UI on Robusta Cloud</strong></a>
     <br />
+    <a href="#usage">Usage</a>
+    ·
     <a href="https://github.com/robusta-dev/krr/issues">Report Bug</a>
     ·
     <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
     ·
     <a href="#support">Support</a>
+    <br /> Like KRR? Please ⭐ this repository to show your support! 
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
@@ -60,7 +63,7 @@
 
 ## About The Project
 
-Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for optimizing resource allocation in Kubernetes clusters. It gathers pod usage data from Prometheus and recommends requests and limits for CPU and memory. This reduces costs and improves performance.
+Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for **optimizing resource allocation** in Kubernetes clusters. It gathers pod usage data from Prometheus and **recommends requests and limits** for CPU and memory. This **reduces costs and improves performance**.
 
 ### Data Integrations
 
@@ -97,6 +100,23 @@ By right-sizing your containers with KRR, you can save an average of 69% on clou
 
 Read more about [how KRR works](#how-krr-works) and [KRR vs Kubernetes VPA](#difference-with-kubernetes-vpa)
 
+## Difference with Kubernetes VPA
+
+| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                           |
+| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
+| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
+| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
+| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
+| Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
+| Explainability 📖           | ✅ See graphs explaining the recommendations                                                               | ❌ Not supported                                            |
+| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
+| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
+| Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
+| Default History 🕒          | 14 days                                                                                                    | 8 days                                             |
+
+
 <!-- GETTING STARTED -->
 
 ## Installation
@@ -119,6 +139,7 @@ If you have a different setup, make sure the following metrics exist:
 
 _Note: If one of last three metrics is absent KRR will still work, but it will only consider currently-running pods when calculating recommendations. Historic pods that no longer exist in the cluster will not be taken into consideration._
 </details>
+
 
 ### Installation Methods
 
@@ -212,7 +233,14 @@ Setup KRR for...
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+
+
 <!-- USAGE EXAMPLES -->
+
+## Free KRR UI on Robusta SaaS
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/49ea188f67c545f0ae98508b448d1a8b?sid=66f76710-0aea-4efd-949f-a5b0c234c4f9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
 
 ## Usage
 
@@ -385,21 +413,6 @@ Find about how KRR tries to find the default Prometheus to connect <a href="#pro
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Difference with Kubernetes VPA
-
-| Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                           |
-| Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
-| Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
-| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
-| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
-| Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
-| Explainability 📖           | ✅ See graphs explaining the recommendations                                                               | ❌ Not supported                                            |
-| Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
-| Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
-| Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
-| Default History 🕒          | 14 days                                                                                                    | 8 days                                             |
 
 <!-- ADVANCED USAGE EXAMPLES -->
 
@@ -567,13 +580,14 @@ For discovering Prometheus it scans services for those labels:
 <details id="free-ui-for-krr-recommendations">
 <summary>Free UI for KRR recommendations</summary>
 
-With the [free Robusta SaaS platform](https://home.robusta.dev/) you can:
+With the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme) you can:
 
-- See why KRR recommends what it does
+- Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
-- Copy a YAML snippet to fix the problems KRR finds
+- Give dev's a YAML snippet to fix the problems KRR finds
+- Analyze impact using KRR scan history
 
-![Robusta UI Screen Shot][ui-screenshot]
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="https://www.loom.com/embed/49ea188f67c545f0ae98508b448d1a8b?sid=66f76710-0aea-4efd-949f-a5b0c234c4f9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
 </details>
 
