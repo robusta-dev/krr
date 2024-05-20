@@ -98,7 +98,7 @@ According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kub
 
 By right-sizing your containers with KRR, you can save an average of 69% on cloud costs.
 
-Read more about [how KRR works](#how-krr-works) and [KRR vs Kubernetes VPA](#difference-with-kubernetes-vpa)
+Read more about [how KRR works](#how-krr-works)
 
 ## Difference with Kubernetes VPA
 
@@ -115,11 +115,12 @@ Read more about [how KRR works](#how-krr-works) and [KRR vs Kubernetes VPA](#dif
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
 | Default History 🕒          | 14 days                                                                                                    | 8 days                                             |
+| Supports HPA 🔥          | ✅ Enable using `--allow-hpa` flag                                                                                                 | ❌ Not supported                                         |
 
 
 <!-- GETTING STARTED -->
 
-## Installation
+## Installation 
 
 ### Requirements
 
