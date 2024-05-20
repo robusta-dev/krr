@@ -588,7 +588,7 @@ For discovering Prometheus it scans services for those labels:
 <details id="free-ui-for-krr-recommendations">
 <summary>Free UI for KRR recommendations</summary>
 
-With the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme) you can:
+We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme). You can:
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
