@@ -25,7 +25,7 @@ from robusta_krr.core.integrations.prometheus.metrics import (
 
 
 class SimpleStrategySettings(StrategySettings):
-    cpu_percentile: float = pd.Field(99, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
+    cpu_percentile: float = pd.Field(95, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
     memory_buffer_percentage: float = pd.Field(
         15, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
