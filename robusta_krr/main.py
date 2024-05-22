@@ -186,9 +186,8 @@ def load_commands() -> None:
                 openshift: bool = typer.Option(
                     False,
                     "--openshift",
-                    help="Used when running by Robusta inside an OpenShift cluster.",
+                    help="Connect to Prometheus with a token read from /var/run/secrets/kubernetes.io/serviceaccount/token - recommended when running KRR inside an OpenShift cluster",
                     rich_help_panel="Prometheus Openshift Settings",
-                    hidden=True,
                 ),
                 cpu_min_value: int = typer.Option(
                     10,
