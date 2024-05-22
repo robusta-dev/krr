@@ -8,6 +8,7 @@ from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import RecommendationValue, ResourceAllocations, ResourceType
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.severity import Severity
+from robusta_krr.core.models.config import Config
 
 
 class Recommendation(pd.BaseModel):
@@ -64,6 +65,7 @@ class Result(pd.BaseModel):
     description: Optional[str] = None
     strategy: StrategyData
     errors: list[dict[str, Any]] = pd.Field(default_factory=list)
+    config: Optional[Config] = pd.Field(default_factory=Config.get_config)
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
