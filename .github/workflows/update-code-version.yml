@@ -18,6 +18,12 @@ jobs:
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
+      - name: Fetch all branches
+        run: git fetch --all
+
+      - name: Set up the remote repository
+        run: git remote add origin https://github.com/${{ github.repository }}.git
+
       - name: Select main branch
         run: git checkout origin/main
 
