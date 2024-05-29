@@ -79,7 +79,6 @@ jobs:
         GITHUB_REF_NAME: ${{ github.ref_name }}
 
     - name: Build with PyInstaller
-      if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
         pyinstaller krr.py
@@ -88,7 +87,7 @@ jobs:
         cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Zip the application (Unix)
-      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest'
       run: |
         cd dist
         zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip krr
