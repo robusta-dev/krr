@@ -88,7 +88,6 @@ jobs:
         cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Build with PyInstaller
-      continue-on-error: true
       if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
