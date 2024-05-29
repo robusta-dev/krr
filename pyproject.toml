@@ -23,15 +23,19 @@ plugins = "numpy.typing.mypy_plugin,pydantic.mypy"
 krr = "robusta_krr.main:run"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<=3.12.3"
 typer = { extras = ["all"], version = "^0.7.0" }
 pydantic = "^1.10.7"
 kubernetes = "^26.1.0"
 prometheus-api-client = "0.5.3"
-numpy = "^1.24.2"
+numpy = ">=1.26.4,<1.27.0"
 alive-progress = "^3.1.2"
 prometrix = "^0.1.17"
 slack-sdk = "^3.21.3"
+pandas = "2.2.2"
+requests = "2.32.0"
+pyyaml = "6.0.1"
+typing-extensions = "4.6.0"
 
 
 
