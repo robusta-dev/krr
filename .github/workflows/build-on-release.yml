@@ -88,7 +88,7 @@ jobs:
         cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Build with PyInstaller
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os != 'macos-latest'
       shell: bash
       run: |
         pyinstaller krr.py
