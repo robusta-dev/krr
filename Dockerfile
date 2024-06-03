@@ -5,6 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
 
+# Install system dependencies required for Poetry
+RUN apt-get update && \
+    dpkg --add-architecture arm64
+
 # Set the working directory
 WORKDIR /app
 
