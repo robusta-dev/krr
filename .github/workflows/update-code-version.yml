@@ -18,6 +18,9 @@ jobs:
       - name: Extract version from tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
+      - name: Fetch all branches
+        run: git fetch --all
+
       - name: Select main branch
         run: git checkout origin/main
 

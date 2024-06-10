@@ -82,13 +82,13 @@ jobs:
       if: matrix.os == 'macos-latest'
       shell: bash
       run: |
-        pyinstaller --target-architecture universal2 krr.py
+        pyinstaller --target-architecture arm64 krr.py
         mkdir -p ./dist/krr/grapheme/data
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
         cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Build with PyInstaller
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os != 'macos-latest'
       shell: bash
       run: |
         pyinstaller krr.py
