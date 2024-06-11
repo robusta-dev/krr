@@ -32,6 +32,22 @@ jobs:
         build-args: |
           BUILDKIT_INLINE_CACHE=1
 
+    - name: Set up gcloud CLI
+      uses: google-github-actions/setup-gcloud@v0.2.0
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: genuine-flight-317411
+        export_default_credentials: true
+
+    # Configure Docker to use the gcloud command-line tool as a credential helper for authentication	
+    - name: Configure Docker	
+      run: |-	
+        gcloud auth configure-docker us-central1-docker.pkg.dev	
+
+    - name: Verify gcloud configuration	
+      run: |-	
+        gcloud config get-value project
+
     - name: Release Docker to old repo
       run: |-
         docker buildx build \
