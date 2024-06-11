@@ -31,3 +31,13 @@ jobs:
         tags: robustadev/krr:${{ github.ref_name }}
         build-args: |
           BUILDKIT_INLINE_CACHE=1
+
+    - name: Release Docker to old repo
+      run: |-
+        docker buildx build \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        --platform linux/arm64,linux/amd64 \
+        --cache-from robustadev/krr:${{ github.ref_name }} \
+        --tag us-central1-docker.pkg.dev/genuine-flight-317411/devel/krr:${{ github.ref_name }} \
+        --push \
+        .
