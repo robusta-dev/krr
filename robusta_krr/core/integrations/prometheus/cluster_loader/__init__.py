@@ -37,20 +37,20 @@ class PrometheusClusterLoader(BaseClusterLoader):
         self.prometheus.connect(settings.prometheus_url)
 
     async def list_clusters(self) -> Optional[list[str]]:
-        if settings.prometheus_cluster_label is None:
+        if settings.prometheus_label is None:
             logger.info("Assuming that Prometheus contains only one cluster.")
             logger.info("If you have multiple clusters in Prometheus, please provide the `-l` flag.")
             return None
 
         clusters = await self.prometheus.loader.query(
             f"""
-                avg by({settings.prometheus_cluster_label}) (
+                avg by({settings.prometheus_label}) (
                     kube_pod_container_resource_limits
                 )
             """
         )
 
-        return [cluster["metric"][settings.prometheus_cluster_label] for cluster in clusters]
+        return [cluster["metric"][settings.prometheus_label] for cluster in clusters]
 
     @cache
     def get_workload_loader(self, cluster: str) -> PrometheusWorkloadLoader:
