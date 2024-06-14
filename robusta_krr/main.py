@@ -234,7 +234,7 @@ def load_commands() -> None:
                     rich_help_panel="Logging Settings",
                 ),
                 file_output: Optional[str] = typer.Option(
-                    None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"
+                    None, "--fileoutput", help="Filename to write output to (if not specified, file output is disabled)", rich_help_panel="Output Settings"
                 ),
                 slack_output: Optional[str] = typer.Option(
                     None,
