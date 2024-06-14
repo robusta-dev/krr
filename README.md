@@ -430,7 +430,7 @@ If your Prometheus monitors multiple clusters we require the label you defined f
 For example, if your cluster has the Prometheus label `cluster: "my-cluster-name"`, then run this command:
 
 ```sh
-krr.py simple --prometheus-label cluster -l my-cluster-name
+krr.py simple --prometheus-cluster-key cluster -l my-cluster-name
 ```
 
 You may also need the `-p` flag to explicitly give Prometheus' URL.

@@ -138,15 +138,16 @@ def load_commands() -> None:
                 ),
                 prometheus_cluster_label: Optional[str] = typer.Option(
                     None,
-                    "--prometheus-cluster-label",
+                    "--prometheus-cluster-value",
                     "-l",
-                    help="The label in prometheus for your cluster. (Only relevant for centralized prometheus)",
+                    help="The name of the cluster in Prometheus to scan. e.g. 'gke-prod-1'. Use with `--prometheus-cluster-key`. Only relevant for centralized prometheus.",
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_label: str = typer.Option(
                     None,
+                    "--prometheus-cluster-key",
                     "--prometheus-label",
-                    help="The label in prometheus used to differentiate clusters. (Only relevant for centralized prometheus)",
+                    help="The label in prometheus used to differentiate different clusters (e.g. 'cluster'). Only relevant for centralized prometheus.",
                     rich_help_panel="Prometheus Settings",
                 ),
                 eks_managed_prom: bool = typer.Option(
