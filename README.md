@@ -12,17 +12,16 @@
 ![Product Name Screen Shot][product-screenshot]
 
 <div align="center">
-  <h1 align="center">Robusta KRR</h1>
-  <p align="center">
-    Prometheus-based Kubernetes Resource Recommendations
-    <br />
+  <h1 align="center">Kubernetes Resource Recommendations Based on Historical Data</h1>
+  <h2 align="center">Get recommendations based on your existing data in Prometheus/Coralogix/Thanos/Mimir and more!</h2>
+  <p align="center">    
     <a href="#installation"><strong>Installation</strong></a>
     .
     <a href="#how-krr-works"><strong>How KRR works</strong></a>
     .
     <a href="#slack-integration"><strong>Slack Integration</strong></a>
     .
-    <a href="#free-krr-ui-on-robusta-saas"><strong>KRR UI on Robusta Cloud</strong></a>
+    <a href="#free-krr-ui-on-robusta-saas"><strong>Free KRR UI</strong></a>
     <br />
     <a href="#usage">Usage</a>
     ·
