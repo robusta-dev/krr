@@ -55,7 +55,7 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
     if pods_current == 1:
         pods_info = ""
     else:
-        pods_info = "\n({pods_current} pods)"
+        pods_info = f"\n({pods_current} pods)"
 
     return f"{format_diff(allocated, recommended, selector, pods_current, colored=True)}{pods_info}"
 
