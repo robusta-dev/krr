@@ -88,7 +88,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme).
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
-### Why Use KRR?
+### How Much Can I Expect to Save with KRR?
 
 According to a recent [Sysdig study](https://sysdig.com/blog/millions-wasted-kubernetes/), on average, Kubernetes clusters have:
 
