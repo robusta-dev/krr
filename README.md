@@ -106,15 +106,15 @@ Read more about [how KRR works](#how-krr-works)
 | Resource Recommendations 💡 | ✅ CPU/Memory requests and limits                                                                          | ✅ CPU/Memory requests and limits                           |
 | Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
 | Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
-| Immediate Results ⚡        | ✅ Gets results immediately (given Prometheus is running)                                                   | ❌ Requires time to gather data and provide recommendations |
-| Reporting 📊                | ✅ Detailed CLI Report, web UI in [Robusta.dev](https://home.robusta.dev/)                                 | ❌ Not supported                                            |
+| Immediate Results ⚡         | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
+| Reporting 📊                | ✅ Json, CSV, Markdown, [Web UI](#free-ui-for-krr-recommendations), and more!                              | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
 | Explainability 📖           | ✅ [See graphs explaining the recommendations](#free-krr-ui-on-robusta-saas)                               | ❌ Not supported                                            |
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
-| Default History 🕒          | 14 days                                                                                                    | 8 days                                                      |
-| Supports HPA 🔥          | ✅ Enable using `--allow-hpa` flag                                                                            | ❌ Not supported                                            |
+| Default History 🕒          | 14 days                                                                                                    | 8 days                                                     |
+| Supports HPA 🔥             | ✅ Enable using `--allow-hpa` flag                                                                         | ❌ Not supported                                            |
 
 
 <!-- GETTING STARTED -->
@@ -328,7 +328,7 @@ krr simple -c my-cluster-1 -c my-cluster-2
 </details>
 
 <details>
-  <summary>Customize output (JSON, YAML, and more</summary>
+  <summary>Output formats for reporting (JSON, YAML, CSV, and more)</summary>
 
 Currently KRR ships with a few formatters to represent the scan data:
 
@@ -336,24 +336,18 @@ Currently KRR ships with a few formatters to represent the scan data:
 - `json`
 - `yaml`
 - `pprint` - data representation from python's pprint library
-- `csv_export` - export data to a csv file in the current directory
+- `csv` - export data to a csv file in the current directory
 
-To run a strategy with a selected formatter, add a `-f` flag:
+To run a strategy with a selected formatter, add a `-f` flag. Usually this should be combined with `--fileoutput <filename>` to write clean output to file without logs:
 
 ```sh
-krr simple -f json
+krr simple -f json --fileoutput krr-report.json
 ```
 
-For JSON output, add --logtostderr  so no logs go to the result file:
+If you prefer, you can also use `--logtostderr` to get clean formatted output in one file and error logs in another:
 
 ```sh
-krr simple --logtostderr -f json > result.json
-```
-
-For YAML output, do the same:
-
-```sh
-krr simple --logtostderr -f yaml > result.yaml
+krr simple --logtostderr -f json > result.json 2> logs-and-errors.log
 ```
 </details>
 

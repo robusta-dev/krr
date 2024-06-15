@@ -234,7 +234,10 @@ def load_commands() -> None:
                     rich_help_panel="Logging Settings",
                 ),
                 file_output: Optional[str] = typer.Option(
-                    None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"
+                    None, "--fileoutput", help="Filename to write output to (if not specified, file output is disabled)", rich_help_panel="Output Settings"
+                ),
+                file_output_dynamic: bool = typer.Option(
+                    False, "--fileoutput-dynamic", help="Ignore --fileoutput and write files to the current directory in the format krr-{datetime}.{format} (e.g. krr-20240518223924.csv)", rich_help_panel="Output Settings"
                 ),
                 slack_output: Optional[str] = typer.Option(
                     None,
@@ -279,6 +282,7 @@ def load_commands() -> None:
                         log_to_stderr=log_to_stderr,
                         width=width,
                         file_output=file_output,
+                        file_output_dynamic=file_output_dynamic,
                         slack_output=slack_output,
                         strategy=_strategy_name,
                         other_args=strategy_args,

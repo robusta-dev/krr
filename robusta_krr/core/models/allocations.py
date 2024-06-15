@@ -25,7 +25,30 @@ RecommendationValueRaw = Union[float, str, None]
 
 Self = TypeVar("Self", bound="ResourceAllocations")
 
+NONE_LITERAL = "unset"
+NAN_LITERAL = "?"
 
+def format_recommendation_value(value: RecommendationValue) -> str:
+    if value is None:
+        return NONE_LITERAL
+    elif isinstance(value, str):
+        return NAN_LITERAL
+    else:
+        return resource_units.format(value)
+
+def format_diff(allocated, recommended, selector, multiplier=1, colored=False) -> str:
+    if recommended is None or isinstance(recommended.value, str) or selector != "requests":
+        return ""
+    else:
+        reccomended_val = recommended.value if isinstance(recommended.value, (int, float)) else 0
+        allocated_val = allocated if isinstance(allocated, (int, float)) else 0
+        diff_val = reccomended_val - allocated_val
+        if colored:
+            diff_sign = "[green]+[/green]" if diff_val >= 0 else "[red]-[/red]"
+        else:
+            diff_sign = "+" if diff_val >= 0 else "-"         
+        return f"{diff_sign}{format_recommendation_value(abs(diff_val) * multiplier)}"
+    
 class ResourceAllocations(pd.BaseModel):
     requests: dict[ResourceType, RecommendationValue]
     limits: dict[ResourceType, RecommendationValue]
