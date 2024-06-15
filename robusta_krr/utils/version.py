@@ -1,12 +1,36 @@
-import robusta_krr
-import requests
 import asyncio
-from typing import Optional
+import os
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
+
+import requests
+
+import robusta_krr
 
 
 def get_version() -> str:
-    return robusta_krr.__version__
+    # the version string was patched by a release - return __version__ which will be correct
+    if robusta_krr.__version__ != "dev":
+        return robusta_krr.__version__
+    
+    # we are running from an unreleased dev version
+    try:
+        # Get the latest git tag
+        tag = subprocess.check_output(["git", "describe", "--tags"]).decode().strip()
+
+        # Get the current branch name
+        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode().strip()
+
+        # Check if there are uncommitted changes
+        status = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
+        dirty = "-dirty" if status else ""
+
+        return f"{tag}-{branch}{dirty}"
+    
+    except Exception:
+        return robusta_krr.__version__
 
 
 # Synchronous function to fetch the latest release version from GitHub API

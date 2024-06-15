@@ -83,7 +83,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 
 - **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-integration).)
 - **Prometheus Integration**: Get recommendations based on the data you already have
-- **Explainability**: Understand how recommendations were calculated
+- **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
 - **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme).
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
@@ -109,7 +109,7 @@ Read more about [how KRR works](#how-krr-works)
 | Immediate Results ⚡         | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
 | Reporting 📊                | ✅ Json, CSV, Markdown, [Web UI](#free-ui-for-krr-recommendations), and more!                              | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
-| Explainability 📖           | ✅ See graphs explaining the recommendations                                                               | ❌ Not supported                                            |
+| Explainability 📖           | ✅ [See graphs explaining the recommendations](#free-krr-ui-on-robusta-saas)                               | ❌ Not supported                                            |
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
