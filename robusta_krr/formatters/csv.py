@@ -40,8 +40,7 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
 
 
 @formatters.register()
-def csv_export(result: Result) -> str:
-    
+def csv(result: Result) -> str:
     current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     file_path = f"krr-{current_datetime}.csv"
 

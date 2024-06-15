@@ -336,7 +336,7 @@ Currently KRR ships with a few formatters to represent the scan data:
 - `json`
 - `yaml`
 - `pprint` - data representation from python's pprint library
-- `csv_export` - export data to a csv file in the current directory
+- `csv` - export data to a csv file in the current directory
 
 To run a strategy with a selected formatter, add a `-f` flag:
 
