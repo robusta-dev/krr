@@ -6,7 +6,7 @@ import sys
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
-from datetime import timedelta
+from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
@@ -108,14 +108,23 @@ class Runner:
 
         custom_print(formatted, rich=rich, force=True)
 
-        if settings.file_output or settings.slack_output:
-            if settings.file_output:
+        if settings.file_output_dynamic or settings.file_output or settings.slack_output:
+            if settings.file_output_dynamic:
+                current_datetime = datetime.now().strftime("%Y%m%d%H%M%S")
+                file_name = f"krr-{current_datetime}.{settings.format}"
+                logger.info(f"Writing output to file: {file_name}")
+            elif settings.file_output:
                 file_name = settings.file_output
             elif settings.slack_output:
                 file_name = settings.slack_output
+
             with open(file_name, "w") as target_file:
-                console = Console(file=target_file, width=settings.width)
-                console.print(formatted)
+                # don't use rich when writing a csv to avoid line wrapping etc
+                if settings.format == "csv":
+                    target_file.write(formatted)
+                else:
+                    console = Console(file=target_file, width=settings.width)
+                    console.print(formatted)
             if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)

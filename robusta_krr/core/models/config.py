@@ -59,8 +59,9 @@ class Config(pd.BaseSettings):
     log_to_stderr: bool
     width: Optional[int] = pd.Field(None, ge=1)
 
-    # Outputs Settings
+    # Output Settings
     file_output: Optional[str] = pd.Field(None)
+    file_output_dynamic = bool = pd.Field(False)
     slack_output: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
