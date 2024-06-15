@@ -6,8 +6,6 @@ import io
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import RecommendationValue, format_recommendation_value, format_diff, NONE_LITERAL, NAN_LITERAL
 from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
-from robusta_krr.utils import resource_units
-import datetime
 
 logger = logging.getLogger("krr")
 
@@ -38,8 +36,6 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
 
 @formatters.register("csv")
 def csv_exporter(result: Result) -> str:
-    current_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-
     # We need to order the resource columns so that they are in the format of Namespace,Name,Pods,Old Pods,Type,Container,CPU Diff,CPU Requests,CPU Limits,Memory Diff,Memory Requests,Memory Limits
     resource_columns = []
     for resource in ResourceType:
