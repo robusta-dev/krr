@@ -20,6 +20,7 @@ from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, Re
 from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version, load_latest_version
+from robusta_krr.utils.patch import create_monkey_patches
 
 logger = logging.getLogger("krr")
 
@@ -312,7 +313,6 @@ class Runner:
     async def run(self) -> int:
         """Run the Runner. The return value is the exit code of the program."""
         await self._greet()
-
         try:
             settings.load_kubeconfig()
         except Exception as e:
@@ -321,6 +321,7 @@ class Runner:
             return 1  # Exit with error
 
         try:
+            create_monkey_patches()
             # eks has a lower step limit than other types of prometheus, it will throw an error
             step_count = self._strategy.settings.history_duration * 60 / self._strategy.settings.timeframe_duration
             if settings.eks_managed_prom and step_count > 11000:
