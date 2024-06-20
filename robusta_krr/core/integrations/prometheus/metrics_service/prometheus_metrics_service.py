@@ -99,9 +99,13 @@ class PrometheusMetricsService(MetricsService):
         headers |= self.additional_headers
 
         if self.auth_header:
+            logger.debug("Adding auth_header")
             headers |= {"Authorization": self.auth_header}
         elif not settings.inside_cluster and self.api_client is not None:
+            logger.debug("Adding API Server token to Prometheus headers")
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
+
+        logger.debug(f"Using headers: {headers}")
         self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
         self.prometheus = get_custom_prometheus_connect(self.prom_config)
 

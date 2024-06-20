@@ -73,7 +73,7 @@ class ServiceDiscovery:
             logger.debug(f"Trying to find service with label selector {label_selector}")
             service_url = self.find_service_url(label_selector)
             if service_url:
-                logger.debug(f"Found service with label selector {label_selector}")
+                logger.debug(f"Found service {service_url} with label selector {label_selector}")
                 self.cache[cache_key] = service_url
                 return service_url
 
@@ -81,6 +81,7 @@ class ServiceDiscovery:
             self.find_ingress_host(label_selector)
             ingress_url = self.find_ingress_host(label_selector)
             if ingress_url:
+                logger.debug(f"Found ingress {ingress_url} with label selector {label_selector}")
                 return ingress_url
 
         return None
