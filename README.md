@@ -405,7 +405,7 @@ Get a free breakdown of KRR recommendations in the [Robusta SaaS](#free-krr-ui-o
 
 By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
 
-- For CPU, we set a request at the 99th percentile with no limit. Meaning, in 99% of the cases, your CPU request will be sufficient. For the remaining 1%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
+- For CPU, we set a request at the 95th percentile with no limit. Meaning, in 95% of the cases, your CPU request will be sufficient. For the remaining 5%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
 
 - For memory, we take the maximum value over the past week and add a 15% buffer.
 
