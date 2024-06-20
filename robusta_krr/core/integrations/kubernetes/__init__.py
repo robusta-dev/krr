@@ -115,6 +115,7 @@ class ClusterLoader:
             if selector is None:
                 return []
 
+        logger.info(f"Listing pods for namespace={object._api_resource.metadata.namespace} and label_selector={selector}")
         ret: V1PodList = await loop.run_in_executor(
             self.executor,
             lambda: self.core.list_namespaced_pod(
