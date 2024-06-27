@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Dict, Any
 
 from kubernetes import config as k8s_config
 from kubernetes.client.api_client import ApiClient
@@ -88,6 +88,13 @@ class PrometheusMetricsLoader:
         except Exception as e:
             logger.exception(f"Failed to load pods for {object}: {e}")
             return []
+
+    async def get_cluster_summary(self) -> Dict[str, Any]:
+        try:
+            return await self.loader.get_cluster_summary()
+        except Exception as e:
+            logger.exception(f"Failed to get cluster summary: {e}")
+            return {}
 
     async def gather_data(
         self,

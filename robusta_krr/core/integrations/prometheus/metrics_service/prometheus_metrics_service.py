@@ -2,7 +2,7 @@ import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Dict, Any
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
@@ -205,6 +205,45 @@ class PrometheusMetricsService(MetricsService):
                 )
 
         return data
+
+    async def get_cluster_summary(self) -> Dict[str, Any]:
+        cluster_label = self.get_prometheus_cluster_label()
+        memory_query = f"""
+            sum(node_memory_MemTotal_bytes{{ {cluster_label} }})
+        """
+        cpu_query = f"""
+            sum(count without(cpu, mode) (node_cpu_seconds_total{{ mode="idle" {cluster_label} }}))
+        """
+
+        try:
+            cluster_memory_result = await self.query(memory_query)
+            cluster_cpu_result = await self.query(cpu_query)
+
+            # Verify that there is exactly one value in each result
+            if len(cluster_memory_result) != 1 or len(cluster_cpu_result) != 1:
+                logger.warning("Error: Expected exactly one result from Prometheus query.")
+                return {}
+
+            cluster_memory_value = cluster_memory_result[0].get("value")
+            cluster_cpu_value = cluster_cpu_result[0].get("value")
+
+            # Verify that the "value" list has exactly two elements (timestamp and value)
+            if not cluster_memory_value or not cluster_cpu_value:
+                logger.warning("Error: Missing value in Prometheus result.")
+                return {}
+
+            if len(cluster_memory_value) != 2 or len(cluster_cpu_value) != 2:
+                logger.warning("Error: Prometheus result values are not of expected size.")
+                return {}
+
+            return {
+                "cluster_memory": float(cluster_memory_value[1]),
+                "cluster_cpu": float(cluster_cpu_value[1])
+            }
+
+        except Exception as e:
+            logger.error(f"Exception occurred while getting cluster summary: {e}")
+            return {}
 
     async def load_pods(self, object: K8sObjectData, period: timedelta) -> list[PodData]:
         """
