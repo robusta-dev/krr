@@ -233,22 +233,27 @@ class Runner:
         return True
 
     async def _gather_object_allocations(self, k8s_object: K8sWorkload) -> Optional[ResourceScan]:
-        recommendation = await self._calculate_object_recommendations(k8s_object)
+        try:
+            recommendation = await self._calculate_object_recommendations(k8s_object)
 
-        self.__progressbar.progress()
+            self.__progressbar.progress()
 
-        if recommendation is None:
+            if recommendation is None:
+                return None
+
+            return ResourceScan.calculate(
+                k8s_object,
+                ResourceAllocations(
+                    requests={resource: recommendation[resource].request for resource in ResourceType},
+                    limits={resource: recommendation[resource].limit for resource in ResourceType},
+                    info={resource: recommendation[resource].info for resource in ResourceType},
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Failed to gather allocations for {k8s_object}")
+            logger.exception(e)
             return None
-
-        return ResourceScan.calculate(
-            k8s_object,
-            ResourceAllocations(
-                requests={resource: recommendation[resource].request for resource in ResourceType},
-                limits={resource: recommendation[resource].limit for resource in ResourceType},
-                info={resource: recommendation[resource].info for resource in ResourceType},
-            ),
-        )
-
+    
     async def _collect_result(self) -> Result:
         clusters = await self.connector.list_clusters()
         if clusters is None:
@@ -314,7 +319,7 @@ class Runner:
             raise CriticalRunnerException("No successful scans were made. Check the logs for more information.")
 
         return Result(
-            scans=scans,
+            scans=successful_scans,
             description=self.strategy.description,
             strategy=StrategyData(
                 name=str(self.strategy).lower(),
