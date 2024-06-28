@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
 
 
+# TODO: rename so it isn't the same name as ResourceRecommendation in result.py
 class ResourceRecommendation(pd.BaseModel):
     """A class to represent resource recommendation with optional request and limit values.
 
