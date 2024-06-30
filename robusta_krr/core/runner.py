@@ -286,6 +286,12 @@ class Runner:
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             workloads = await self._k8s_loader.list_scannable_objects(clusters)
+            if not clusters:
+                # we only need this for in cluster scan
+                prometheus_loader = self._get_prometheus_loader(None)
+                cluster_summary = await prometheus_loader.get_cluster_summary()
+            else:
+                cluster_summary = {}
             scans = await asyncio.gather(*[self._gather_object_allocations(k8s_object) for k8s_object in workloads])
 
         successful_scans = [scan for scan in scans if scan is not None]
@@ -308,6 +314,7 @@ class Runner:
                 name=str(self._strategy).lower(),
                 settings=self._strategy.settings.dict(),
             ),
+            clusterSummary=cluster_summary
         )
 
     async def run(self) -> int:

@@ -65,6 +65,7 @@ class Result(pd.BaseModel):
     description: Optional[str] = None
     strategy: StrategyData
     errors: list[dict[str, Any]] = pd.Field(default_factory=list)
+    clusterSummary: dict[str, Any] = {}
     config: Optional[Config] = pd.Field(default_factory=Config.get_config)
 
     def __init__(self, *args, **kwargs) -> None:
