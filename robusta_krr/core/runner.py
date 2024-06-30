@@ -286,8 +286,9 @@ class Runner:
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             workloads = await self._k8s_loader.list_scannable_objects(clusters)
-            if len(clusters) == 1:
-                prometheus_loader = self._get_prometheus_loader(clusters[0])
+            if not clusters:
+                # we only need this for in cluster scan
+                prometheus_loader = self._get_prometheus_loader(None)
                 cluster_summary = await prometheus_loader.get_cluster_summary()
             else:
                 cluster_summary = {}
