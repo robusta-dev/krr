@@ -274,20 +274,22 @@ class PrometheusMetricsService(MetricsService):
             pod_owners = [object.name]
             pod_owner_kind = object.kind
 
-        owners_regex = "|".join(pod_owners)
-        related_pods_result = await self.query(
-            f"""
-                last_over_time(
-                    kube_pod_owner{{
-                        owner_name=~"{owners_regex}",
-                        owner_kind="{pod_owner_kind}",
-                        namespace="{object.namespace}"
-                        {cluster_label}
-                    }}[{period_literal}]
-                )
-            """
-        )
-
+        related_pods_result = []
+        for owner_group in batched(pod_owners, 10):
+            owners_regex = "|".join(owner_group)
+            related_pods_result_item = await self.query(
+                f"""
+                    last_over_time(
+                        kube_pod_owner{{
+                            owner_name=~"{owners_regex}",
+                            owner_kind="{pod_owner_kind}",
+                            namespace="{object.namespace}"
+                            {cluster_label}
+                        }}[{period_literal}]
+                    )
+                """
+            )
+            related_pods_result.extend(related_pods_result_item)
         if related_pods_result == []:
             return []
 
