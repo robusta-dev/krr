@@ -231,10 +231,10 @@ class ClusterLoader:
     ) -> list[K8sObjectData]:
         if not self._should_list_resource(kind):
             logger.debug(f"Skipping {kind}s in {self.cluster}")
-            return
+            return []
 
         if not self.__kind_available[kind]:
-            return
+            return []
         
         result = []
         try:
