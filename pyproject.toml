@@ -37,6 +37,9 @@ requests = "2.32.0"
 pyyaml = "6.0.1"
 typing-extensions = "4.6.0"
 idna = "3.7"
+urllib3 = "1.26.19"
+setuptools = "^70.0.0"
+zipp = "^3.19.1"
 
 
 
