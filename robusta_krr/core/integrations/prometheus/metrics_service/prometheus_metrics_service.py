@@ -255,7 +255,7 @@ class PrometheusMetricsService(MetricsService):
 
         logger.debug(f"Adding historic pods for {object}")
 
-        days_literal = min(int(period.total_seconds()) // 60 // 24, 32)
+        days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
         period_literal = f"{days_literal}d"
         pod_owners: Iterable[str]
         pod_owner_kind: str
