@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional, Dict, Any
@@ -314,7 +315,8 @@ class PrometheusMetricsService(MetricsService):
             pod_owner_kind = object.kind
 
         related_pods_result = []
-        for owner_group in batched(pod_owners, 100):
+        batch_size = os.getenv("KRR_OWNER_BATCH_SIZE", 100)
+        for owner_group in batched(pod_owners, batch_size):
             owners_regex = "|".join(owner_group)
             related_pods_result_item = await self.query(
                 f"""
