@@ -315,7 +315,7 @@ class PrometheusMetricsService(MetricsService):
             pod_owner_kind = object.kind
 
         related_pods_result = []
-        batch_size = os.getenv("KRR_OWNER_BATCH_SIZE", 100)
+        batch_size = int(os.environ.get("KRR_OWNER_BATCH_SIZE", 100))
         for owner_group in batched(pod_owners, batch_size):
             owners_regex = "|".join(owner_group)
             related_pods_result_item = await self.query(
