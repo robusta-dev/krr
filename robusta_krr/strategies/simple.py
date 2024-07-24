@@ -41,7 +41,7 @@ class SimpleStrategySettings(StrategySettings):
         description="Whether to bump the memory when OOMKills are detected (experimental).",
     )
     oom_memory_buffer_percentage: float = pd.Field(
-        25, gt=0, description="What percentage to increase the memory when there are OOMKill events."
+        25, ge=0, description="What percentage to increase the memory when there are OOMKill events."
     )
 
     def calculate_memory_proposal(self, data: PodsTimeData, max_oomkill: float = 0) -> float:
