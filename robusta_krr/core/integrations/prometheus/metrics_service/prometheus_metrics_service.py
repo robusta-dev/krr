@@ -314,7 +314,7 @@ class PrometheusMetricsService(MetricsService):
             pod_owner_kind = object.kind
 
         related_pods_result = []
-        for owner_group in batched(pod_owners, 10):
+        for owner_group in batched(pod_owners, 100):
             owners_regex = "|".join(owner_group)
             related_pods_result_item = await self.query(
                 f"""
