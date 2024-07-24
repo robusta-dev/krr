@@ -209,10 +209,10 @@ class PrometheusMetricsService(MetricsService):
     async def get_cluster_summary(self) -> Dict[str, Any]:
         cluster_label = self.get_prometheus_cluster_label()
         memory_query = f"""
-            sum(max by (instance) (machine_memory_bytes{{{cluster_label}}}))
+            sum(max by (instance) (machine_memory_bytes{{ {cluster_label} }}))
         """
         cpu_query = f"""
-            sum(max by (instance) (machine_cpu_cores{{{cluster_label}}}))
+            sum(max by (instance) (machine_cpu_cores{{ {cluster_label} }}))
         """
 
         try:
