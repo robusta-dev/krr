@@ -207,6 +207,25 @@ class PrometheusMetricsService(MetricsService):
 
         return data
 
+    async def query_and_validate(self, prom_query) -> Any:
+            result = await self.query(prom_query)
+            if len(result) != 1:
+                logger.warning(f"Error: Expected exactly one result from Prometheus query. {prom_query}")
+                return None
+
+            result_value = result[0].get("value")
+
+            # Verify that the "value" list has exactly two elements (timestamp and value)
+            if not result_value:
+                logger.warning(f"Error: Missing value in Prometheus result. {prom_query}")
+                return None
+
+            if len(result_value) != 2:
+                logger.warning(f"Error: Prometheus result values are not of expected size. {prom_query}")
+                return None
+
+            return result_value[1]
+
     async def get_cluster_summary(self) -> Dict[str, Any]:
         cluster_label = self.get_prometheus_cluster_label()
         memory_query = f"""
@@ -215,31 +234,22 @@ class PrometheusMetricsService(MetricsService):
         cpu_query = f"""
             sum(max by (instance) (machine_cpu_cores{{ {cluster_label} }}))
         """
-
+        kube_system_requests_mem = f"""
+            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='memory' {cluster_label} }})  by (job) )
+        """
+        kube_system_requests_cpu = f"""
+            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='cpu' {cluster_label} }})  by (job) )
+        """
         try:
-            cluster_memory_result = await self.query(memory_query)
-            cluster_cpu_result = await self.query(cpu_query)
-
-            # Verify that there is exactly one value in each result
-            if len(cluster_memory_result) != 1 or len(cluster_cpu_result) != 1:
-                logger.warning("Error: Expected exactly one result from Prometheus query.")
-                return {}
-
-            cluster_memory_value = cluster_memory_result[0].get("value")
-            cluster_cpu_value = cluster_cpu_result[0].get("value")
-
-            # Verify that the "value" list has exactly two elements (timestamp and value)
-            if not cluster_memory_value or not cluster_cpu_value:
-                logger.warning("Error: Missing value in Prometheus result.")
-                return {}
-
-            if len(cluster_memory_value) != 2 or len(cluster_cpu_value) != 2:
-                logger.warning("Error: Prometheus result values are not of expected size.")
-                return {}
-
+            cluster_memory_result = await self.query_and_validate(memory_query)
+            cluster_cpu_result = await self.query_and_validate(cpu_query)
+            kube_system_mem_result = await self.query_and_validate(kube_system_requests_mem)
+            kube_system_cpu_result = await self.query_and_validate(kube_system_requests_cpu)
             return {
-                "cluster_memory": float(cluster_memory_value[1]),
-                "cluster_cpu": float(cluster_cpu_value[1])
+                "cluster_memory": float(cluster_memory_result),
+                "cluster_cpu": float(cluster_cpu_result),
+                "kube_system_mem_req": float(kube_system_mem_result),
+                "kube_system_cpu_req": float(kube_system_cpu_result)
             }
 
         except Exception as e:
