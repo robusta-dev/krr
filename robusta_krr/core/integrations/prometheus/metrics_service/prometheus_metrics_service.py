@@ -210,18 +210,18 @@ class PrometheusMetricsService(MetricsService):
     async def query_and_validate(self, prom_query) -> Any:
             result = await self.query(prom_query)
             if len(result) != 1:
-                logger.warning("Error: Expected exactly one result from Prometheus query.")
+                logger.warning(f"Error: Expected exactly one result from Prometheus query. {prom_query}")
                 return None
 
             result_value = result[0].get("value")
 
             # Verify that the "value" list has exactly two elements (timestamp and value)
             if not result_value:
-                logger.warning("Error: Missing value in Prometheus result.")
+                logger.warning(f"Error: Missing value in Prometheus result. {prom_query}")
                 return None
 
             if len(result_value) != 2:
-                logger.warning("Error: Prometheus result values are not of expected size.")
+                logger.warning(f"Error: Prometheus result values are not of expected size. {prom_query}")
                 return None
 
             return result_value[1]
