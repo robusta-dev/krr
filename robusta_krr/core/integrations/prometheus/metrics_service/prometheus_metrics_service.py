@@ -249,8 +249,8 @@ class PrometheusMetricsService(MetricsService):
             return {
                 "cluster_memory": float(cluster_memory_result),
                 "cluster_cpu": float(cluster_cpu_result),
-                "kube-system_req_memory": float(kube_system_mem_result),
-                "kube-system_req_cpu": float(kube_system_cpu_result)
+                "kube_system_mem_req": float(kube_system_mem_result),
+                "kube_system_cpu_req": float(kube_system_cpu_result)
             }
 
         except Exception as e:
