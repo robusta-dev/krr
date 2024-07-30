@@ -245,7 +245,6 @@ class PrometheusMetricsService(MetricsService):
             cluster_cpu_result = await self.query_and_validate(cpu_query)
             kube_system_mem_result = await self.query_and_validate(kube_system_requests_mem)
             kube_system_cpu_result = await self.query_and_validate(kube_system_requests_cpu)
-            logger.warning(f"{cluster_memory_result} {cluster_cpu_result} {kube_system_mem_result} {kube_system_cpu_result}")
             return {
                 "cluster_memory": float(cluster_memory_result),
                 "cluster_cpu": float(cluster_cpu_result),
