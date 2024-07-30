@@ -235,10 +235,10 @@ class PrometheusMetricsService(MetricsService):
             sum(max by (instance) (machine_cpu_cores{{ {cluster_label} }}))
         """
         kube_system_requests_mem = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='memory' {cluster_label} }})  by (job) )
+            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='memory' {cluster_label} }})  by (job, pod, container) )
         """
         kube_system_requests_cpu = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='cpu' {cluster_label} }})  by (job) )
+            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='cpu' {cluster_label} }})  by (job, pod, container) )
         """
         try:
             cluster_memory_result = await self.query_and_validate(memory_query)
