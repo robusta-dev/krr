@@ -26,6 +26,7 @@ krr = "robusta_krr.main:run"
 python = ">=3.9,<=3.12.3"
 typer = { extras = ["all"], version = "^0.7.0" }
 pydantic = "^1.10.7"
+pydantic-settings = "^2.0.0"
 kubernetes = "^26.1.0"
 prometheus-api-client = "0.5.3"
 numpy = ">=1.26.4,<1.27.0"
