@@ -62,7 +62,7 @@ class Config(pds.BaseSettings):
 
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
-    file_output_dynamic = bool = pd.Field(False)
+    file_output_dynamic: bool = pd.Field(False)
     slack_output: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
