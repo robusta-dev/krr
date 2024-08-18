@@ -234,6 +234,10 @@ Setup KRR for...
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
+**Trusting custom Certificate Authority (CA) certificate:**
+
+If your llm provider url uses a certificate from a custom CA, in order to trust it, base-64 encode the certificate, and store it in an environment variable named ``CERTIFICATE``
+
 ## Free KRR UI on Robusta SaaS
 
 We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme). You can:
