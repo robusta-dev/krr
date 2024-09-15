@@ -1,8 +1,9 @@
 import asyncio
 import logging
+import re
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Awaitable, Callable, Iterable, Optional, Union
+from typing import Any, Awaitable, Callable, Iterable, Optional, Union, Literal
 
 from kubernetes import client, config  # type: ignore
 from kubernetes.client import ApiException
@@ -47,6 +48,43 @@ class ClusterLoader:
 
         self.__jobs_for_cronjobs: dict[str, list[V1Job]] = {}
         self.__jobs_loading_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+        self.__namespaces: Union[list[str, None]] = None
+
+    @property
+    def namespaces(self) -> Union[list[str], Literal["*"]]:
+        """wrapper for settings.namespaces, which will do expand namespace list if some regex pattern included
+
+        Returns:
+            A list of namespace that will be scanned
+        """
+        # just return the list if it's already initialized
+        if self.__namespaces != None:
+            return self.__namespaces
+
+        setting_ns = settings.namespaces
+        if setting_ns == "*":
+            self.__namespaces = setting_ns
+            return self.__namespaces
+
+        self.__namespaces = []
+        expand_list: list[re.Pattern] = []
+        ns_regex_chars = re.compile(r"[\\*|\(.*?\)|\[.*?\]|\^|\$]")
+        for ns in setting_ns:
+            if ns_regex_chars.search(ns):
+                logger.debug(f"{ns} is detected as regex pattern in expanding namespace list")
+                expand_list.append(re.compile(ns))
+            else:
+                self.__namespaces.append(ns)
+
+        if expand_list:
+            logger.info("found regex pattern in provided namespace argument, expanding namespace list")
+            all_ns = [ ns.metadata.name for ns in self.core.list_namespace().items ]
+            for expand_ns in expand_list:
+                for ns in all_ns:
+                    if expand_ns.search(ns) and ns not in self.__namespaces:
+                        self.__namespaces.append(ns)
+
+        return self.__namespaces
 
     async def list_scannable_objects(self) -> list[K8sObjectData]:
         """List all scannable objects.
@@ -56,7 +94,7 @@ class ClusterLoader:
         """
 
         logger.info(f"Listing scannable objects in {self.cluster}")
-        logger.debug(f"Namespaces: {settings.namespaces}")
+        logger.debug(f"Namespaces: {self.namespaces}")
         logger.debug(f"Resources: {settings.resources}")
 
         self.__hpa_list = await self._try_list_hpa()
@@ -75,7 +113,7 @@ class ClusterLoader:
             for workload_objects in workload_object_lists
             for object in workload_objects
             # NOTE: By default we will filter out kube-system namespace
-            if not (settings.namespaces == "*" and object.namespace == "kube-system")
+            if not (self.namespaces == "*" and object.namespace == "kube-system")
         ]
 
     async def _list_jobs_for_cronjobs(self, namespace: str) -> list[V1Job]:
@@ -189,7 +227,7 @@ class ClusterLoader:
         logger.debug(f"Listing {kind}s in {self.cluster}")
         loop = asyncio.get_running_loop()
 
-        if settings.namespaces == "*":
+        if self.namespaces == "*":
             requests = [
                 loop.run_in_executor(
                     self.executor,
@@ -209,7 +247,7 @@ class ClusterLoader:
                         label_selector=settings.selector,
                     ),
                 )
-                for namespace in settings.namespaces
+                for namespace in self.namespaces
             ]
 
         result = [
