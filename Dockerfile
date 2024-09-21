@@ -14,10 +14,10 @@ WORKDIR /app
 
 COPY ./requirements.txt requirements.txt
 
-RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
 # Install the project dependencies
 RUN python -m ensurepip --upgrade
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
 COPY . .
