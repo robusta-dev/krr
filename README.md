@@ -310,7 +310,7 @@ krr simple -n default -n ingress-nginx
 It also supports regex matches that requires permission/RBAC in listing namespaces in target cluster
 
 ```sh
-krr simple -n default -n 'ingress-*'
+krr simple -n default -n 'ingress-.*'
 ```
 
 See [example ServiceAccount and RBAC permissions](./tests/single_namespace_permissions.yaml)

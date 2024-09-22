@@ -55,7 +55,7 @@ def test_output_formats(format: str, output: str):
             ),
             (
                 # list of namespace provided from arguments with regex pattern and will not duplicating in final result
-                ["robusta-*", "robusta-frontend"],
+                ["robusta-.*", "robusta-frontend"],
                 ["kube-system", "robusta-frontend", "robusta-backend", "robusta-krr"],
                 ["robusta-frontend", "robusta-backend", "robusta-krr"]
             ),
