@@ -81,7 +81,7 @@ class ClusterLoader:
             all_ns = [ ns.metadata.name for ns in self.core.list_namespace().items ]
             for expand_ns in expand_list:
                 for ns in all_ns:
-                    if expand_ns.search(ns) and ns not in self.__namespaces:
+                    if expand_ns.fullmatch(ns) and ns not in self.__namespaces:
                         self.__namespaces.append(ns)
 
         return self.__namespaces
