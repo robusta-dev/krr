@@ -124,7 +124,7 @@ jobs:
         asset_content_type: application/octet-stream
 
     - name: Upload build as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: krr-${{ matrix.os }}-${{ github.ref_name }}
         path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
@@ -159,7 +159,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: Download MacOS artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: krr-macos-latest-${{ github.ref_name }}
       - name: Calculate hash
@@ -177,7 +177,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: Download Linux artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: krr-ubuntu-latest-${{ github.ref_name }}
       - name: Calculate hash
