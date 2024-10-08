@@ -96,8 +96,8 @@ class PrometheusMetricsService(MetricsService):
 
         logger.info(f"Using {self.name()} at {self.url} for cluster {cluster or 'default'}")
 
-        headers = {k: v.get_secret_value() for k, v in settings.prometheus_other_headers.items()}
-        headers |= self.additional_headers
+        headers = self.additional_headers
+        headers |= {k: v.get_secret_value() for k, v in settings.prometheus_other_headers.items()}
 
         if self.auth_header:
             headers |= {"Authorization": self.auth_header}
