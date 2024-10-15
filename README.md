@@ -307,7 +307,7 @@ List as many namespaces as you want with `-n` (in this case, `default` and `ingr
 krr simple -n default -n ingress-nginx
 ```
 
-It also supports regex matches that requires permission/RBAC in listing namespaces in target cluster
+The -n flag also supports regex matches like -n kube-.*. To use regexes, you must have permissions to list namespaces in the target cluster.
 
 ```sh
 krr simple -n default -n 'ingress-.*'
