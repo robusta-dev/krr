@@ -307,6 +307,12 @@ List as many namespaces as you want with `-n` (in this case, `default` and `ingr
 krr simple -n default -n ingress-nginx
 ```
 
+The -n flag also supports regex matches like -n kube-.*. To use regexes, you must have permissions to list namespaces in the target cluster.
+
+```sh
+krr simple -n default -n 'ingress-.*'
+```
+
 See [example ServiceAccount and RBAC permissions](./tests/single_namespace_permissions.yaml)
 </details>
 
