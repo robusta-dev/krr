@@ -188,7 +188,6 @@ class _Settings(Config):  # Config here is used for type checking
         pass
 
     def __getattr__(self, name: str):
-
         if _config is None:
             raise AttributeError("Config is not set")
 
