@@ -101,6 +101,11 @@ class Config(pd.BaseSettings):
         if v == []:
             return "*"
 
+        if isinstance(v, list):
+            for val in v:
+                if val.startswith("*"):
+                    raise ValueError("Namespace's values cannot start with an asterisk (*)")
+            
         return [val.lower() for val in v]
 
     @pd.validator("resources", pre=True)
@@ -183,6 +188,7 @@ class _Settings(Config):  # Config here is used for type checking
         pass
 
     def __getattr__(self, name: str):
+        print("it is just config")
         if _config is None:
             raise AttributeError("Config is not set")
 
