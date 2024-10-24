@@ -101,6 +101,11 @@ class Config(pd.BaseSettings):
         if v == []:
             return "*"
 
+        if isinstance(v, list):
+            for val in v:
+                if val.startswith("*"):
+                    raise ValueError("Namespace's values cannot start with an asterisk (*)")
+            
         return [val.lower() for val in v]
 
     @pd.validator("resources", pre=True)
