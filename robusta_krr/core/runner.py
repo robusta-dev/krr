@@ -218,8 +218,8 @@ class Runner:
         try:
             history_range = await prometheus_loader.get_history_range(timedelta(hours=5))
         except ValueError:
-            logger.warning(
-                f"Was not able to get history range for cluster {cluster}. This is not critical, will try continue."
+            logger.info(
+                f"Unable to check how much historical data is available on cluster {cluster}. Will assume it is sufficient and calculate recommendations anyway. (You can usually ignore this. Not all Prometheus compatible metric stores support checking history settings.)"
             )
             self.errors.append(
                 {
