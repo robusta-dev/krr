@@ -493,7 +493,7 @@ For Azure managed Prometheus you need to generate an access token, which can be 
 ```sh
 # If you are not logged in to Azure, uncomment out the following line
 # az login
-AZURE_BEARER=$(az account get-access-token --resource=https://prometheus.monitor.azure.com  --query accessToken --output tsv); echo $AZURE_BEARER
+$AZURE_BEARER=$(az account get-access-token --resource=https://prometheus.monitor.azure.com  --query accessToken --output tsv); echo $AZURE_BEARER
 ```
 
 Than run the following command with PROMETHEUS_URL substituted for your Azure Managed Prometheus URL:
