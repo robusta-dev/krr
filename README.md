@@ -30,7 +30,7 @@
     <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
     ·
     <a href="#support">Support</a>
-    <br /> Like KRR? Please ⭐ this repository to show your support! 
+    <br /> Like KRR? Please ⭐ this repository to show your support!
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
@@ -119,7 +119,7 @@ Read more about [how KRR works](#how-krr-works)
 
 <!-- GETTING STARTED -->
 
-## Installation 
+## Installation
 
 ### Requirements
 
@@ -130,7 +130,7 @@ KRR requires Prometheus 2.26+, [kube-state-metrics](https://github.com/kubernete
 No setup is required if you use kube-prometheus-stack or <a href="https://docs.robusta.dev/master/configuration/alertmanager-integration/embedded-prometheus.html">Robusta's Embedded Prometheus</a>.
 
 If you have a different setup, make sure the following metrics exist:
-  
+
 - `container_cpu_usage_seconds_total`
 - `container_memory_working_set_bytes`
 - `kube_replicaset_owner`
@@ -179,7 +179,7 @@ You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-o
 
 <details>
   <summary>Airgapped Installation (Offline Environments)</summary>
-  
+
 You can download pre-built binaries from <a href="https://github.com/robusta-dev/krr/releases">Releases</a> or use the prebuilt Docker container. For example, the container for version 1.8.3 is:
 
 ```
@@ -258,7 +258,7 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 
 <details>
   <summary>Basic usage</summary>
-  
+
 ```sh
 krr simple
 ```
@@ -266,7 +266,7 @@ krr simple
 
 <details>
   <summary>Tweak the recommendation algorithm (strategy)</summary>
-  
+
 Most helpful flags:
 
 - `--cpu-min` Sets the minimum recommended cpu value in millicores
@@ -347,6 +347,7 @@ Currently KRR ships with a few formatters to represent the scan data:
 - `yaml`
 - `pprint` - data representation from python's pprint library
 - `csv` - export data to a csv file in the current directory
+- `html`
 
 To run a strategy with a selected formatter, add a `-f` flag. Usually this should be combined with `--fileoutput <filename>` to write clean output to file without logs:
 

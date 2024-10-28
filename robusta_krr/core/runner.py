@@ -120,8 +120,8 @@ class Runner:
                 file_name = settings.slack_output
 
             with open(file_name, "w") as target_file:
-                # don't use rich when writing a csv to avoid line wrapping etc
-                if settings.format == "csv":
+                # don't use rich when writing a csv or html to avoid line wrapping etc
+                if settings.format == "csv" or settings.format == "html":
                     target_file.write(formatted)
                 else:
                     console = Console(file=target_file, width=settings.width)
