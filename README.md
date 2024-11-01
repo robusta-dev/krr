@@ -178,7 +178,7 @@ You can install using brew (see above) on [WSL2](https://docs.brew.sh/Homebrew-o
 </details>
 
 <details>
-  <summary>Airgapped Installation (Offline Environments)</summary>
+  <summary>Docker image, binaries, and airgapped installation (offline environments)</summary>
 
 You can download pre-built binaries from <a href="https://github.com/robusta-dev/krr/releases">Releases</a> or use the prebuilt Docker container. For example, the container for version 1.8.3 is:
 
