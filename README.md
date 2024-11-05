@@ -669,7 +669,7 @@ _We use pytest to run tests._
 
 1. Install the project manually (see above)
 2. Navigate to the project root directory
-3. Install poetry (https://python-poetry.org/docs/#installing-with-the-official-installer)
+3. Install [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
 4. Install dev dependencies:
 
 ```sh
