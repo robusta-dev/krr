@@ -1,9 +1,12 @@
+import csv
+import io
 import json
 from typing import Any
+
+import pytest
+
 from robusta_krr.core.models.result import Result
 from robusta_krr.formatters.csv import csv_exporter
-import io
-import csv
 
 RESULT = """
 {
@@ -32,8 +35,8 @@ RESULT = """
                 "kind": "Deployment",
                 "allocations": {
                     "requests": {
-                        "cpu": 1.0,
-                        "memory": 1.0
+                        "cpu": "50m",
+                        "memory": "2048Mi"
                     },
                     "limits": {
                         "cpu": 2.0,
@@ -46,12 +49,12 @@ RESULT = """
             "recommended": {
                 "requests": {
                     "cpu": {
-                        "value": "?",
+                        "value": 0.0065,
                         "severity": "UNKNOWN"
                     },
                     "memory": {
-                        "value": "?",
-                        "severity": "UNKNOWN"
+                        "value": 0.5,
+                        "severity": "CRITICAL"
                     }
                 },
                 "limits": {
@@ -60,8 +63,8 @@ RESULT = """
                         "severity": "UNKNOWN"
                     },
                     "memory": {
-                        "value": "?",
-                        "severity": "UNKNOWN"
+                        "value": 0.5,
+                        "severity": "CRITICAL"
                     }
                 },
                 "info": {
@@ -69,7 +72,7 @@ RESULT = """
                     "memory": "Not enough data"
                 }
             },
-            "severity": "UNKNOWN"
+            "severity": "CRITICAL"
         }
     ],
     "score": 100,
@@ -138,48 +141,149 @@ RESULT = """
             "oom_memory_buffer_percentage": "25"
         },
         "inside_cluster": false,
-        "file_output_dynamic": false,
-        "bool": false
+        "file_output_dynamic": false
     }
 }
 """
 
 
-def test_csv_headers() -> None:
+def _load_result(override_config: dict[str, Any]) -> Result:
     res_data = json.loads(RESULT)
+    res_data["config"].update(override_config)
     result = Result(**res_data)
-    x = csv_exporter(result)
-    reader = csv.DictReader(io.StringIO(x))
+    return result
 
-    expected_headers: list[str] = [
-        "Namespace",
-        "Name",
-        "Pods",
-        "Old Pods",
-        "Type",
-        "Container",
-        "CPU Diff",
-        "CPU Requests",
-        "CPU Limits",
-        "Memory Diff",
-        "Memory Requests",
-        "Memory Limits",
-    ]
+
+@pytest.mark.parametrize(
+    "override_config, expected_headers",
+    [
+        (
+            {},
+            [
+                "Namespace",
+                "Name",
+                "Pods",
+                "Old Pods",
+                "Type",
+                "Container",
+                "Severity",
+                "CPU Diff",
+                "CPU Requests",
+                "CPU Limits",
+                "Memory Diff",
+                "Memory Requests",
+                "Memory Limits",
+            ],
+        ),
+        (
+            {"show_severity": False},
+            [
+                "Namespace",
+                "Name",
+                "Pods",
+                "Old Pods",
+                "Type",
+                "Container",
+                "CPU Diff",
+                "CPU Requests",
+                "CPU Limits",
+                "Memory Diff",
+                "Memory Requests",
+                "Memory Limits",
+            ],
+        ),
+        (
+            {"show_cluster_name": True},
+            [
+                "Cluster",
+                "Namespace",
+                "Name",
+                "Pods",
+                "Old Pods",
+                "Type",
+                "Container",
+                "Severity",
+                "CPU Diff",
+                "CPU Requests",
+                "CPU Limits",
+                "Memory Diff",
+                "Memory Requests",
+                "Memory Limits",
+            ],
+        ),
+    ],
+)
+def test_csv_headers(override_config: dict[str, Any], expected_headers: list[str]) -> None:
+    result = _load_result(override_config=override_config)
+    output = csv_exporter(result)
+    reader = csv.DictReader(io.StringIO(output))
+
     assert reader.fieldnames == expected_headers
 
-    expected_first_row: dict[str, str] = {
-        "Namespace": "default",
-        "Name": "mock-object-1",
-        "Pods": "2",
-        "Old Pods": "1",
-        "Type": "Deployment",
-        "Container": "mock-container-1",
-        "CPU Diff": "",
-        "CPU Requests": "1.0 -> ?",
-        "CPU Limits": "2.0 -> ?",
-        "Memory Diff": "",
-        "Memory Requests": "1.0 -> ?",
-        "Memory Limits": "2.0 -> ?",
-    }
+
+@pytest.mark.parametrize(
+    "override_config, expected_first_row",
+    [
+        (
+            {},
+            {
+                "Namespace": "default",
+                "Name": "mock-object-1",
+                "Pods": "2",
+                "Old Pods": "1",
+                "Type": "Deployment",
+                "Container": "mock-container-1",
+                'Severity': 'CRITICAL',
+                "CPU Diff": "-87m",
+                "CPU Requests": "(-43m) 50m -> 6m",
+                "CPU Limits": "2.0 -> ?",
+                "Memory Diff": "-4096Mi",
+                "Memory Requests": "(-2048Mi) 2048Mi -> 500m",
+                "Memory Limits": "2.0 -> 500m",
+            },
+        ),
+        (
+            {"show_severity": False},
+            {
+                "Namespace": "default",
+                "Name": "mock-object-1",
+                "Pods": "2",
+                "Old Pods": "1",
+                "Type": "Deployment",
+                "Container": "mock-container-1",
+                "CPU Diff": "-87m",
+                "CPU Requests": "(-43m) 50m -> 6m",
+                "CPU Limits": "2.0 -> ?",
+                "Memory Diff": "-4096Mi",
+                "Memory Requests": "(-2048Mi) 2048Mi -> 500m",
+                "Memory Limits": "2.0 -> 500m",
+            },
+        ),
+        (
+            {"show_cluster_name": True},
+            {
+                "Cluster": "mock-cluster",
+                "Namespace": "default",
+                "Name": "mock-object-1",
+                "Pods": "2",
+                "Old Pods": "1",
+                "Type": "Deployment",
+                "Container": "mock-container-1",
+                'Severity': 'CRITICAL',
+                "CPU Diff": "-87m",
+                "CPU Requests": "(-43m) 50m -> 6m",
+                "CPU Limits": "2.0 -> ?",
+                "Memory Diff": "-4096Mi",
+                "Memory Requests": "(-2048Mi) 2048Mi -> 500m",
+                "Memory Limits": "2.0 -> 500m",
+            },
+        ),
+    ],
+)
+def test_csv_row_value(override_config: dict[str, Any], expected_first_row: list[str]) -> None:
+    result = _load_result(override_config=override_config)
+    output = csv_exporter(result)
+    reader = csv.DictReader(io.StringIO(output))
+
     first_row: dict[str, Any] = next(reader)
     assert first_row == expected_first_row
