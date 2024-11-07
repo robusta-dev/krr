@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from robusta_krr.core.models.config import Config
 from robusta_krr.core.models.result import Result
 from robusta_krr.formatters.csv import csv_exporter
 
@@ -151,6 +152,7 @@ def _load_result(override_config: dict[str, Any]) -> Result:
     res_data = json.loads(RESULT)
     res_data["config"].update(override_config)
     result = Result(**res_data)
+    Config.set_config(result.config)
     return result
 
 

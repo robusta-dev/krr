@@ -6,6 +6,7 @@ from typing import Any
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import NONE_LITERAL, format_diff, format_recommendation_value
+from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 
 logger = logging.getLogger("krr")
@@ -52,10 +53,10 @@ def csv_exporter(result: Result) -> str:
     # We need to order the resource columns so that they are in the format of Namespace,Name,Pods,Old Pods,Type,Container,CPU Diff,CPU Requests,CPU Limits,Memory Diff,Memory Requests,Memory Limits
     csv_columns = ["Namespace", "Name", "Pods", "Old Pods", "Type", "Container"]
 
-    if result.config and result.config.show_cluster_name:
+    if settings.show_cluster_name:
         csv_columns.insert(0, "Cluster")
 
-    if result.config and result.config.show_severity:
+    if settings.show_severity:
         csv_columns.append("Severity")
 
     for resource in ResourceType:

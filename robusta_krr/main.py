@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
+import click
 import typer
 import urllib3
 from pydantic import ValidationError  # noqa: F401
@@ -268,6 +269,8 @@ def load_commands() -> None:
                 **strategy_args,
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
+                if not show_severity and format != "csv":
+                    raise click.BadOptionUsage("--exclude-severity", "--exclude-severity works only with format=csv")
 
                 try:
                     config = Config(
