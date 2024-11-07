@@ -66,7 +66,6 @@ def csv_exporter(result: Result) -> str:
     output = io.StringIO()
     csv_writer = csv.DictWriter(output, csv_columns, extrasaction="ignore")
     csv_writer.writeheader()
-    # csv_writer.writerow(csv_columns)
 
     for _, group in itertools.groupby(
         enumerate(result.scans), key=lambda x: (x[1].object.cluster, x[1].object.namespace, x[1].object.name)
