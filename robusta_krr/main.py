@@ -228,7 +228,7 @@ def load_commands() -> None:
                 ),
                 show_severity: bool = typer.Option(
                     True,
-                    "--show-severity",
+                    " /--exclude-severity",
                     help="Whether to include the severity in the output or not",
                     rich_help_panel="Output Settings",
                 ),
