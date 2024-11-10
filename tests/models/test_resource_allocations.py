@@ -1,4 +1,7 @@
+from typing import Union
+
 import pytest
+
 from robusta_krr.core.models.allocations import ResourceAllocations, ResourceType
 
 
@@ -13,7 +16,7 @@ from robusta_krr.core.models.allocations import ResourceAllocations, ResourceTyp
     "memory",
     [
         {"request": 128974848, "limit": 128974848},
-        {"request": "128.974848e6", "limit": 128.974848e6},
+        {"request": 128.974848e6, "limit": 128.974848e6},
         {"request": "128.9748480M", "limit": "128.9748480M"},
         {"request": "128974848000m", "limit": "128974848000m"},
         {"request": "123Mi", "limit": "123Mi"},
@@ -21,7 +24,7 @@ from robusta_krr.core.models.allocations import ResourceAllocations, ResourceTyp
     ],
 )
 def test_resource_allocation_supported_formats(
-    cpu: dict[str, str | None] | dict[str, float | None], memory: dict[str, int] | dict[str, float] | dict[str, str]
+    cpu: dict[str, Union[str, int, float, None]], memory: dict[str, Union[str, int, float, None]]
 ):
     allocations = ResourceAllocations(
         requests={ResourceType.CPU: cpu["request"], ResourceType.Memory: memory["request"]},
