@@ -58,10 +58,11 @@ class Config(pd.BaseSettings):
     strategy: str
     log_to_stderr: bool
     width: Optional[int] = pd.Field(None, ge=1)
+    show_severity: bool = True
 
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
-    file_output_dynamic = bool = pd.Field(False)
+    file_output_dynamic: bool = pd.Field(False)
     slack_output: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
@@ -105,7 +106,7 @@ class Config(pd.BaseSettings):
             for val in v:
                 if val.startswith("*"):
                     raise ValueError("Namespace's values cannot start with an asterisk (*)")
-            
+
         return [val.lower() for val in v]
 
     @pd.validator("resources", pre=True)

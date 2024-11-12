@@ -30,7 +30,7 @@ def test_run(log_flag: str):
         raise e from result.exception
 
 
-@pytest.mark.parametrize("format", ["json", "yaml", "table", "pprint"])
+@pytest.mark.parametrize("format", ["json", "yaml", "table", "pprint", "csv"])
 @pytest.mark.parametrize("output", ["--logtostderr", "-q"])
 def test_output_formats(format: str, output: str):
     result = runner.invoke(app, [STRATEGY_NAME, output, "-f", format])

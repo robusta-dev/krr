@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
+import click
 import typer
 import urllib3
 from pydantic import ValidationError  # noqa: F401
@@ -19,7 +20,12 @@ from robusta_krr.core.models.config import Config
 from robusta_krr.core.runner import Runner
 from robusta_krr.utils.version import get_version
 
-app = typer.Typer(pretty_exceptions_show_locals=False, pretty_exceptions_short=True, no_args_is_help=True, help="IMPORTANT: Run `krr simple --help` to see all cli flags!")
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    pretty_exceptions_short=True,
+    no_args_is_help=True,
+    help="IMPORTANT: Run `krr simple --help` to see all cli flags!",
+)
 
 # NOTE: Disable insecure request warnings, as it might be expected to use self-signed certificates inside the cluster
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -216,7 +222,16 @@ def load_commands() -> None:
                     rich_help_panel="Logging Settings",
                 ),
                 show_cluster_name: bool = typer.Option(
-                    False, "--show-cluster-name", help="In table output, always show the cluster name even for a single cluster", rich_help_panel="Output Settings"
+                    False,
+                    "--show-cluster-name",
+                    help="In table output, always show the cluster name even for a single cluster",
+                    rich_help_panel="Output Settings",
+                ),
+                show_severity: bool = typer.Option(
+                    True,
+                    " /--exclude-severity",
+                    help="Whether to include the severity in the output or not",
+                    rich_help_panel="Output Settings",
                 ),
                 verbose: bool = typer.Option(
                     False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
@@ -234,10 +249,16 @@ def load_commands() -> None:
                     rich_help_panel="Logging Settings",
                 ),
                 file_output: Optional[str] = typer.Option(
-                    None, "--fileoutput", help="Filename to write output to (if not specified, file output is disabled)", rich_help_panel="Output Settings"
+                    None,
+                    "--fileoutput",
+                    help="Filename to write output to (if not specified, file output is disabled)",
+                    rich_help_panel="Output Settings",
                 ),
                 file_output_dynamic: bool = typer.Option(
-                    False, "--fileoutput-dynamic", help="Ignore --fileoutput and write files to the current directory in the format krr-{datetime}.{format} (e.g. krr-20240518223924.csv)", rich_help_panel="Output Settings"
+                    False,
+                    "--fileoutput-dynamic",
+                    help="Ignore --fileoutput and write files to the current directory in the format krr-{datetime}.{format} (e.g. krr-20240518223924.csv)",
+                    rich_help_panel="Output Settings",
                 ),
                 slack_output: Optional[str] = typer.Option(
                     None,
@@ -248,6 +269,8 @@ def load_commands() -> None:
                 **strategy_args,
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
+                if not show_severity and format != "csv":
+                    raise click.BadOptionUsage("--exclude-severity", "--exclude-severity works only with format=csv")
 
                 try:
                     config = Config(
@@ -284,6 +307,7 @@ def load_commands() -> None:
                         file_output=file_output,
                         file_output_dynamic=file_output_dynamic,
                         slack_output=slack_output,
+                        show_severity=show_severity,
                         strategy=_strategy_name,
                         other_args=strategy_args,
                     )
