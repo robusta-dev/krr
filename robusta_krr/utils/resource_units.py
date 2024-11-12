@@ -1,6 +1,6 @@
 from typing import Literal, Union
 
-UNITS = {
+UNITS: dict[str, float] = {
     "m": 0.001,
     "Ki": 1024,
     "Mi": 1024**2,
@@ -23,15 +23,14 @@ def parse(x: str, /) -> Union[float, int]:
     for unit, multiplier in UNITS.items():
         if x.endswith(unit):
             return float(x[: -len(unit)]) * multiplier
-    if "." in x:
-        return float(x)
-    return int(x)
+
+    return float(x)
 
 
 def get_base(x: str, /) -> Literal[1024, 1000]:
     """Returns the base of the unit."""
 
-    for unit, multiplier in UNITS.items():
+    for unit, _ in UNITS.items():
         if x.endswith(unit):
             return 1024 if unit in ["Ki", "Mi", "Gi", "Ti", "Pi", "Ei"] else 1000
     return 1000 if "." in x else 1024
