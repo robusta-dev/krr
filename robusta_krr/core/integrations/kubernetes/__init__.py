@@ -201,6 +201,14 @@ class ClusterLoader:
         namespace = item.metadata.namespace
         kind = kind or item.__class__.__name__[2:]
 
+        labels = {}
+        annotations = {}
+        if item.metadata.labels:
+            labels = item.metadata.labels
+
+        if item.metadata.annotations:
+            annotations = item.metadata.annotations
+
         obj = K8sObjectData(
             cluster=self.cluster,
             namespace=namespace,
@@ -209,6 +217,8 @@ class ClusterLoader:
             container=container.name,
             allocations=ResourceAllocations.from_container(container),
             hpa=self.__hpa_list.get((namespace, kind, name)),
+            labels=labels,
+            annotations= annotations
         )
         obj._api_resource = item
         return obj
