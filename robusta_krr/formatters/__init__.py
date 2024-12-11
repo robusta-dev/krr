@@ -4,3 +4,4 @@ from .table import table
 from .yaml import yaml
 from .csv import csv
 from .html import html
+from .markdown import markdown
