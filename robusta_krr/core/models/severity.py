@@ -30,6 +30,16 @@ class Severity(str, enum.Enum):
             self.CRITICAL: "red",
         }[self]
 
+    @property
+    def emoji(self) -> str:
+        return {
+            self.UNKNOWN: "❔",
+            self.GOOD: "✅",
+            self.OK: "🟩",
+            self.WARNING: "🟨",
+            self.CRITICAL: "🟥",
+        }[self]
+
     @classmethod
     def calculate(
         cls, current: RecommendationValue, recommended: RecommendationValue, resource_type: ResourceType
