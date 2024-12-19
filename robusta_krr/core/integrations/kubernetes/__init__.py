@@ -207,7 +207,10 @@ class ClusterLoader:
             labels = item.metadata.labels
 
         if item.metadata.annotations:
-            annotations = item.metadata.annotations
+            if type(item.metadata.annotations) is ObjectLikeDict:
+                annotations = item.metadata.annotations.__dict__
+            else:
+                annotations = item.metadata.annotations
 
         obj = K8sObjectData(
             cluster=self.cluster,
