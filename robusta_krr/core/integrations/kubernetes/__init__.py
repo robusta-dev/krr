@@ -201,16 +201,15 @@ class ClusterLoader:
         namespace = item.metadata.namespace
         kind = kind or item.__class__.__name__[2:]
 
-        labels = {}
-        annotations = {}
-        if item.metadata.labels:
-            labels = item.metadata.labels
+        labels = item.metadata.labels or {}
+        annotations = item.metadata.annotations or {}
 
-        if item.metadata.annotations:
-            if type(item.metadata.annotations) is ObjectLikeDict:
-                annotations = item.metadata.annotations.__dict__
-            else:
-                annotations = item.metadata.annotations
+        # NOTE: Argocd Rollouts managed object' labels and annotations are interpreted as ObjectLikeDict
+        if labels and type(labels) is ObjectLikeDict:
+            labels = labels.__dict__
+
+        if annotations and type(annotations) is ObjectLikeDict:
+            annotations = annotations.__dict__
 
         obj = K8sObjectData(
             cluster=self.cluster,
