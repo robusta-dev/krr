@@ -202,7 +202,7 @@ You can also run KRR in-cluster as a Kubernetss Job, if you don't want to view r
 Create all the necessary Kubernetes services using the following command to run KRR as a Kubernetes Job.
 
 ```
-kubectl apply -f 
+kubectl apply -f https://raw.githubusercontent.com/robusta-dev/krr/refs/heads/main/docs/krr-in-cluster/krr-in-cluster-job.yaml
 
 ```
 </details>
