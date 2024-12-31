@@ -1,0 +1,122 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: krr-cluster-role
+  namespace: default
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - daemonsets
+      - deployments
+      - namespaces
+      - pods
+      - replicasets
+      - replicationcontrollers
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+      - deployments/scale
+      - replicasets
+      - replicasets/scale
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - extensions
+    resources:
+      - daemonsets
+      - deployments
+      - deployments/scale
+      - ingresses
+      - replicasets
+      - replicasets/scale
+      - replicationcontrollers/scale
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "autoscaling"
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: krr-service-account
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: krr-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: krr-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: krr-service-account
+    namespace: default
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: krr
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - command:
+            - /bin/sh
+            - -c
+            - "python krr.py simple   --max-workers 3 --width 2048 "
+          image: robustadev/krr:v1.17.0
+          imagePullPolicy: Always
+          name: krr
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              memory: 1Gi
+      restartPolicy: Never
+      serviceAccount: krr-service-account
+      serviceAccountName: krr-service-account
