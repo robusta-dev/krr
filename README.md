@@ -204,8 +204,6 @@ Apart from running KRR as a CLI tool you can also run KRR inside your cluster. W
 
 You can also run KRR in-cluster as a Kubernetes Job, if you don't want to view results easily in a <a href="https://platform.robusta.dev/signup">UI</a>. 
 
-Create all the necessary Kubernetes services using the following command to run KRR as a Kubernetes Job.
-
 ```
 kubectl apply -f https://raw.githubusercontent.com/robusta-dev/krr/refs/heads/main/docs/krr-in-cluster/krr-in-cluster-job.yaml
 
