@@ -192,12 +192,17 @@ We do **not** recommend installing KRR from source in airgapped environments due
 <details>
   <summary>In-Cluster</summary>
 
-Apart from running KRR as a CLI tool you can also run KRR inside your cluster. We suggest installing KRR via the Robusta platform. It gives you a free UI with some features like the following
+Apart from running KRR as a CLI tool you can also run KRR inside your cluster. We suggest installing KRR via the <a href="https://platform.robusta.dev/signup">Robusta Platform</a>
+. It gives you a <a href="https://platform.robusta.dev/signup">free UI</a> with some features like the following
 * View application usage history graphs on which recommendations are based.
 * Get application, namespace and cluster level recommendations.
-* YAML configuration to apply the suggesetd recommendation and more
+* YAML configuration to apply the suggested recommendation and more
 
-You can also run KRR in-cluster as a Kubernetss Job, if you don't want to view results easily in a UI. 
+<img src="./images/ui_screenshot_new.png">
+
+<img src="./images/ui_recommendation.png">
+
+You can also run KRR in-cluster as a Kubernetes Job, if you don't want to view results easily in a <a href="https://platform.robusta.dev/signup">UI</a>. 
 
 Create all the necessary Kubernetes services using the following command to run KRR as a Kubernetes Job.
 
