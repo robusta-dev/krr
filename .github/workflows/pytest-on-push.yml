@@ -8,12 +8,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/get-python-version
+      id: get_version
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: "${{ steps.get_version.outputs.python-version }}"
 
     - name: Install dependencies
       run: |

@@ -1,0 +1,14 @@
+name: "Get Python Version"
+description: "Read the python version from .python-version file"
+outputs:
+  python-version:
+    description: "Python version"
+    value: ${{ steps.get_version.outputs.python-version }}
+runs:
+  using: "composite"
+  steps:
+    - name: get python-version
+      shell: bash
+      id: get_version
+      run: |
+        echo "python-version=$(cat .python-version)" >> $GITHUB_OUTPUT
