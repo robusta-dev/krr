@@ -1,5 +1,6 @@
-# Use the official Python 3.9 slim image as the base image
-FROM python:3.12-slim as builder
+# PYTHON_VERSION is passed as a build argument which uses .python-version 
+ARG PYTHON_VERSION
+FROM python:${PYTHON_VERSION}-slim as builder
 ENV LANG=C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
