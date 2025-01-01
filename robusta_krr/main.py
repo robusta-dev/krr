@@ -98,7 +98,7 @@ def load_commands() -> None:
                     None,
                     "--resource",
                     "-r",
-                    help="List of resources to run on (Deployment, StatefulSet, DaemonSet, Job, Rollout). By default, will run on all resources. Case insensitive.",
+                    help="List of resources to run on (Deployment, StatefulSet, DaemonSet, Job, Rollout, StrimziPodSet). By default, will run on all resources. Case insensitive.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 selector: Optional[str] = typer.Option(
