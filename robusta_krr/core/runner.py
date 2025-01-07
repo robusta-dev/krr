@@ -289,7 +289,10 @@ class Runner:
             if not clusters or len(clusters) == 1:
                 cluster_name = clusters[0] if clusters else None # its none if krr is running inside cluster
                 prometheus_loader = self._get_prometheus_loader(cluster_name)
-                cluster_summary = await prometheus_loader.get_cluster_summary()
+                if prometheus_loader:
+                    cluster_summary = await prometheus_loader.get_cluster_summary()
+                else:
+                    cluster_summary = {}
             else:
                 cluster_summary = {}
             scans = await asyncio.gather(*[self._gather_object_allocations(k8s_object) for k8s_object in workloads])
