@@ -56,6 +56,7 @@ jobs:
       run: |-
         docker buildx build \
         --build-arg BUILDKIT_INLINE_CACHE=1 \
+        --build-arg PYTHON_VERSION=${{ steps.get_version.outputs.python-version }} \
         --platform linux/arm64,linux/amd64 \
         --cache-from robustadev/krr:${{ github.ref_name }} \
         --tag us-central1-docker.pkg.dev/genuine-flight-317411/devel/krr:${{ github.ref_name }} \
