@@ -204,7 +204,10 @@ class ClusterLoader:
         labels = {}
         annotations = {}
         if item.metadata.labels:
-            labels = item.metadata.labels
+            if type(item.metadata.annotations) is ObjectLikeDict:
+                labels = item.metadata.labels.__dict__
+            else:
+                labels = item.metadata.labels
 
         if item.metadata.annotations:
             if type(item.metadata.annotations) is ObjectLikeDict:
