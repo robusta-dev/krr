@@ -303,7 +303,7 @@ class ClusterLoader:
 
                 result.extend(self.__build_scannable_object(item, container, kind) for container in containers)
         except ApiException as e:
-            if kind in ("Rollout", "DeploymentConfig") and e.status in [400, 401, 403, 404]:
+            if kind in ("Rollout", "DeploymentConfig", "StrimziPodSet") and e.status in [400, 401, 403, 404]:
                 if self.__kind_available[kind]:
                     logger.debug(f"{kind} API not available in {self.cluster}")
                 self.__kind_available[kind] = False
