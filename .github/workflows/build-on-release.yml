@@ -14,15 +14,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
-
-    - uses: ./.github/actions/get-python-version
-      id: get_version
+    - uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v2
       with:
-        python-version: "${{ steps.get_version.outputs.python-version }}"
+        python-version: '3.11'
     
     - name: Install dependencies
       run: |
@@ -160,7 +157,7 @@ jobs:
       MAC_BUILD_HASH: ${{ steps.calc-hash.outputs.MAC_BUILD_HASH }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
       - name: Download MacOS artifact
         uses: actions/download-artifact@v4
         with:
@@ -178,7 +175,7 @@ jobs:
       LINUX_BUILD_HASH: ${{ steps.calc-hash.outputs.LINUX_BUILD_HASH }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
@@ -193,7 +190,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout homebrew-krr repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         with:
           repository: robusta-dev/homebrew-krr
           token: ${{ secrets.MULTIREPO_GITHUB_TOKEN }}
