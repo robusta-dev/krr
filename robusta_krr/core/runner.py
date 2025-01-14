@@ -121,7 +121,7 @@ class Runner:
 
             with open(file_name, "w") as target_file:
                 # don't use rich when writing a csv or html to avoid line wrapping etc
-                if settings.format == "csv" or settings.format == "html":
+                if settings.format == "csv" or settings.format == "html" or settings.format == "json" or settings.format == "yaml":
                     target_file.write(formatted)
                 else:
                     console = Console(file=target_file, width=settings.width)
