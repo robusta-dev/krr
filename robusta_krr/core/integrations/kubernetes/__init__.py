@@ -101,6 +101,7 @@ class ClusterLoader:
         workload_object_lists = await asyncio.gather(
             self._list_deployments(),
             self._list_rollouts(),
+            self._list_strimzipodsets(),
             self._list_deploymentconfig(),
             self._list_all_statefulsets(),
             self._list_all_daemon_set(),
@@ -204,7 +205,10 @@ class ClusterLoader:
         labels = {}
         annotations = {}
         if item.metadata.labels:
-            labels = item.metadata.labels
+            if type(item.metadata.labels) is ObjectLikeDict:
+                labels = item.metadata.labels.__dict__
+            else:  
+                labels = item.metadata.labels
 
         if item.metadata.annotations:
             if type(item.metadata.annotations) is ObjectLikeDict:
@@ -299,7 +303,7 @@ class ClusterLoader:
 
                 result.extend(self.__build_scannable_object(item, container, kind) for container in containers)
         except ApiException as e:
-            if kind in ("Rollout", "DeploymentConfig") and e.status in [400, 401, 403, 404]:
+            if kind in ("Rollout", "DeploymentConfig", "StrimziPodSet") and e.status in [400, 401, 403, 404]:
                 if self.__kind_available[kind]:
                     logger.debug(f"{kind} API not available in {self.cluster}")
                 self.__kind_available[kind] = False
@@ -362,6 +366,30 @@ class ClusterLoader:
                 )
             ),
             extract_containers=_extract_containers,
+        )
+
+    def _list_strimzipodsets(self) -> list[K8sObjectData]:
+        # NOTE: Using custom objects API returns dicts, but all other APIs return objects
+        # We need to handle this difference using a small wrapper
+        return self._list_scannable_objects(
+            kind="StrimziPodSet",
+            all_namespaces_request=lambda **kwargs: ObjectLikeDict(
+                self.custom_objects.list_cluster_custom_object(
+                    group="core.strimzi.io",
+                    version="v1beta2",
+                    plural="strimzipodsets",
+                    **kwargs,
+                )
+            ),
+            namespaced_request=lambda **kwargs: ObjectLikeDict(
+                self.custom_objects.list_namespaced_custom_object(
+                    group="core.strimzi.io",
+                    version="v1beta2",
+                    plural="strimzipodsets",
+                    **kwargs,
+                )
+            ),
+            extract_containers=lambda item: item.spec.pods[0].spec.containers,
         )
 
     def _list_deploymentconfig(self) -> list[K8sObjectData]:
