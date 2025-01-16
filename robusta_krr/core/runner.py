@@ -176,39 +176,43 @@ class Runner:
         }
 
     async def _calculate_object_recommendations(self, object: K8sObjectData) -> Optional[RunResult]:
-        prometheus_loader = self._get_prometheus_loader(object.cluster)
+        try:
+            prometheus_loader = self._get_prometheus_loader(object.cluster)
 
-        if prometheus_loader is None:
+            if prometheus_loader is None:
+                return None
+
+            object.pods = await prometheus_loader.load_pods(object, self._strategy.settings.history_timedelta)
+            if object.pods == []:
+                # Fallback to Kubernetes API
+                object.pods = await self._k8s_loader.load_pods(object)
+
+                # NOTE: Kubernetes API returned pods, but Prometheus did not
+                # This might happen with fast executing jobs
+                if object.pods != []:
+                    object.add_warning("NoPrometheusPods")
+                    logger.warning(
+                        f"Was not able to load any pods for {object} from Prometheus. "
+                        "Loaded pods from Kubernetes API instead."
+                    )
+
+            metrics = await prometheus_loader.gather_data(
+                object,
+                self._strategy,
+                self._strategy.settings.history_timedelta,
+                step=self._strategy.settings.timeframe_timedelta,
+            )
+
+            # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
+            # But keep in mind that numpy calcluations will not block the GIL
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(self._executor, self._strategy.run, metrics, object)
+
+            logger.info(f"Calculated recommendations for {object} (using {len(metrics)} metrics)")
+            return self._format_result(result)
+        except Exception as e:
+            logger.error(f"An error occurred while calculating recommendations for {object}: {e}")
             return None
-
-        object.pods = await prometheus_loader.load_pods(object, self._strategy.settings.history_timedelta)
-        if object.pods == []:
-            # Fallback to Kubernetes API
-            object.pods = await self._k8s_loader.load_pods(object)
-
-            # NOTE: Kubernetes API returned pods, but Prometheus did not
-            # This might happen with fast executing jobs
-            if object.pods != []:
-                object.add_warning("NoPrometheusPods")
-                logger.warning(
-                    f"Was not able to load any pods for {object} from Prometheus. "
-                    "Loaded pods from Kubernetes API instead."
-                )
-
-        metrics = await prometheus_loader.gather_data(
-            object,
-            self._strategy,
-            self._strategy.settings.history_timedelta,
-            step=self._strategy.settings.timeframe_timedelta,
-        )
-
-        # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
-        # But keep in mind that numpy calcluations will not block the GIL
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(self._executor, self._strategy.run, metrics, object)
-
-        logger.info(f"Calculated recommendations for {object} (using {len(metrics)} metrics)")
-        return self._format_result(result)
 
     async def _check_data_availability(self, cluster: Optional[str]) -> None:
         prometheus_loader = self._get_prometheus_loader(cluster)
@@ -308,7 +312,7 @@ class Runner:
             raise CriticalRunnerException("No successful scans were made. Check the logs for more information.")
 
         return Result(
-            scans=scans,
+            scans=successful_scans,
             description=f"[b]{self._strategy.display_name.title()} Strategy[/b]\n\n{self._strategy.description}",
             strategy=StrategyData(
                 name=str(self._strategy).lower(),
