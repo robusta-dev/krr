@@ -8,6 +8,7 @@ from typing import Iterable, List, Optional, Dict, Any
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
 from prometrix import PrometheusNotFound, get_custom_prometheus_connect
+from tenacity import retry, stop_after_attempt, wait_random
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.integrations import openshift
@@ -114,6 +115,7 @@ class PrometheusMetricsService(MetricsService):
         """
         self.prometheus.check_prometheus_connection()
 
+    @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
@@ -121,6 +123,7 @@ class PrometheusMetricsService(MetricsService):
             lambda: self.prometheus.safe_custom_query(query=query)["result"],
         )
 
+    @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> dict:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
@@ -190,9 +193,12 @@ class PrometheusMetricsService(MetricsService):
         ResourceHistoryData: The gathered resource history data.
         """
         logger.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
-
-        metric_loader = LoaderClass(self.prometheus, self.name(), self.executor)
-        data = await metric_loader.load_data(object, period, step)
+        try:
+            metric_loader = LoaderClass(self.prometheus, self.name(), self.executor)
+            data = await metric_loader.load_data(object, period, step)
+        except Exception:
+            logger.exception("Failed to gather resource history data for %s", object)
+            data = {}
 
         if len(data) == 0:
             if "CPU" in LoaderClass.__name__:
