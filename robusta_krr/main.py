@@ -105,7 +105,7 @@ def load_commands() -> None:
                     None,
                     "--selector",
                     "-s",
-                    help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -s key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.",
+                    help="Selector (label query) to filter workloads. Applied to labels on the workload (e.g. deployment) not on the individual pod! Supports '=', '==', and '!='.(e.g. -s key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 prometheus_url: Optional[str] = typer.Option(
