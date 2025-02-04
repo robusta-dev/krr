@@ -85,7 +85,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Prometheus Integration**: Get recommendations based on the data you already have
 - **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
-- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=free-saas-platform).
+- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-free-saas-platform).
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### How Much Can I Expect to Save with KRR?
@@ -262,7 +262,7 @@ If your llm provider url uses a certificate from a custom CA, in order to trust 
 
 ## Free KRR UI on Robusta SaaS
 
-We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=free-robusta-saas-platform). You can:
+We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=free-krr-ui-robusta-saas-platform). You can:
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
@@ -615,7 +615,7 @@ For discovering Prometheus it scans services for those labels:
 <details id="free-ui-for-krr-recommendations">
 <summary>Free UI for KRR recommendations</summary>
 
-We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=free-robusta-saas-platform). You can:
+We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=integrations-free-robusta-saas-platform). You can:
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
