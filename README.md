@@ -85,7 +85,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Prometheus Integration**: Get recommendations based on the data you already have
 - **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
-- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme).
+- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-free-saas-platform).
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### How Much Can I Expect to Save with KRR?
@@ -192,8 +192,8 @@ We do **not** recommend installing KRR from source in airgapped environments due
 <details>
   <summary>In-Cluster</summary>
 
-Apart from running KRR as a CLI tool you can also run KRR inside your cluster. We suggest installing KRR via the <a href="https://platform.robusta.dev/signup">Robusta Platform</a>
-. It gives you a <a href="https://platform.robusta.dev/signup">free UI</a> with some features like the following
+Apart from running KRR as a CLI tool you can also run KRR inside your cluster. We suggest installing KRR via the <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-robusta-platform">Robusta Platform</a>
+. It gives you a <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-free-ui">free UI</a> with some features like the following
 * View application usage history graphs on which recommendations are based.
 * Get application, namespace and cluster level recommendations.
 * YAML configuration to apply the suggested recommendation and more
@@ -202,7 +202,7 @@ Apart from running KRR as a CLI tool you can also run KRR inside your cluster. W
 
 <img src="./images/ui_recommendation.png">
 
-You can also run KRR in-cluster as a Kubernetes Job, if you don't want to view results easily in a <a href="https://platform.robusta.dev/signup">UI</a>. 
+You can also run KRR in-cluster as a Kubernetes Job, if you don't want to view results easily in a <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-ui">UI</a>. 
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/robusta-dev/krr/refs/heads/main/docs/krr-in-cluster/krr-in-cluster-job.yaml
@@ -262,7 +262,7 @@ If your llm provider url uses a certificate from a custom CA, in order to trust 
 
 ## Free KRR UI on Robusta SaaS
 
-We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme). You can:
+We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=free-krr-ui-robusta-saas-platform). You can:
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
@@ -615,7 +615,7 @@ For discovering Prometheus it scans services for those labels:
 <details id="free-ui-for-krr-recommendations">
 <summary>Free UI for KRR recommendations</summary>
 
-We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?utm_source=github&utm_medium=krr-readme). You can:
+We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=integrations-free-robusta-saas-platform). You can:
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more

@@ -11,6 +11,7 @@ from typing import Any, Optional, TypedDict
 import numpy as np
 import pydantic as pd
 from prometrix import CustomPrometheusConnect
+from tenacity import retry, stop_after_attempt, wait_random
 
 from robusta_krr.core.abstract.metrics import BaseMetric
 from robusta_krr.core.abstract.strategies import PodsTimeData
@@ -116,6 +117,7 @@ class PrometheusMetric(BaseMetric):
             return f"{int(step.total_seconds()) // (60 * 60 * 24)}d"
         return f"{int(step.total_seconds()) // 60}m"
 
+    @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     def _query_prometheus_sync(self, data: PrometheusMetricData) -> list[PrometheusSeries]:
         if data.type == QueryType.QueryRange:
             response = self.prometheus.safe_custom_query_range(
