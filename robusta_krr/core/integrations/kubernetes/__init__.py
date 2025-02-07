@@ -184,6 +184,15 @@ class ClusterLoader:
             label_filters += [
                 ClusterLoader._get_match_expression_filter(expression) for expression in selector.match_expressions
             ]
+        
+        # normally the kubernetes API client renames matchLabels to match_labels in python
+        # but for CRDs like ArgoRollouts that renaming doesn't happen and we have selector={'matchLabels': {'app': 'test-app'}}
+        if getattr(selector, "matchLabels", None):
+            label_filters += [f"{label[0]}={label[1]}" for label in getattr(selector, "matchLabels").items()]
+        if getattr(selector, "matchExpressions", None):
+            label_filters += [
+                ClusterLoader._get_match_expression_filter(expression) for expression in getattr(selector, "matchExpressions").items()
+            ]
 
         if label_filters == []:
             # NOTE: This might mean that we have DeploymentConfig,
