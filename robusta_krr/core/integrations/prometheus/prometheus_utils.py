@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import boto3
-from prometrix import AWSPrometheusConfig, CoralogixPrometheusConfig, PrometheusConfig, VictoriaMetricsPrometheusConfig
+from prometrix import (
+    AWSPrometheusConfig,
+    CoralogixPrometheusConfig,
+    PrometheusConfig,
+    VictoriaMetricsPrometheusConfig,
+)
 
 from robusta_krr.core.models.config import settings
 
@@ -40,6 +45,7 @@ def generate_prometheus_config(
         region = settings.eks_managed_prom_region if settings.eks_managed_prom_region else session.region_name
         access_key = settings.eks_access_key if settings.eks_access_key else credentials.access_key
         secret_key = settings.eks_secret_key.get_secret_value() if settings.eks_secret_key else credentials.secret_key
+        token = settings.eks_token.get_secret_value() if settings.eks_token else credentials.token
         service_name = settings.eks_service_name if settings.eks_secret_key else "aps"
         if not region:
             raise Exception("No eks region specified")
@@ -47,6 +53,7 @@ def generate_prometheus_config(
         return AWSPrometheusConfig(
             access_key=access_key,
             secret_access_key=secret_key,
+            token=token,
             aws_region=region,
             service_name=service_name,
             **baseconfig,

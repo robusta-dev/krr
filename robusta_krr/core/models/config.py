@@ -44,6 +44,7 @@ class Config(pd.BaseSettings):
     eks_managed_prom_profile_name: Optional[str] = pd.Field(None)
     eks_access_key: Optional[str] = pd.Field(None)
     eks_secret_key: Optional[pd.SecretStr] = pd.Field(None)
+    eks_token: Optional[pd.SecretStr] = pd.Field(None)
     eks_service_name: Optional[str] = pd.Field(None)
     eks_managed_prom_region: Optional[str] = pd.Field(None)
     coralogix_token: Optional[pd.SecretStr] = pd.Field(None)
