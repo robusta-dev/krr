@@ -171,6 +171,12 @@ def load_commands() -> None:
                     help="Sets the secret key for eks prometheus connection.",
                     rich_help_panel="Prometheus EKS Settings",
                 ),
+                eks_token: Optional[str] = typer.Option(
+                    None,
+                    "--eks-token",
+                    help="Sets the session token for eks prometheus connection.",
+                    rich_help_panel="Prometheus EKS Settings",
+                ),
                 eks_service_name: Optional[str] = typer.Option(
                     "aps",
                     "--eks-service-name",
@@ -234,13 +240,24 @@ def load_commands() -> None:
                     rich_help_panel="Output Settings",
                 ),
                 verbose: bool = typer.Option(
-                    False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
+                    False,
+                    "--verbose",
+                    "-v",
+                    help="Enable verbose mode",
+                    rich_help_panel="Logging Settings",
                 ),
                 quiet: bool = typer.Option(
-                    False, "--quiet", "-q", help="Enable quiet mode", rich_help_panel="Logging Settings"
+                    False,
+                    "--quiet",
+                    "-q",
+                    help="Enable quiet mode",
+                    rich_help_panel="Logging Settings",
                 ),
                 log_to_stderr: bool = typer.Option(
-                    False, "--logtostderr", help="Pass logs to stderr", rich_help_panel="Logging Settings"
+                    False,
+                    "--logtostderr",
+                    help="Pass logs to stderr",
+                    rich_help_panel="Logging Settings",
                 ),
                 width: Optional[int] = typer.Option(
                     None,
@@ -270,7 +287,10 @@ def load_commands() -> None:
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
                 if not show_severity and format != "csv":
-                    raise click.BadOptionUsage("--exclude-severity", "--exclude-severity works only with format=csv")
+                    raise click.BadOptionUsage(
+                        "--exclude-severity",
+                        "--exclude-severity works only with format=csv",
+                    )
 
                 try:
                     config = Config(
@@ -292,6 +312,7 @@ def load_commands() -> None:
                         eks_managed_prom_profile_name=eks_managed_prom_profile_name,
                         eks_access_key=eks_access_key,
                         eks_secret_key=eks_secret_key,
+                        eks_token=eks_token,
                         eks_service_name=eks_service_name,
                         coralogix_token=coralogix_token,
                         openshift=openshift,
@@ -329,7 +350,14 @@ def load_commands() -> None:
                         kind=inspect.Parameter.KEYWORD_ONLY,
                         default=OptionInfo(
                             default=field_meta.default,
-                            param_decls=list(set([f"--{field_name}", f"--{field_name.replace('_', '-')}"])),
+                            param_decls=list(
+                                set(
+                                    [
+                                        f"--{field_name}",
+                                        f"--{field_name.replace('_', '-')}",
+                                    ]
+                                )
+                            ),
                             help=f"{field_meta.field_info.description}",
                             rich_help_panel="Strategy Settings",
                         ),
