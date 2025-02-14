@@ -92,46 +92,32 @@ class Config(pd.BaseSettings):
         return v
 
     @pd.validator("prometheus_other_headers", pre=True)
-    def validate_prometheus_other_headers(
-        cls, headers: Union[list[str], dict[str, str]]
-    ) -> dict[str, str]:
+    def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
         if isinstance(headers, dict):
             return headers
 
-        return {
-            k.strip().lower(): v.strip()
-            for k, v in [header.split(":") for header in headers]
-        }
+        return {k.strip().lower(): v.strip() for k, v in [header.split(":") for header in headers]}
 
     @pd.validator("namespaces")
-    def validate_namespaces(
-        cls, v: Union[list[str], Literal["*"]]
-    ) -> Union[list[str], Literal["*"]]:
+    def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
             return "*"
 
         if isinstance(v, list):
             for val in v:
                 if val.startswith("*"):
-                    raise ValueError(
-                        "Namespace's values cannot start with an asterisk (*)"
-                    )
+                    raise ValueError("Namespace's values cannot start with an asterisk (*)")
 
         return [val.lower() for val in v]
 
     @pd.validator("resources", pre=True)
-    def validate_resources(
-        cls, v: Union[list[str], Literal["*"]]
-    ) -> Union[list[str], Literal["*"]]:
+    def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
             return "*"
 
         # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
         # So this will preserve the big and small letters of the resource
-        return [
-            next(r for r in KindLiteral.__args__ if r.lower() == val.lower())
-            for val in v
-        ]
+        return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
@@ -155,9 +141,7 @@ class Config(pd.BaseSettings):
     @property
     def logging_console(self) -> Console:
         if getattr(self, "_logging_console") is None:
-            self._logging_console = Console(
-                file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width
-            )
+            self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
         return self._logging_console
 
     def load_kubeconfig(self) -> None:
@@ -172,9 +156,7 @@ class Config(pd.BaseSettings):
         if context is None:
             return None
 
-        api_client = config.new_client_from_config(
-            context=context, config_file=self.kubeconfig
-        )
+        api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
         if self.impersonate_user is not None:
             # trick copied from https://github.com/kubernetes-client/python/issues/362
             api_client.set_default_header("Impersonate-User", self.impersonate_user)
@@ -194,13 +176,7 @@ class Config(pd.BaseSettings):
             handlers=[RichHandler(console=config.logging_console)],
         )
         logging.getLogger("").setLevel(logging.CRITICAL)
-        logger.setLevel(
-            logging.DEBUG
-            if config.verbose
-            else logging.CRITICAL
-            if config.quiet
-            else logging.INFO
-        )
+        logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
 
     @staticmethod
     def get_config() -> Optional[Config]:

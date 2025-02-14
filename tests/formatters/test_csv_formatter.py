@@ -216,9 +216,7 @@ def _load_result(override_config: dict[str, Any]) -> Result:
         ),
     ],
 )
-def test_csv_headers(
-    override_config: dict[str, Any], expected_headers: list[str]
-) -> None:
+def test_csv_headers(override_config: dict[str, Any], expected_headers: list[str]) -> None:
     result = _load_result(override_config=override_config)
     output = csv_exporter(result)
     reader = csv.DictReader(io.StringIO(output))
@@ -285,9 +283,7 @@ def test_csv_headers(
         ),
     ],
 )
-def test_csv_row_value(
-    override_config: dict[str, Any], expected_first_row: list[str]
-) -> None:
+def test_csv_row_value(override_config: dict[str, Any], expected_first_row: list[str]) -> None:
     result = _load_result(override_config=override_config)
     output = csv_exporter(result)
     reader = csv.DictReader(io.StringIO(output))
