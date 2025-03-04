@@ -127,15 +127,43 @@ class Runner:
                     console = Console(file=target_file, width=settings.width)
                     console.print(formatted)
             if settings.slack_output:
-                client = WebClient(os.environ["SLACK_BOT_TOKEN"])
-                warnings.filterwarnings("ignore", category=UserWarning)
-                client.files_upload(
-                    channels=f"#{settings.slack_output}",
-                    title="KRR Report",
-                    file=f"./{file_name}",
-                    initial_comment=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}',
-                )
-                os.remove(file_name)
+                try:
+                    slack_token = os.environ.get("SLACK_BOT_TOKEN")
+                    if not slack_token:
+                        raise ValueError("SLACK_BOT_TOKEN is missing from environment variables.")
+
+                    client = WebClient(slack_token)
+
+                    # Validate slack_output format
+                    channel_name = settings.slack_output.strip()
+                    if not channel_name.startswith("#"):
+                        channel_name = f"#{channel_name}"
+
+                    # Send a message and get the channel ID
+                    resp = client.chat_postMessage(
+                        channel=channel_name,
+                        text=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}'
+                    )
+                    
+                    channel_id = resp.get("channel")
+                    if not channel_id:
+                        raise ValueError(f"Failed to retrieve channel ID for {channel_name}")
+
+                    warnings.filterwarnings("ignore", category=UserWarning)
+
+                    # Upload the file it no longer takes the channel plain text name
+                    client.files_upload_v2(
+                        channels=channel_id,
+                        title="KRR Report",
+                        file=f"./{file_name}",
+                    )
+
+                    # Safely remove the file
+                    if os.path.exists(file_name):
+                        os.remove(file_name)
+
+                except Exception as e:
+                    logger.info(f"Unexpected error: {e}")
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
