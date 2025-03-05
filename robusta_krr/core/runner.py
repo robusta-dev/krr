@@ -163,7 +163,7 @@ class Runner:
                         os.remove(file_name)
 
                 except Exception as e:
-                    logger.info(f"Unexpected error: {e}")
+                    logger.exception(f"Unexpected error: {e}")
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
