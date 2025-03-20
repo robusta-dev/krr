@@ -25,7 +25,9 @@ RUN python -m ensurepip --upgrade
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
-COPY . .
+COPY ./krr.py krr.py
+COPY ./robusta_krr/ robusta_krr/
+COPY ./intro.txt intro.txt
 
 # Run the application using 'poetry run krr simple'
 CMD ["python", "krr.py", "simple"]
