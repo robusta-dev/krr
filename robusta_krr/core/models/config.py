@@ -71,6 +71,10 @@ class Config(pd.BaseSettings):
     inside_cluster: bool = False
     _logging_console: Optional[Console] = pd.PrivateAttr(None)
 
+    # vcluster settings
+    vcluster_name: Optional[str] = pd.Field(None)
+    vcluster_namespace: Optional[str] = pd.Field(None)
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 

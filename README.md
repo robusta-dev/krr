@@ -14,7 +14,7 @@
 <div align="center">
   <h1 align="center">Kubernetes Resource Recommendations Based on Historical Data</h1>
   <h2 align="center">Get recommendations based on your existing data in Prometheus/Coralogix/Thanos/Mimir and more!</h2>
-  <p align="center">    
+  <p align="center">
     <a href="#installation"><strong>Installation</strong></a>
     .
     <a href="#how-krr-works"><strong>How KRR works</strong></a>
@@ -202,7 +202,7 @@ Apart from running KRR as a CLI tool you can also run KRR inside your cluster. W
 
 <img src="./images/ui_recommendation.png">
 
-You can also run KRR in-cluster as a Kubernetes Job, if you don't want to view results easily in a <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-ui">UI</a>. 
+You can also run KRR in-cluster as a Kubernetes Job, if you don't want to view results easily in a <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-ui">UI</a>.
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/robusta-dev/krr/refs/heads/main/docs/krr-in-cluster/krr-in-cluster-job.yaml
@@ -398,6 +398,22 @@ KRR supports all known authentication schemes for Prometheus, VictoriaMetrics, C
 Refer to `krr simple --help`, and look at the flags `--prometheus-url`, `--prometheus-auth-header`, `--prometheus-headers` `--prometheus-ssl-enabled`, `--coralogix-token`, and the various `--eks-*` flags.
 
 If you need help, contact us on Slack, email, or by opening a GitHub issue.
+</details>
+
+<details>
+  <summary>VCluster</summary>
+
+KRR supports VCluster software when Prometheus is outside of the VCluster (on physical cluster or centralized). Because of VCluster pod renaming, you need to provide :
+
+- `vcluster-namespace` : The namespace on physical cluster where VCluster is
+- `vcluster-name` : The name of your VCluster (set during VCluster deployment)
+
+Other parameters like namespace selector, pod selector etc work as expected.
+
+```sh
+krr simple --vcluster-name my-vcluster-name --vcluster-namespace my-vcluster-namespace
+```
+
 </details>
 
 <details>
