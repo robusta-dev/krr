@@ -369,6 +369,7 @@ Currently KRR ships with a few formatters to represent the scan data:
 - `yaml`
 - `pprint` - data representation from python's pprint library
 - `csv` - export data to a csv file in the current directory
+- `csv-raw` - csv with raw data for calculation
 - `html`
 
 To run a strategy with a selected formatter, add a `-f` flag. Usually this should be combined with `--fileoutput <filename>` to write clean output to file without logs:
