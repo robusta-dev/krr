@@ -293,6 +293,10 @@ Most helpful flags:
 
 - `--cpu-min` Sets the minimum recommended cpu value in millicores
 - `--mem-min` Sets the minimum recommended memory value in MB
+- `--cpu-min-diff` Sets the minimum cpu difference for recommendation in millicores
+- `--mem-min-diff` Sets the minimum memory difference for recommendation in MB
+- `--cpu-min-percent` Sets the minimum cpu difference in percentage for recommendation
+- `--mem-min-percent` Sets the minimum memory difference in percentage for recommendation
 - `--history_duration` The duration of the Prometheus history data to use (in hours)
 
 More specific information on Strategy Settings can be found using

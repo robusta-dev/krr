@@ -5,7 +5,7 @@ import os
 import sys
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
@@ -32,6 +32,49 @@ def custom_print(*objects, rich: bool = True, force: bool = False) -> None:
     print_func = settings.logging_console.print if rich else print
     if not settings.quiet or force:
         print_func(*objects)  # type: ignore
+
+# Helper function to make the main logic cleaner
+def _meets_filter_criteria(
+    current_val: Optional[float],
+    recommended_val: Optional[float],
+    min_diff: float,
+    min_percent: float,
+    resource: ResourceType,
+) -> bool:
+    """
+    Checks if the difference between current and recommended values meets the threshold.
+    For CPU, min_diff is in millicores, values are in cores.
+    For Memory, min_diff is in MB, values are in bytes.
+    """
+    current = current_val if current_val is not None else 0.0
+    recommended = recommended_val if recommended_val is not None else 0.0
+
+    # If no change, it doesn't meet any "difference" criteria unless thresholds are zero
+    if current == recommended and min_diff != 0.0 and min_percent != 0.0:
+        return False
+
+    # Absolute difference check
+    try:
+        abs_diff_raw = abs(recommended - current)
+        if resource == ResourceType.CPU:
+            abs_diff = abs_diff_raw * 1000
+        else:
+            abs_diff = abs_diff_raw / (1024**2)
+    except TypeError:
+        logger.error(
+            f"TypeError: current_val: {current_val}, recommended_val: {recommended_val}, min_diff: {min_diff}, min_percent: {min_percent}")
+        return True
+
+    if abs_diff < min_diff and min_diff != 0.0:
+        return False
+
+    if min_percent != 0.0:
+        if current > 0:  # Avoid division by zero; if current is 0, any increase is infinite percent
+            percent_diff = (abs_diff_raw / current) * 100
+            if percent_diff < min_percent:
+                return False
+
+    return True
 
 
 class CriticalRunnerException(Exception): ...
@@ -300,6 +343,48 @@ class Runner:
 
         successful_scans = [scan for scan in scans if scan is not None]
 
+        filtered_scans: List[ResourceScan] = []
+        for scan in successful_scans:
+            if scan.object is None or scan.object.allocations is None or scan.recommended is None:
+                logger.debug(f"Skipping scan for {scan.object.name if scan.object else 'Unknown'} due to missing data for filtering.")
+                continue
+
+            current_cpu_request = scan.object.allocations.requests.get(ResourceType.CPU)
+            current_memory_request = scan.object.allocations.requests.get(ResourceType.Memory)
+
+            recommended_cpu_request = rec.value if (rec := scan.recommended.requests.get(ResourceType.CPU)) else None
+            recommended_memory_request = rec.value if (rec := scan.recommended.requests.get(ResourceType.Memory)) else None
+
+            # Check CPU criteria
+            cpu_meets_criteria = _meets_filter_criteria(
+                current_val=current_cpu_request,
+                recommended_val=recommended_cpu_request,
+                min_diff=float(settings.cpu_min_diff),
+                min_percent=float(settings.cpu_min_percent),
+                resource=ResourceType.CPU,
+            )
+
+            # Check Memory criteria
+            memory_meets_criteria = _meets_filter_criteria(
+                current_val=current_memory_request,
+                recommended_val=recommended_memory_request,
+                min_diff=float(settings.memory_min_diff),
+                min_percent=float(settings.memory_min_percent),
+                resource=ResourceType.Memory,
+            )
+
+            if cpu_meets_criteria or memory_meets_criteria:
+                filtered_scans.append(scan)
+            else:
+                logger.debug(
+                    f"Scan for {scan.object.name} (container: {scan.object.container}) did not meet filter criteria. "
+                    f"CPU met: {cpu_meets_criteria}, Memory met: {memory_meets_criteria}. "
+                    f"Current CPU: {current_cpu_request}, Rec CPU: {recommended_cpu_request}. "
+                    f"Current Mem: {current_memory_request}, Rec Mem: {recommended_memory_request}."
+                )
+
+        logger.info(f"Gathered {len(scans)} total scans, {len(successful_scans)} were valid, {len(filtered_scans)} met filter criteria.")
+
         if len(scans) == 0:
             logger.warning("Current filters resulted in no objects available to scan.")
             logger.warning("Try to change the filters or check if there is anything available.")
@@ -308,11 +393,11 @@ class Runner:
                     "Note that you are using the '*' namespace filter, which by default excludes kube-system."
                 )
             raise CriticalRunnerException("No objects available to scan.")
-        elif len(successful_scans) == 0:
-            raise CriticalRunnerException("No successful scans were made. Check the logs for more information.")
+        elif len(filtered_scans) == 0:
+            raise CriticalRunnerException("No successful filtered scans were made. Check the logs for more information.")
 
         return Result(
-            scans=successful_scans,
+            scans=filtered_scans,
             description=f"[b]{self._strategy.display_name.title()} Strategy[/b]\n\n{self._strategy.description}",
             strategy=StrategyData(
                 name=str(self._strategy).lower(),
