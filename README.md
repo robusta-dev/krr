@@ -19,8 +19,6 @@
     .
     <a href="#how-krr-works"><strong>How KRR works</strong></a>
     .
-    <a href="#slack-integration"><strong>Slack Integration</strong></a>
-    .
     <a href="#free-krr-ui-on-robusta-saas"><strong>Free KRR UI</strong></a>
     <br />
     <a href="#usage">Usage</a>
@@ -31,6 +29,8 @@
     ·
     <a href="#support">Support</a>
     <br /> Like KRR? Please ⭐ this repository to show your support!
+    <br />
+    <a href="https://trendshift.io/repositories/7087" target="_blank"><img src="https://trendshift.io/api/badge/repositories/7087" alt="robusta-dev%2Fkrr | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
