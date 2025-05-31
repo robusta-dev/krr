@@ -1,0 +1,10 @@
+apiVersion: v2
+name: krr-enforcer
+description: KRR enforcer - auto apply KRR recommendations
+type: application
+
+# these are set to the right value by .github/workflows/release.yaml
+# we use 0.0.1 as a placeholder for the version` because Helm wont allow `0.0.0` and we want to be able to run
+# `helm install` on development checkouts without updating this file. the version doesn't matter in that case anyway
+version: 0.2.0
+appVersion: 0.2.0

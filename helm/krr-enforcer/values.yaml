@@ -1,0 +1,40 @@
+certificate: "" # base64 encoded
+logLevel: INFO
+
+#image: ~  # image can be used to override image.registry/imageName
+
+image:
+  registry: us-central1-docker.pkg.dev/genuine-flight-317411/devel
+
+imageName: krr-enforcer:0.2.0
+imagePullPolicy: IfNotPresent
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: ~
+additionalEnvVars: []
+priorityClassName: ""
+tolerations: []
+annotations: {}
+nodeSelector: ~
+imagePullSecrets: []
+securityContext:
+  container:
+    allowPrivilegeEscalation: false
+    capabilities: {}
+    privileged: false
+    readOnlyRootFilesystem: false
+    runAsUser: 1000
+  pod: {}
+service:
+  annotations: {}
+serviceAccount:
+  annotations: {}
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+  annotations: {}

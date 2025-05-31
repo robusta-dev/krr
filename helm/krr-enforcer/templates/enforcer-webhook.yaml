@@ -1,0 +1,33 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer
+  labels:
+    app.kubernetes.io/component: krr-enforcer
+webhooks:
+  - name: krr-enforcer.{{ .Release.Name }}.{{ .Release.Namespace }}.svc
+    sideEffects: None
+    admissionReviewVersions: ["v1", "v1beta1"]
+    clientConfig:
+      service:
+        name: {{ .Release.Name }}-krr-enforcer
+        namespace: {{ .Release.Namespace }}
+        path: "/mutate"
+      caBundle: {{ .Values.caBundle | default "Cg==" }}
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+      - operations: ["CREATE", "DELETE"]
+        apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        resources: ["replicasets"]
+    failurePolicy: Ignore
+    timeoutSeconds: 30
+    matchPolicy: Equivalent
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
