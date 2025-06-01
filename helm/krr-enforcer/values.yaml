@@ -1,0 +1,40 @@
+certificate: "" # base64 encoded
+logLevel: INFO
+
+# fullImage: ~  # full image path can be used to override image.repository/image.name:image.tag
+
+image:
+  repository: us-central1-docker.pkg.dev/genuine-flight-317411/devel
+  name: krr-enforcer
+  tag: 0.3.1
+imagePullPolicy: IfNotPresent
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: ~
+additionalEnvVars: []
+priorityClassName: ""
+tolerations: []
+annotations: {}
+nodeSelector: ~
+imagePullSecrets: []
+securityContext:
+  container:
+    allowPrivilegeEscalation: false
+    capabilities: {}
+    privileged: false
+    readOnlyRootFilesystem: false
+    runAsUser: 1000
+  pod: {}
+service:
+  annotations: {}
+serviceAccount:
+  annotations: {}
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+  labels: {}
+  annotations: {}

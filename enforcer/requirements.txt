@@ -1,0 +1,8 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+pydantic==2.6.1
+supabase==2.5
+PyYAML==6.0.1
+cachetools==5.3.3
+prometheus-client==0.20.0
+kubernetes==26.1.0

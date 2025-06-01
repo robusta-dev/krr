@@ -1,0 +1,36 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: krr-enforcer
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: krr-enforcer
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.serviceMonitor.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: krr-enforcer
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: krr-enforcer
+  endpoints:
+  - port: https
+    path: /metrics
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+    {{- with .Values.serviceMonitor.interval }}
+    interval: {{ . }}
+    {{- end }}
+    {{- with .Values.serviceMonitor.scrapeTimeout }}
+    scrapeTimeout: {{ . }}
+    {{- end }}
+{{- end }}
