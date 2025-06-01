@@ -61,6 +61,12 @@ helm repo add robusta https://robusta-charts.storage.googleapis.com && helm repo
 
 2. **Add cluster configuration**:
 
+If the enforcer is installed in the same namespace as Robusta, it will automatically detect the Robusta account settings.
+
+If your Robusta UI sink token, is pulled from a secret (as described [here](https://docs.robusta.dev/master/setup-robusta/configuration-secrets.html#pulling-values-from-kubernetes-secrets)), you should add the same environement variable to the `Enforcer` pod as well.
+
+If the `Enforcer` is installed on a different namespace, you can provide your Robusta account credentials using env variables:
+
 Add your robusta credentials and cluster name: (`enforcer-values.yaml`)
 
 ```yaml

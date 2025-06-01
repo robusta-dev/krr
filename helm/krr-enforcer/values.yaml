@@ -6,7 +6,7 @@ logLevel: INFO
 image:
   repository: us-central1-docker.pkg.dev/genuine-flight-317411/devel
   name: krr-enforcer
-  tag: 0.3.0
+  tag: 0.3.1
 imagePullPolicy: IfNotPresent
 resources:
   requests:

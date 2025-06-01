@@ -24,6 +24,7 @@ from enforcer.env_vars import (
     STORE_PASSWORD,
     SCAN_AGE_HOURS_THRESHOLD,
 )
+from enforcer.params_utils import get_env_replacement
 
 SUPABASE_TIMEOUT_SECONDS = int(os.getenv("SUPABASE_TIMEOUT_SECONDS", 3600))
 
@@ -113,6 +114,10 @@ class SupabaseDal:
                             "No robusta token provided.\n"
                             "Please set a valid Robusta UI token.\n "
                         )
+                    env_replacement_token = get_env_replacement(token)
+                    if env_replacement_token:
+                        token = env_replacement_token
+
                     if "{{" in token:
                         raise ValueError(
                             "The robusta token configured for Krr-enforcer appears to be a templating placeholder (e.g. `{ env.UI_SINK_TOKEN }`).\n "
