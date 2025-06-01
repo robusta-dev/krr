@@ -21,20 +21,13 @@ class Resources(BaseModel):
     limit: Optional[float]
 
 
-class ResourcesRecommendation(BaseModel):
+class ContainerRecommendation(BaseModel):
     cpu: Optional[Resources] = None
     memory: Optional[Resources] = None
 
-class WorkloadRecommendation(BaseModel):
-    workload_key: str
-    container_recommendations: Dict[str, ResourcesRecommendation] = {}
-
-    def get(self, container: str) -> Optional[ResourcesRecommendation]:
-        return self.container_recommendations.get(container, None)
-
     @staticmethod
-    def build(recommendation: Dict[str, Any]) -> Optional[ResourcesRecommendation]:
-        resource_recommendation = ResourcesRecommendation()
+    def build(recommendation: Dict[str, Any]) -> Optional["ContainerRecommendation"]:
+        resource_recommendation = ContainerRecommendation()
         content: List[Dict] = recommendation["content"]
         for container_resource in content:
             resource = container_resource["resource"]
@@ -46,12 +39,12 @@ class WorkloadRecommendation(BaseModel):
             limit = recommended.get("limit", None)
 
             if request == 0.0:
-                logging.debug(f"skipping container recommendations without request, %s", recommendation)
-                return
+                logging.debug("skipping container recommendations without request, %s", recommendation)
+                return None
 
             if request == "?" or limit == "?":
-                logging.debug(f"skipping container recommendations with '?', %s", recommendation)
-                return
+                logging.debug("skipping container recommendations with '?', %s", recommendation)
+                return None
 
             resources = Resources(request=request, limit=limit)
             if resource == "memory":
@@ -61,5 +54,14 @@ class WorkloadRecommendation(BaseModel):
 
         return resource_recommendation
 
-    def add(self, container: str, recommendation: ResourcesRecommendation):
+
+class WorkloadRecommendation(BaseModel):
+    workload_key: str
+    container_recommendations: Dict[str, ContainerRecommendation] = {}
+
+    def get(self, container: str) -> Optional[ContainerRecommendation]:
+        return self.container_recommendations.get(container, None)
+
+
+    def add(self, container: str, recommendation: ContainerRecommendation):
         self.container_recommendations[container] = recommendation

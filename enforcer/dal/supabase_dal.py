@@ -40,9 +40,7 @@ class SupabaseDal:
 
         self.enabled = self.__init_config()
         if not self.enabled:
-            logging.info(
-                "Not connecting to Robusta platform - robusta token not provided - using ROBUSTA_AI will not be possible"
-            )
+            logging.info("Not connecting to Robusta platform - robusta token not provided")
             return
         logging.info(
             f"Initializing Robusta platform connection for account {self.account_id} cluster {self.cluster}"
@@ -112,9 +110,8 @@ class SupabaseDal:
                     token = conf["robusta_sink"].get("token")
                     if not token:
                         raise Exception(
-                            "No robusta token provided to Holmes.\n"
+                            "No robusta token provided.\n"
                             "Please set a valid Robusta UI token.\n "
-                            "See https://docs.robusta.dev/master/configuration/ai-analysis.html#choosing-and-configuring-an-ai-provider for instructions."
                         )
                     if "{{" in token:
                         raise ValueError(
@@ -128,11 +125,11 @@ class SupabaseDal:
                         return RobustaToken(**json.loads(decoded)), config.global_config.get("cluster_name")
                     except binascii.Error:
                         raise Exception(
-                            "binascii.Error encountered. The robusta token provided to Holmes is not a valid base64."
+                            "binascii.Error encountered. The robusta token provided is not a valid base64."
                         )
                     except json.JSONDecodeError:
                         raise Exception(
-                            "json.JSONDecodeError encountered. The Robusta token provided to Holmes could not be parsed as JSON after being base64 decoded."
+                            "json.JSONDecodeError encountered. The Robusta token provided could not be parsed as JSON after being base64 decoded."
                         )
         return None, None
 
@@ -189,12 +186,21 @@ class SupabaseDal:
                 logging.warning(f"No scans found for account {self.account_id} cluster {self.cluster}")
                 return None, None
 
-            latest_scan_id = scans_meta_response.data[0]["scan_id"]
+            if len(scans_meta_response.data) > 1:
+                logging.warning(f"Multiple latest scans found. Using newest scan")
+                # Sort by scan_start string (ISO format sorts chronologically)
+                sorted_scans = sorted(scans_meta_response.data, key=lambda x: x["scan_start"], reverse=True)
+                latest_scan_data = sorted_scans[0]
+            else:
+                latest_scan_data = scans_meta_response.data[0]
+                
+            latest_scan_id = latest_scan_data["scan_id"]
+
             if latest_scan_id == current_scan_id:
                 logging.info(f"Latest scan ID matches current scan ID {current_scan_id}. Reload not required.")
                 return None, None
 
-            scan_start = scans_meta_response.data[0]["scan_start"]
+            scan_start = latest_scan_data["scan_start"]
             scan_datetime = datetime.fromisoformat(scan_start)
             max_age = timedelta(hours=SCAN_AGE_HOURS_THRESHOLD)
             if datetime.now(timezone.utc) - scan_datetime > max_age:
@@ -215,7 +221,7 @@ class SupabaseDal:
             return latest_scan_id, scans_results_response.data
         except Exception:
             logging.exception("Supabase error while retrieving krr scan data")
-            return None
+            return None, None
 
 
 

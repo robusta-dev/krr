@@ -4,7 +4,7 @@ from prometheus_client import Counter, Histogram, Gauge
 pod_admission_mutations = Counter(
     'krr_pod_admission_mutations_total',
     'Total pod admission mutations',
-    ['mutated']  # labels: 'true' or 'false'
+    ['mutated', 'reason']  # labels: 'true' or 'false', reason for success/failure
 )
 
 replicaset_admissions = Counter(

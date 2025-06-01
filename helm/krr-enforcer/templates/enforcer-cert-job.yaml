@@ -25,7 +25,7 @@ spec:
           emptyDir: {}
       containers:
         - name: cert-job
-          image: "bitnami/kubectl:latest"
+          image: "bitnami/kubectl:1.30"
           workingDir: /tmp/certs
           volumeMounts:
             - name: workdir
@@ -113,7 +113,7 @@ spec:
               webhooks:
               - name: enforcer.${SERVICE_NAME}.svc
                 sideEffects: None
-                admissionReviewVersions: ["v1", "v1beta1"]
+                admissionReviewVersions: ["v1"]
                 clientConfig:
                   service:
                     name: ${SERVICE_NAME}
@@ -138,6 +138,15 @@ spec:
                     operator: NotIn
                     values: ["kube-system"]
               EOF
+              
+              # Restart the enforcer deployment to pick up new certificates (only if it exists)
+              echo "Checking if enforcer deployment exists..."
+              if kubectl get deployment ${SERVICE_NAME} -n ${NAMESPACE} >/dev/null 2>&1; then
+                echo "Restarting enforcer deployment..."
+                kubectl rollout restart deployment ${SERVICE_NAME} -n ${NAMESPACE}
+              else
+                echo "Deployment ${SERVICE_NAME} does not exist yet, skipping restart"
+              fi
               
               echo "Job completed successfully!"
 ---
@@ -170,6 +179,9 @@ rules:
   - apiGroups: ["admissionregistration.k8s.io"]
     resources: ["mutatingwebhookconfigurations"]
     verbs: ["create", "get", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

@@ -15,8 +15,6 @@ if add_custom_certificate(ADDITIONAL_CERTIFICATE):
 # ADDING IMPORTS BEFORE ADDING THE CUSTOM CERTS MIGHT INIT HTTP CLIENTS THAT DOESN'T RESPECT THE CUSTOM CERT
 
 import logging
-import os
-import sys
 import base64
 import json
 import re
@@ -102,10 +100,10 @@ async def mutate(request: AdmissionReview):
         kind = request.request.get('kind', {}).get('kind')
 
         if kind == "ReplicaSet":  # use create/delete admission requests, to track new/removed replica sets owners
+            owner_store.handle_rs_admission(request.request)
             operation = request.request.get('operation', 'UNKNOWN')
             replicaset_admissions.labels(operation=operation).inc()
             admission_duration.labels(kind='ReplicaSet').observe(time.time() - start_time)
-            owner_store.handle_rs_admission(request.request)
             # Update rs_owners size metric
             rs_owners_size.set(owner_store.get_rs_owners_count())
             return admission_allowed(request)
@@ -119,7 +117,7 @@ async def mutate(request: AdmissionReview):
 
         if not enforce_pod(object_to_review):
             logger.debug("pod skipped %s", object_to_review)
-            pod_admission_mutations.labels(mutated="false").inc()
+            pod_admission_mutations.labels(mutated="false", reason="ignored_by_annotation").inc()
             admission_duration.labels(kind="Pod").observe(time.time() - start_time)
             return admission_allowed(request)
 
@@ -127,7 +125,7 @@ async def mutate(request: AdmissionReview):
 
         if not pod_owner:
             logger.debug("no owner found. pod skipped %s", object_to_review)
-            pod_admission_mutations.labels(mutated="false").inc()
+            pod_admission_mutations.labels(mutated="false", reason="no_owner_found").inc()
             admission_duration.labels(kind="Pod").observe(time.time() - start_time)
             return admission_allowed(request)
 
@@ -139,7 +137,7 @@ async def mutate(request: AdmissionReview):
 
         if not recommendations:
             logger.debug("no recommendations found for %s. Skipping", pod_owner)
-            pod_admission_mutations.labels(mutated="false").inc()
+            pod_admission_mutations.labels(mutated="false", reason="no_recommendations_found").inc()
             admission_duration.labels(kind="Pod").observe(time.time() - start_time)
             return admission_allowed(request)
 
@@ -154,7 +152,8 @@ async def mutate(request: AdmissionReview):
         
         # Record metrics for Pod mutation
         was_mutated = len(patches) > 0
-        pod_admission_mutations.labels(mutated=str(was_mutated).lower()).inc()
+        reason = "success" if was_mutated else "no_changes_needed"
+        pod_admission_mutations.labels(mutated=str(was_mutated).lower(), reason=reason).inc()
         admission_duration.labels(kind="Pod").observe(time.time() - start_time)
 
         logger.debug(f"Pod patches %s", patches)
@@ -172,6 +171,10 @@ async def mutate(request: AdmissionReview):
         
     except Exception as e:
         logger.exception("Error processing webhook request")
+        # Record failure metric for Pod requests
+        if request.request.get('kind', {}).get('kind') == "Pod":
+            pod_admission_mutations.labels(mutated="false", reason="processing_error").inc()
+            admission_duration.labels(kind="Pod").observe(time.time() - start_time)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
@@ -182,6 +185,7 @@ async def health_check():
     Returns:
         dict: Health status
     """
+    owner_store.finalize_owner_initialization()  # Init loading owners from api server, after accepting api requests
     return {"status": "healthy"}
 
 @app.get("/recommendations/{namespace}/{kind}/{name}")

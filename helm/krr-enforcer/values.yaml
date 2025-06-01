@@ -1,12 +1,12 @@
 certificate: "" # base64 encoded
 logLevel: INFO
 
-#image: ~  # image can be used to override image.registry/imageName
+# fullImage: ~  # full image path can be used to override image.repository/image.name:image.tag
 
 image:
-  registry: us-central1-docker.pkg.dev/genuine-flight-317411/devel
-
-imageName: krr-enforcer:0.2.0
+  repository: us-central1-docker.pkg.dev/genuine-flight-317411/devel
+  name: krr-enforcer
+  tag: 0.3.0
 imagePullPolicy: IfNotPresent
 resources:
   requests:

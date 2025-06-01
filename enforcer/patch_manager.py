@@ -1,8 +1,8 @@
 import copy
 import logging
 from typing import Dict, Any, List, Optional
-from model import ResourcesRecommendation
-from env_vars import UPDATE_THRESHOLD
+from enforcer.model import ContainerRecommendation
+from enforcer.env_vars import UPDATE_THRESHOLD
 logger = logging.getLogger()
 
 REQ = "requests"
@@ -39,6 +39,8 @@ def to_cpu_num(cpu_str: Optional[str]) -> Optional[float]:
     # Handle millicpu format (e.g., "100m", "1500m")
     if cpu_str.endswith('m'):
         return float(cpu_str[:-1]) / 1000.0
+    if cpu_str.endswith('k'):
+        return float(cpu_str[:-1]) * 1000.0
 
     # Handle regular float/int format (e.g., "0.5", "1", "2.5")
     try:
@@ -132,7 +134,7 @@ def add_resource_value(resources: Dict[str, Any], resource_type: str, resource_n
     resources[resource_type][resource_name] = str(resource_value)
 
 
-def get_updated_resources(resources: Dict[str, Any], recommendation: ResourcesRecommendation) -> Dict[str, Any]:
+def get_updated_resources(resources: Dict[str, Any], recommendation: ContainerRecommendation) -> Dict[str, Any]:
     if recommendation.cpu:
         old_cpu_req = to_cpu_num(resources.get(REQ, {}).get(CPU))
         if old_cpu_req:
@@ -227,7 +229,7 @@ def validate_resources(resources: Dict[str, Any]) -> bool:
 def patch_container_resources(
         container_index: int,
         container: Dict[str, Any],
-        recommendation: Optional[ResourcesRecommendation]) -> List[Dict[str, Any]]:
+        recommendation: Optional[ContainerRecommendation]) -> List[Dict[str, Any]]:
     """
     Validate container resources and return patches if needed.
 

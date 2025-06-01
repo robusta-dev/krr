@@ -13,7 +13,11 @@ RUN apt-get update \
 # Set the working directory
 WORKDIR /app/enforcer
 
-COPY . .
+COPY ./*.py .
+COPY ./dal/ dal/
+COPY ./resources/ resources/
+COPY ./requirements.txt requirements.txt
+
 
 RUN pip install --no-cache-dir --upgrade pip
 # Install the project dependencies

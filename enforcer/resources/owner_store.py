@@ -4,6 +4,7 @@ import time
 from typing import Dict, Any, Optional, List
 
 from enforcer.env_vars import REPLICA_SET_CLEANUP_INTERVAL, REPLICA_SET_DELETION_WAIT
+from enforcer.metrics import rs_owners_size
 from enforcer.model import PodOwner, RsOwner
 from enforcer.resources.kubernetes_resource_loader import KubernetesResourceLoader
 
@@ -11,8 +12,10 @@ from enforcer.resources.kubernetes_resource_loader import KubernetesResourceLoad
 class OwnerStore:
 
     def __init__(self):
-        self.rs_owners = self._load_rs_owners()
+        self.rs_owners: Dict[str, RsOwner] = {}
         self._rs_owners_lock = threading.Lock()
+        self._owners_loaded = threading.Event()
+        self._loading_in_progress = threading.Lock()
         self.cleanup_interval = REPLICA_SET_CLEANUP_INTERVAL
         self._stop_event = threading.Event()
         self._cleanup_thread = threading.Thread(target=self._periodic_cleanup, daemon=True)
@@ -21,12 +24,36 @@ class OwnerStore:
     def _rs_key(self, rs_name: str, namespace: str) -> str:
         return f"{namespace}/{rs_name}"
 
-    def _load_rs_owners(self) -> Dict[str, RsOwner]:
-        replica_sets_owners: List[RsOwner] = KubernetesResourceLoader.load_replicasets()
-        rs_owners: Dict[str, RsOwner] = {}
-        for owner in replica_sets_owners:
-            rs_owners[self._rs_key(owner.rs_name, owner.namespace)] = owner
-        return rs_owners
+    def finalize_owner_initialization(self):
+        """Initialize rs_owners on-demand, thread-safe, only once."""
+        if self._owners_loaded.is_set():
+            return  # Already loaded
+            
+        # Try to acquire the loading lock without blocking
+        if not self._loading_in_progress.acquire(blocking=False):
+            # Another thread is loading, just return
+            return
+            
+        try:
+            if self._owners_loaded.is_set():
+                return
+                
+            replica_sets_owners: List[RsOwner] = KubernetesResourceLoader.load_replicasets()
+            loaded_owners: Dict[str, RsOwner] = {}
+            for owner in replica_sets_owners:
+                loaded_owners[self._rs_key(owner.rs_name, owner.namespace)] = owner
+            
+            with self._rs_owners_lock:
+                self.rs_owners.update(loaded_owners)
+                rs_owners_size.set(len(self.rs_owners))
+            
+            self._owners_loaded.set()
+            logging.info(f"Loaded {len(loaded_owners)} ReplicaSet owners")
+            
+        except Exception:
+            logging.exception(f"Failed to load ReplicaSet owners")
+        finally:
+            self._loading_in_progress.release()
 
     @staticmethod
     def get_pod_name(metadata: Dict[str, Any]) -> str:
@@ -47,6 +74,9 @@ class OwnerStore:
             # get only owners with controller == true
             controllers = [owner for owner in owner_references if owner.get("controller", False)]
             if controllers:
+                if len(controllers) > 1:
+                    logging.warning(f"Multiple controllers found for {pod}")
+
                 controller = controllers[0]
                 controller_kind: str = controller.get("kind")
                 if controller_kind == "ReplicaSet":
@@ -68,8 +98,8 @@ class OwnerStore:
         logging.debug(f"handle_rs_admission %s", request)
         operation = request.get("operation")
         if operation == "DELETE":
-            object = request.get("oldObject") or {}  # delete has old object
-            metadata = object.get("metadata", {})
+            old_object = request.get("oldObject") or {}  # delete has old object
+            metadata = old_object.get("metadata", {})
             rs_name = metadata.get("name")
             namespace = metadata.get("namespace")
             if rs_name and namespace:

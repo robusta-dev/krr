@@ -4,7 +4,7 @@ from typing import Dict, Optional, Tuple
 
 from enforcer.dal.supabase_dal import SupabaseDal
 from enforcer.env_vars import SCAN_RELOAD_INTERVAL
-from enforcer.model import WorkloadRecommendation
+from enforcer.model import WorkloadRecommendation, ContainerRecommendation
 
 
 class RecommendationStore:
@@ -13,6 +13,7 @@ class RecommendationStore:
         self.dal = dal
         self.recommendations: Dict[str, WorkloadRecommendation] = {}
         self.scan_id: Optional[str] = None
+        self._recommendations_lock = threading.Lock()
         self._reload_recommendations()
 
         self.reload_interval = SCAN_RELOAD_INTERVAL
@@ -27,6 +28,7 @@ class RecommendationStore:
         if not latest_scan:
             return None, None
 
+        # group workload containers recommendations, into WorkloadRecommendation object
         scan_recommendations: Dict[str, WorkloadRecommendation] = {}
         for container_recommendation in latest_scan:
             try:
@@ -36,7 +38,7 @@ class RecommendationStore:
                         kind=container_recommendation["kind"],
                     )
 
-                recommendation = WorkloadRecommendation.build(container_recommendation)
+                recommendation = ContainerRecommendation.build(container_recommendation)
                 if recommendation:  # if a valid recommendation was created, connect it to the workload
                     workload_recommendation: WorkloadRecommendation = scan_recommendations.get(store_key, None)
                     if not workload_recommendation:
@@ -55,10 +57,11 @@ class RecommendationStore:
     def _reload_recommendations(self):
         scan_id, new_recommendations = self._load_recommendations(self.scan_id)
         if new_recommendations is not None:
-            self.recommendations = new_recommendations
-            self.scan_id = scan_id
-            logging.info("Recommendations reloaded successfully")
-            logging.debug("Loaded recommendations: %s", new_recommendations)
+            with self._recommendations_lock:
+                self.recommendations = new_recommendations
+                self.scan_id = scan_id
+                logging.info("Recommendations reloaded successfully")
+                logging.debug("Loaded recommendations: %s", new_recommendations)
 
     def _periodic_reload(self):
         while not self._stop_event.wait(self.reload_interval):
@@ -72,5 +75,6 @@ class RecommendationStore:
         self._reload_thread.join()
 
     def get_recommendations(self, name: str, namespace: str, kind: str) -> Optional[WorkloadRecommendation]:
-        return self.recommendations.get(self._store_key(name, namespace, kind))
+        with self._recommendations_lock:
+            return self.recommendations.get(self._store_key(name, namespace, kind))
 

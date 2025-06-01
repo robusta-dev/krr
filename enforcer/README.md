@@ -10,9 +10,9 @@ A mutating webhook server that automatically enforces [KRR (Kubernetes Resource 
 
 ## Enforcement Modes
 
-The enforcer supports three enforcement modes:
+Enforcement can be configured globally or on a per-workload basis.
 
-### Default Mode
+### Global Enforcement Mode
 The global default mode is configured via the `KRR_MUTATION_MODE_DEFAULT` environment variable:
 - `enforce` - Apply recommendations to all pods by default
 - `ignore` - Skip enforcement for all pods by default
@@ -46,6 +46,12 @@ The webhook uses `failurePolicy: Ignore` by default, meaning if the webhook fail
 - Prometheus Operator (optional, for metrics collection)
 - Robusta UI account - used to store KRR scan results
 
+### Certificate
+
+- Each helm install/upgrade, a new certificate is created and deployed for the admission webhook.
+- <B>The certificate is set to expire after 1 year.</b>
+- In order to avoid certificate expiration, you must upgrade the enforcer helm release, <b>at least once a year</b>.
+
 ### Quick Start
 
 1. **Add the helm repository** (if available):
@@ -72,18 +78,18 @@ additionalEnvVars:
 
 2. **Install with default settings**:
 ```bash
-helm upgrade --install krr-enforcer robusta/krr-enforcer -f enforcer-values.yaml
+helm install krr-enforcer robusta/krr-enforcer -f enforcer-values.yaml
 ```
 
-### Configuration Options
+### Helm values
 
 | Parameter | Description                                                         | Default |
 |-----------|---------------------------------------------------------------------|---------|
 | `logLevel` | Log level (DEBUG, INFO, WARN, ERROR)                                | `INFO` |
 | `certificate` | Base64-encoded custom CA certificate - for self signed certificates | `""` |
 | `serviceMonitor.enabled` | Enable Prometheus ServiceMonitor                                    | `true` |
-| `resources.requests.cpu` | CPU request                                                         | `100m` |
-| `resources.requests.memory` | Memory request                                                      | `256Mi` |
+| `resources.requests.cpu` | CPU request for the enforcer pod                                    | `100m` |
+| `resources.requests.memory` | Memory request for the enforcer pod                                                     | `256Mi` |
 
 
 ## Running Locally

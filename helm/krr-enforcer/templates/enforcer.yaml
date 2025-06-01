@@ -58,10 +58,10 @@ spec:
             secretName: {{ .Release.Name }}-krr-enforcer-certs
       containers:
         - name: enforcer
-          {{- if .Values.image }}
-          image: "{{ .Values.image }}"
+          {{- if .Values.fullImage }}
+          image: "{{ .Values.fullImage }}"
           {{- else }}
-          image: "{{ .Values.image.registry }}/{{ .Values.imageName }}"
+          image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
           {{- end }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- with .Values.securityContext.container }}
