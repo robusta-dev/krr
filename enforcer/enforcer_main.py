@@ -94,7 +94,7 @@ async def mutate(request: AdmissionReview):
     """
     start_time = time.time()
     try:
-        logging.debug(f"Admission request received %s", request)
+        logging.debug("Admission request received %s", request)
         # Extract the object being reviewed
         object_to_review = request.request.get('object', {})
         kind = request.request.get('kind', {}).get('kind')
@@ -113,7 +113,7 @@ async def mutate(request: AdmissionReview):
             logger.warning(f"Received unexpected resource mutation: {kind}")
             return admission_allowed(request)
 
-        logger.debug(f"Processing pod: %s", owner_store.get_pod_name(object_to_review.get("metadata", {})))
+        logger.debug("Processing pod: %s", owner_store.get_pod_name(object_to_review.get("metadata", {})))
 
         if not enforce_pod(object_to_review):
             logger.debug("pod skipped %s", object_to_review)
@@ -129,7 +129,7 @@ async def mutate(request: AdmissionReview):
             admission_duration.labels(kind="Pod").observe(time.time() - start_time)
             return admission_allowed(request)
 
-        logger.debug(f"Pod owner %s", pod_owner)
+        logger.debug("Pod owner %s", pod_owner)
 
         recommendations: WorkloadRecommendation = recommendation_store.get_recommendations(
             name=pod_owner.name, namespace=pod_owner.namespace, kind=pod_owner.kind
@@ -141,7 +141,7 @@ async def mutate(request: AdmissionReview):
             admission_duration.labels(kind="Pod").observe(time.time() - start_time)
             return admission_allowed(request)
 
-        logger.debug(f"Pod Recommendations %s", recommendations)
+        logger.debug("Pod Recommendations %s", recommendations)
 
         patches = []
         
@@ -156,7 +156,7 @@ async def mutate(request: AdmissionReview):
         pod_admission_mutations.labels(mutated=str(was_mutated).lower(), reason=reason).inc()
         admission_duration.labels(kind="Pod").observe(time.time() - start_time)
 
-        logger.debug(f"Pod patches %s", patches)
+        logger.debug("Pod patches %s", patches)
 
         return {
             "apiVersion": "admission.k8s.io/v1",
