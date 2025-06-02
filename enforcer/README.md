@@ -64,19 +64,10 @@ helm repo add robusta https://robusta-charts.storage.googleapis.com && helm repo
 The `Enforcer` needs access to your Robusta account to fetch KRR recommendations. Choose the appropriate configuration based on your setup:
 
 #### Option A: Same Namespace as Robusta (Easiest)
-If the enforcer is installed in the **same namespace as Robusta**, it will automatically detect Robusta account settings from the existing configuration.
+If the enforcer is installed in the **same namespace as Robusta**, it can automatically detect Robusta account settings and there is no need for explicit configuration.
 
-**⚠️ Caveat**: If your Robusta UI token is pulled from a secret (as described [here](https://docs.robusta.dev/master/setup-robusta/configuration-secrets.html#pulling-values-from-kubernetes-secrets)), you must add the same environment variables to the enforcer pod:
+**⚠️ Caveat**: If your Robusta UI token is pulled from a secret (as described [here](https://docs.robusta.dev/master/setup-robusta/configuration-secrets.html#pulling-values-from-kubernetes-secrets)),  this method won’t work and you should use Option B (described below) instead.
 
-```yaml
-# enforcer-values.yaml
-additionalEnvVars:
-  - name: TOKEN_ENV_VAR_NAME
-    valueFrom:
-      secretKeyRef:
-        name: robusta-secrets
-        key: robustaSinkToken
-```
 
 #### Option B: Different Namespace
 If the enforcer is installed in a **different namespace than Robusta**, provide the Robusta credentials explicitly:
@@ -96,7 +87,7 @@ additionalEnvVars:
   #       key: robustaSinkToken
 ```
 
-2. **Install with default settings**:
+3. **Install with default settings**:
 ```bash
 helm install krr-enforcer robusta/krr-enforcer -f enforcer-values.yaml
 ```
