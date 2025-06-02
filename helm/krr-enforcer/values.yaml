@@ -1,12 +1,16 @@
 certificate: "" # base64 encoded
 logLevel: INFO
 
+# Enforcer configuration
+mutationMode: ignore            # enforce or ignore - default global enforcement mode
+updateThreshold: 20.0           # percentage threshold for applying resource updates
+
 # fullImage: ~  # full image path can be used to override image.repository/image.name:image.tag
 
 image:
   repository: us-central1-docker.pkg.dev/genuine-flight-317411/devel
   name: krr-enforcer
-  tag: 0.3.1
+  tag: 0.3.2
 imagePullPolicy: IfNotPresent
 resources:
   requests:

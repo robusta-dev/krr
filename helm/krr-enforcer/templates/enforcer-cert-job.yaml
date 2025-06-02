@@ -139,15 +139,6 @@ spec:
                     values: ["kube-system"]
               EOF
               
-              # Restart the enforcer deployment to pick up new certificates (only if it exists)
-              echo "Checking if enforcer deployment exists..."
-              if kubectl get deployment ${SERVICE_NAME} -n ${NAMESPACE} >/dev/null 2>&1; then
-                echo "Restarting enforcer deployment..."
-                kubectl rollout restart deployment ${SERVICE_NAME} -n ${NAMESPACE}
-              else
-                echo "Deployment ${SERVICE_NAME} does not exist yet, skipping restart"
-              fi
-              
               echo "Job completed successfully!"
 ---
 apiVersion: v1
