@@ -34,10 +34,12 @@ SCANS_RESULTS_TABLE = "ScansResults"
 
 class SupabaseDal:
     def __init__(self):
-        # disable infor logs for each db call
-        httpx_logger = logging.getLogger("httpx")
-        if httpx_logger:
-            httpx_logger.setLevel(logging.WARNING)
+        # disable info/debug logs for each db call
+        for http_logger_name in ["httpx", "httpcore", "hpack"]:
+            http_logger = logging.getLogger(http_logger_name)
+            if http_logger:
+                logging.info(f"Setting logging level for {http_logger_name} to WARNING")
+                http_logger.setLevel(logging.WARNING)
 
         self.enabled = self.__init_config()
         if not self.enabled:
