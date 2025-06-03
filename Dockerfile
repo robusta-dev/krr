@@ -9,11 +9,6 @@ ENV PATH="/app/venv/bin:$PATH"
 RUN apt-get update && \
     dpkg --add-architecture arm64
 
-# # We're installing here libexpat1, to upgrade the package to include a fix to 3 high CVEs. CVE-2024-45491,CVE-2024-45490,CVE-2024-45492
-# RUN apt-get update \
-#     && apt-get install -y --no-install-recommends libexpat1 \
-#     && rm -rf /var/lib/apt/lists/*
-
 # Set the working directory
 WORKDIR /app
 
