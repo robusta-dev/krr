@@ -1,7 +1,9 @@
 from robusta_krr.core.models.objects import K8sObjectData
 
 from .base import PrometheusMetric, QueryType
+import logging
 
+logger = logging.getLogger("krr")
 
 class MemoryLoader(PrometheusMetric):
     """
@@ -11,18 +13,21 @@ class MemoryLoader(PrometheusMetric):
     query_type: QueryType = QueryType.QueryRange
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(self.get_vcluster_pod_real_name(pod.name, object.namespace) for pod in object.pods)
+        pods_namespace = self.get_pod_namespace(object.namespace)
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        prom_query = f"""
             max(
                 container_memory_working_set_bytes{{
-                    namespace="{object.namespace}",
+                    namespace="{pods_namespace}",
                     pod=~"{pods_selector}",
                     container="{object.container}"
                     {cluster_label}
                 }}
             ) by (container, pod, job)
         """
+        logger.debug(f"{prom_query}")
+        return prom_query
 
 
 class MaxMemoryLoader(PrometheusMetric):
@@ -31,13 +36,14 @@ class MaxMemoryLoader(PrometheusMetric):
     """
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(self.get_vcluster_pod_real_name(pod.name, object.namespace) for pod in object.pods)
+        pods_namespace = self.get_pod_namespace(object.namespace)
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        prom_query = f"""
             max_over_time(
                 max(
                     container_memory_working_set_bytes{{
-                        namespace="{object.namespace}",
+                        namespace="{pods_namespace}",
                         pod=~"{pods_selector}",
                         container="{object.container}"
                         {cluster_label}
@@ -46,7 +52,8 @@ class MaxMemoryLoader(PrometheusMetric):
                 [{duration}:{step}]
             )
         """
-
+        logger.debug(f"{prom_query}")
+        return prom_query
 
 class MemoryAmountLoader(PrometheusMetric):
     """
@@ -54,13 +61,14 @@ class MemoryAmountLoader(PrometheusMetric):
     """
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(self.get_vcluster_pod_real_name(pod.name, object.namespace) for pod in object.pods)
+        pods_namespace = self.get_pod_namespace(object.namespace)
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        prom_query = f"""
             count_over_time(
                 max(
                     container_memory_working_set_bytes{{
-                        namespace="{object.namespace}",
+                        namespace="{pods_namespace}",
                         pod=~"{pods_selector}",
                         container="{object.container}"
                         {cluster_label}
@@ -69,7 +77,9 @@ class MemoryAmountLoader(PrometheusMetric):
                 [{duration}:{step}]
             )
         """
-
+        logger.debug(f"{prom_query}")
+        return prom_query
+    
 # TODO: Need to battle test if this one is correct.
 class MaxOOMKilledMemoryLoader(PrometheusMetric):
     """
@@ -79,15 +89,16 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
     warning_on_no_data = False
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(self.get_vcluster_pod_real_name(pod.name, object.namespace) for pod in object.pods)
+        pods_namespace = self.get_pod_namespace(object.namespace)
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        prom_query = f"""
             max_over_time(
                 max(
                     max(
                         kube_pod_container_resource_limits{{
                             resource="memory",
-                            namespace="{object.namespace}",
+                            namespace="{pods_namespace}",
                             pod=~"{pods_selector}",
                             container="{object.container}"
                             {cluster_label}
@@ -97,7 +108,7 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
                     max(
                         kube_pod_container_status_last_terminated_reason{{
                             reason="OOMKilled",
-                            namespace="{object.namespace}",
+                            namespace="{pods_namespace}",
                             pod=~"{pods_selector}",
                             container="{object.container}"
                             {cluster_label}
@@ -107,3 +118,5 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
                 [{duration}:{step}]
             )
         """
+        logger.debug(f"{prom_query}")
+        return prom_query
