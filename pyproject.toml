@@ -38,7 +38,7 @@ pyyaml = "6.0.1"
 typing-extensions = "4.6.0"
 idna = "3.7"
 urllib3 = "^1.26.20"
-setuptools = "^70.0.0"
+setuptools = "^80.9.0"
 zipp = "^3.19.1"
 tenacity = "^9.0.0"
 
