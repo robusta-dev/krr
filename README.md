@@ -28,7 +28,7 @@
     <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
     ·
     <a href="#support">Support</a>
-    <br /> Like KRR? Please ⭐ this repository to show your support!
+    <br />
     <br />
     <a href="https://trendshift.io/repositories/7087" target="_blank"><img src="https://trendshift.io/api/badge/repositories/7087" alt="robusta-dev%2Fkrr | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
   </p>
@@ -63,6 +63,8 @@
 ## About The Project
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for **optimizing resource allocation** in Kubernetes clusters. It gathers pod usage data from Prometheus and **recommends requests and limits** for CPU and memory. This **reduces costs and improves performance**.
+
+**New:** Put right-sizing on auto-pilot by applying recommendations automatically. [Request beta access](https://robusta-dev.typeform.com/to/ATz6h0wN).
 
 ### Data Integrations
 
