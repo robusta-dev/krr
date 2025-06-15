@@ -330,10 +330,10 @@ def load_commands() -> None:
                         default=OptionInfo(
                             default=field_meta.default,
                             param_decls=list(set([f"--{field_name}", f"--{field_name.replace('_', '-')}"])),
-                            help=f"{field_meta.field_info.description}",
+                            help=f"{field_meta.description}",
                             rich_help_panel="Strategy Settings",
                         ),
-                        annotation=__process_type(field_meta.type_),
+                        annotation=__process_type(field_meta.annotation),
                     )
                     for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
                 ]
