@@ -1,5 +1,4 @@
-# Use the official Python 3.9 slim image as the base image
-FROM python:3.12-slim
+FROM python:3.12-alpine
 ENV LANG=C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
