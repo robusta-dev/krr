@@ -12,6 +12,7 @@ from rich.console import Console
 from slack_sdk import WebClient
 import requests
 import json
+import traceback
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
@@ -333,6 +334,7 @@ class Runner:
         except Exception as e:
             logger.error(f"Could not load kubernetes configuration: {e}")
             logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
+            publish_error(f"Could not load kubernetes configuration: {e}")
             return 1  # Exit with error
 
         try:
@@ -352,41 +354,63 @@ class Runner:
             self._process_result(result)
         except (ClusterNotSpecifiedException, CriticalRunnerException) as e:
             logger.critical(e)
+            publish_error(traceback.format_exc())
             return 1  # Exit with error
         except Exception:
             logger.exception("An unexpected error occurred")
+            publish_error(traceback.format_exc())
             return 1  # Exit with error
         else:
             return 0  # Exit with success
 
     def _send_result(self, url: str, start_time: datetime, scan_id: str, result: Result):
-        headers = {"Content-Type": "application/json"}
+        result_dict = json.loads(result.json(indent=2))
+        _send_scan_payload(url, scan_id, start_time, result_dict, is_error=False)
 
-        try:
-            logger.warning(f"Sending Scan")
-            # Safely parse the JSON string back into a dict
-            result_dict = json.loads(result.json(indent=2))
+def publish_error(url: str, scan_id: str, start_time: str, error: str):
+    _send_scan_payload(url, scan_id, start_time, error, is_error=True)
 
-            action_request = {
-                "action_name": "process_scan",
-                "action_params": {
-                    "result": result_dict,  # Native JSON object
-                    "scan_type": "krr",
-                    "scan_id": scan_id,
-                    "start_time": start_time,
-                }
-            }
+def publish_error(error: str):
+    if not settings.publish_scan_url or not settings.scan_id or not settings.start_time:
+        return
+    _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, is_error=True)
 
-            response = requests.post(
-                url,
-                headers=headers,
-                json=action_request  # Let requests handle encoding
-            )
+def _send_scan_payload(
+    url: str,
+    scan_id: str,
+    start_time: Union[str, datetime],
+    result_data: Union[str, dict],
+    is_error: bool = False
+):
+    headers = {"Content-Type": "application/json"}
 
-            logger.warning(f"Status code: {response.status_code}")
-            logger.warning(f"Response: {response.text}")
+    if isinstance(start_time, datetime):
+        start_time = start_time.isoformat()
 
-        except requests.exceptions.RequestException as e:
-            logger.error("HTTP RequestException", exc_info=True)
-        except Exception as e:
-            logger.error("Unexpected exception in send_result", exc_info=True)
+    action_request = {
+        "action_name": "process_scan",
+        "action_params": {
+            "result": result_data,
+            "scan_type": "krr",
+            "scan_id": scan_id,
+            "start_time": start_time,
+        }
+    }
+
+    try:
+        logger_msg = "Sending error scan" if is_error else "Sending scan"
+        logger.warning(logger_msg)
+
+        response = requests.post(
+            url,
+            headers=headers,
+            json=action_request  # Let requests handle encoding
+        )
+
+        logger.info(f"Status code: {response.status_code}")
+        logger.info(f"Response: {response.text}")
+
+    except requests.exceptions.RequestException:
+        logger.error("HTTP RequestException", exc_info=True)
+    except Exception:
+        logger.error("Unexpected exception while sending scan result", exc_info=True)
