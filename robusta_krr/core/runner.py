@@ -413,4 +413,3 @@ def _send_scan_payload(
     except requests.exceptions.RequestException:
         logger.error("HTTP RequestException", exc_info=True)
     except Exception:
-        logger.error("Unexpected exception while sending scan result", exc_info=True)
