@@ -266,6 +266,24 @@ def load_commands() -> None:
                     help="Send to output to a slack channel, must have SLACK_BOT_TOKEN",
                     rich_help_panel="Output Settings",
                 ),
+                publish_scan_url: Optional[str] = typer.Option(
+                    None,
+                    "--publish_scan_url",
+                    help="Sends to output to a robusta_runner instance",
+                    rich_help_panel="Publish Scan Settings",
+                ),
+                start_time: Optional[str] = typer.Option(
+                    None,
+                    "--start_time",
+                    help="Start time of the scan",
+                    rich_help_panel="Publish Scan Settings",
+                ),
+                scan_id: Optional[str] = typer.Option(
+                    None,
+                    "--scan_id",
+                    help="A UUID scan identifier",
+                    rich_help_panel="Publish Scan Settings",
+                ),
                 **strategy_args,
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
@@ -310,7 +328,10 @@ def load_commands() -> None:
                         show_severity=show_severity,
                         strategy=_strategy_name,
                         other_args=strategy_args,
-                    )
+                        publish_scan_url=publish_scan_url,
+                        start_time=start_time,
+                        scan_id=scan_id,
+                        )
                     Config.set_config(config)
                 except ValidationError:
                     logger.exception("Error occured while parsing arguments")

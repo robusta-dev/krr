@@ -10,7 +10,8 @@ from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
-
+import requests
+import json
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
@@ -104,6 +105,9 @@ class Runner:
         result.errors = self.errors
 
         Formatter = settings.Formatter
+
+        if(settings.publish_scan_url and settings.start_time and settings.scan_id):
+            self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, result)
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
@@ -354,3 +358,35 @@ class Runner:
             return 1  # Exit with error
         else:
             return 0  # Exit with success
+
+    def _send_result(self, url: str, start_time: datetime, scan_id: str, result: Result):
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            logger.warning(f"Sending Scan")
+            # Safely parse the JSON string back into a dict
+            result_dict = json.loads(result.json(indent=2))
+
+            action_request = {
+                "action_name": "process_scan",
+                "action_params": {
+                    "result": result_dict,  # Native JSON object
+                    "scan_type": "krr",
+                    "scan_id": scan_id,
+                    "start_time": start_time,
+                }
+            }
+
+            response = requests.post(
+                url,
+                headers=headers,
+                json=action_request  # Let requests handle encoding
+            )
+
+            logger.warning(f"Status code: {response.status_code}")
+            logger.warning(f"Response: {response.text}")
+
+        except requests.exceptions.RequestException as e:
+            logger.error("HTTP RequestException", exc_info=True)
+        except Exception as e:
+            logger.error("Unexpected exception in send_result", exc_info=True)
