@@ -17,7 +17,7 @@ from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import BaseStrategy
 from robusta_krr.core.models.config import Config
-from robusta_krr.core.runner import Runner
+from robusta_krr.core.runner import Runner, publish_error
 from robusta_krr.utils.version import get_version
 
 app = typer.Typer(
@@ -333,8 +333,9 @@ def load_commands() -> None:
                         scan_id=scan_id,
                         )
                     Config.set_config(config)
-                except ValidationError:
+                except ValidationError as e:
                     logger.exception("Error occured while parsing arguments")
+                    publish_error( publish_scan_url, start_time, scan_id, str(e))
                 else:
                     runner = Runner()
                     exit_code = asyncio.run(runner.run())
