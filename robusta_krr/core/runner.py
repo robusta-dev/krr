@@ -107,8 +107,7 @@ class Runner:
 
         Formatter = settings.Formatter
 
-        if(settings.publish_scan_url and settings.start_time and settings.scan_id):
-            self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, result)
+        self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, result)
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
@@ -371,8 +370,6 @@ def publish_error(url: str, scan_id: str, start_time: str, error: str):
     _send_scan_payload(url, scan_id, start_time, error, is_error=True)
 
 def publish_error(error: str):
-    if not settings.publish_scan_url or not settings.scan_id or not settings.start_time:
-        return
     _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, is_error=True)
 
 def _send_scan_payload(
@@ -382,6 +379,9 @@ def _send_scan_payload(
     result_data: Union[str, dict],
     is_error: bool = False
 ):
+    if not url or not scan_id or not start_time:
+        return
+
     headers = {"Content-Type": "application/json"}
 
     if isinstance(start_time, datetime):
