@@ -111,6 +111,10 @@ spec:
               memory: {{ .Values.resources.limits.memory }}
               {{- end }}
             {{- end }}
+          {{- if .Values.envFrom }}
+          envFrom:
+          {{- toYaml .Values.envFrom | nindent 12 }}
+          {{- end }}
           env:
             - name: ENFORCER_SSL_KEY_FILE
               value: "/etc/webhook/certs/tls.key"

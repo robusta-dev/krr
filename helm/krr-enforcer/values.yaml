@@ -15,6 +15,7 @@ resources:
   limits:
     cpu: ~
 additionalEnvVars: []
+envFrom: []
 priorityClassName: ""
 tolerations: []
 annotations: {}
