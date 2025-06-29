@@ -269,7 +269,7 @@ def load_commands() -> None:
                 publish_scan_url: Optional[str] = typer.Option(
                     None,
                     "--publish_scan_url",
-                    help="Sends to output to a robusta_runner instance",
+                    help="Sends the output to a robusta_runner instance",
                     rich_help_panel="Publish Scan Settings",
                 ),
                 start_time: Optional[str] = typer.Option(
