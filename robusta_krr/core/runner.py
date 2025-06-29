@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import sys
+import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
@@ -369,7 +370,7 @@ class Runner:
 def publish_error(url: str, scan_id: str, start_time: str, error: str):
     _send_scan_payload(url, scan_id, start_time, error, is_error=True)
 
-def publish_error(error: str):
+def publish_input_error(error: str):
     _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, is_error=True)
 
 def _send_scan_payload(
@@ -380,11 +381,15 @@ def _send_scan_payload(
     is_error: bool = False
 ):
     if not url or not scan_id or not start_time:
+        logger.debug(f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}")
         return
+
+    logger.debug(f"Preparing to send scan payload. scan_id={scan_id}, is_error={is_error}")
 
     headers = {"Content-Type": "application/json"}
 
     if isinstance(start_time, datetime):
+        logger.debug(f"Converting datetime to ISO format for scan_id={scan_id}")
         start_time = start_time.isoformat()
 
     action_request = {
@@ -397,20 +402,32 @@ def _send_scan_payload(
         }
     }
 
-    try:
-        logger_msg = "Sending error scan" if is_error else "Sending scan"
-        logger.warning(logger_msg)
+    retries = 3
+    backoff = 1
 
-        response = requests.post(
-            url,
-            headers=headers,
-            json=action_request  # Let requests handle encoding
-        )
+    for attempt in range(1, retries + 1):
+        try:
+            logger_msg = "Sending error scan" if is_error else "Sending scan"
+            logger.info(f"{logger_msg} for scan_id={scan_id} to url={url} (attempt {attempt})")
 
-        logger.info(f"Status code: {response.status_code}")
-        logger.info(f"Response: {response.text}")
+            response = requests.post(
+                url,
+                headers=headers,
+                json=action_request  # Let requests handle encoding
+            )
 
-    except requests.exceptions.RequestException:
-        logger.error("HTTP RequestException", exc_info=True)
-    except Exception:
-        logger.error("Unexpected exception while sending scan result", exc_info=True)
+            logger.info(f"scan_id={scan_id} | Status code: {response.status_code}")
+            logger.info(f"scan_id={scan_id} | Response body: {response.text}")
+            break  # Success, exit retry loop
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"scan_id={scan_id} | Attempt {attempt} failed with RequestException: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"scan_id={scan_id} | Attempt {attempt} failed with unexpected exception: {e}", exc_info=True)
+
+        if attempt < retries:
+            logger.info(f"scan_id={scan_id} | Retrying in {backoff} seconds...")
+            time.sleep(backoff)
+            backoff *= 2  # Exponential backoff
+        else:
+            logger.error(f"scan_id={scan_id} | All retry attempts failed.")
