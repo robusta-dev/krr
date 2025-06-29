@@ -266,6 +266,18 @@ def load_commands() -> None:
                     help="Send to output to a slack channel, must have SLACK_BOT_TOKEN",
                     rich_help_panel="Output Settings",
                 ),
+                vcluster_namespace: str = typer.Option(
+                    None,
+                    "--vcluster-namespace",
+                    help="The vcluster namespace on physical cluster",
+                    rich_help_panel="VCluster Settings",
+                ),
+                vcluster_name: str = typer.Option(
+                    None,
+                    "--vcluster-name",
+                    help="The vcluster name on physical cluster",
+                    rich_help_panel="VCluster Settings",
+                ),
                 **strategy_args,
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
@@ -310,6 +322,8 @@ def load_commands() -> None:
                         show_severity=show_severity,
                         strategy=_strategy_name,
                         other_args=strategy_args,
+                        vcluster_namespace=vcluster_namespace,
+                        vcluster_name=vcluster_name,
                     )
                     Config.set_config(config)
                 except ValidationError:
