@@ -60,6 +60,11 @@ class Config(pd.BaseSettings):
     width: Optional[int] = pd.Field(None, ge=1)
     show_severity: bool = True
 
+    # Publishing to url settings
+    publish_scan_url: Optional[str] = pd.Field(None)
+    start_time: Optional[str] = pd.Field(None)
+    scan_id: Optional[str] = pd.Field(None)
+
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
     file_output_dynamic: bool = pd.Field(False)

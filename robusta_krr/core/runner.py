@@ -3,6 +3,7 @@ import logging
 import math
 import os
 import sys
+import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
@@ -10,7 +11,9 @@ from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
-
+import requests
+import json
+import traceback
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
@@ -104,6 +107,8 @@ class Runner:
         result.errors = self.errors
 
         Formatter = settings.Formatter
+
+        self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, result)
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
@@ -329,6 +334,7 @@ class Runner:
         except Exception as e:
             logger.error(f"Could not load kubernetes configuration: {e}")
             logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
+            publish_error(f"Could not load kubernetes configuration: {e}")
             return 1  # Exit with error
 
         try:
@@ -348,9 +354,80 @@ class Runner:
             self._process_result(result)
         except (ClusterNotSpecifiedException, CriticalRunnerException) as e:
             logger.critical(e)
+            publish_error(traceback.format_exc())
             return 1  # Exit with error
         except Exception:
             logger.exception("An unexpected error occurred")
+            publish_error(traceback.format_exc())
             return 1  # Exit with error
         else:
             return 0  # Exit with success
+
+    def _send_result(self, url: str, start_time: datetime, scan_id: str, result: Result):
+        result_dict = json.loads(result.json(indent=2))
+        _send_scan_payload(url, scan_id, start_time, result_dict, is_error=False)
+
+def publish_error(url: str, scan_id: str, start_time: str, error: str):
+    _send_scan_payload(url, scan_id, start_time, error, is_error=True)
+
+def publish_input_error(error: str):
+    _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, is_error=True)
+
+def _send_scan_payload(
+    url: str,
+    scan_id: str,
+    start_time: Union[str, datetime],
+    result_data: Union[str, dict],
+    is_error: bool = False
+):
+    if not url or not scan_id or not start_time:
+        logger.debug(f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}")
+        return
+
+    logger.debug(f"Preparing to send scan payload. scan_id={scan_id}, is_error={is_error}")
+
+    headers = {"Content-Type": "application/json"}
+
+    if isinstance(start_time, datetime):
+        logger.debug(f"Converting datetime to ISO format for scan_id={scan_id}")
+        start_time = start_time.isoformat()
+
+    action_request = {
+        "action_name": "process_scan",
+        "action_params": {
+            "result": result_data,
+            "scan_type": "krr",
+            "scan_id": scan_id,
+            "start_time": start_time,
+        }
+    }
+
+    retries = 3
+    backoff = 1
+
+    for attempt in range(1, retries + 1):
+        try:
+            logger_msg = "Sending error scan" if is_error else "Sending scan"
+            logger.info(f"{logger_msg} for scan_id={scan_id} to url={url} (attempt {attempt})")
+
+            response = requests.post(
+                url,
+                headers=headers,
+                json=action_request  # Let requests handle encoding
+            )
+
+            logger.info(f"scan_id={scan_id} | Status code: {response.status_code}")
+            logger.info(f"scan_id={scan_id} | Response body: {response.text}")
+            break  # Success, exit retry loop
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"scan_id={scan_id} | Attempt {attempt} failed with RequestException: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"scan_id={scan_id} | Attempt {attempt} failed with unexpected exception: {e}", exc_info=True)
+
+        if attempt < retries:
+            logger.info(f"scan_id={scan_id} | Retrying in {backoff} seconds...")
+            time.sleep(backoff)
+            backoff *= 2  # Exponential backoff
+        else:
+            logger.error(f"scan_id={scan_id} | All retry attempts failed.")
