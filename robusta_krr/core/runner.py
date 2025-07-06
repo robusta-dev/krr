@@ -11,6 +11,7 @@ from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import requests
 import json
 import traceback
@@ -373,6 +374,22 @@ def publish_input_error(url: str, scan_id: str, start_time: str, error: str):
 def publish_error(error: str):
     _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, is_error=True)
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=8),
+    retry=retry_if_exception_type(requests.exceptions.RequestException),
+    reraise=True
+)
+def _post_scan_request(url: str, headers: dict, payload: dict, scan_id: str, is_error: bool):
+    logger_msg = "Sending error scan" if is_error else "Sending scan"
+    logger.info(f"{logger_msg} for scan_id={scan_id} to url={url}")
+
+    response = requests.post(url, headers=headers, json=payload)
+    logger.info(f"scan_id={scan_id} | Status code: {response.status_code}")
+    logger.info(f"scan_id={scan_id} | Response body: {response.text}")
+    return response
+
+
 def _send_scan_payload(
     url: str,
     scan_id: str,
@@ -402,32 +419,9 @@ def _send_scan_payload(
         }
     }
 
-    retries = 3
-    backoff = 1
-
-    for attempt in range(1, retries + 1):
-        try:
-            logger_msg = "Sending error scan" if is_error else "Sending scan"
-            logger.info(f"{logger_msg} for scan_id={scan_id} to url={url} (attempt {attempt})")
-
-            response = requests.post(
-                url,
-                headers=headers,
-                json=action_request  # Let requests handle encoding
-            )
-
-            logger.info(f"scan_id={scan_id} | Status code: {response.status_code}")
-            logger.info(f"scan_id={scan_id} | Response body: {response.text}")
-            break  # Success, exit retry loop
-
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"scan_id={scan_id} | Attempt {attempt} failed with RequestException: {e}", exc_info=True)
-        except Exception as e:
-            logger.error(f"scan_id={scan_id} | Attempt {attempt} failed with unexpected exception: {e}", exc_info=True)
-
-        if attempt < retries:
-            logger.info(f"scan_id={scan_id} | Retrying in {backoff} seconds...")
-            time.sleep(backoff)
-            backoff *= 2  # Exponential backoff
-        else:
-            logger.error(f"scan_id={scan_id} | All retry attempts failed.")
+    try:
+        _post_scan_request(url, headers, action_request, scan_id, is_error)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"scan_id={scan_id} | All retry attempts failed due to RequestException: {e}", exc_info=True)
+    except Exception as e:
+        logger.error(f"scan_id={scan_id} | Unexpected error after retries: {e}", exc_info=True)
