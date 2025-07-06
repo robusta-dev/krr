@@ -377,13 +377,11 @@ def publish_error(error: str):
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=8),
-    retry=retry_if_exception_type(requests.exceptions.RequestException),
     reraise=True
 )
 def _post_scan_request(url: str, headers: dict, payload: dict, scan_id: str, is_error: bool):
     logger_msg = "Sending error scan" if is_error else "Sending scan"
     logger.info(f"{logger_msg} for scan_id={scan_id} to url={url}")
-
     response = requests.post(url, headers=headers, json=payload)
     logger.info(f"scan_id={scan_id} | Status code: {response.status_code}")
     logger.info(f"scan_id={scan_id} | Response body: {response.text}")
