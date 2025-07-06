@@ -367,10 +367,10 @@ class Runner:
         result_dict = json.loads(result.json(indent=2))
         _send_scan_payload(url, scan_id, start_time, result_dict, is_error=False)
 
-def publish_error(url: str, scan_id: str, start_time: str, error: str):
+def publish_input_error(url: str, scan_id: str, start_time: str, error: str):
     _send_scan_payload(url, scan_id, start_time, error, is_error=True)
 
-def publish_input_error(error: str):
+def publish_error(error: str):
     _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, is_error=True)
 
 def _send_scan_payload(
