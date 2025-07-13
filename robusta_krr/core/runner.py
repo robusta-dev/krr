@@ -136,48 +136,22 @@ class Runner:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)
                 
-                # Resolve channel name to ID if needed (files_upload_v2 requires channel ID)
-                channel_id = self._resolve_slack_channel_id(client, settings.slack_output)
-                
-                client.files_upload_v2(
-                    channels=channel_id,
+                # Upload file without specifying channel
+                result = client.files_upload_v2(
                     title="KRR Report",
-                    file=f"./{file_name}",
-                    initial_comment=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}',
+                    file_uploads=[{"file": f"./{file_name}", "filename": file_name, "title": "KRR Report"}],
                 )
+                file_permalink = result["file"]["permalink"]
+                
+                # Post message with file link to channel
+                channel = settings.slack_output if settings.slack_output.startswith('#') else f"#{settings.slack_output}"
+                client.chat_postMessage(
+                    channel=channel,
+                    text=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}\n{file_permalink}'
+                )
+                
                 os.remove(file_name)
 
-    def _resolve_slack_channel_id(self, client: WebClient, channel_input: str) -> str:
-        """Resolve channel name to ID if needed. files_upload_v2 requires channel ID."""
-        # If it already looks like a channel ID (starts with C), return as-is
-        if channel_input.startswith('C'):
-            return channel_input
-        
-        # Remove # if present
-        channel_name = channel_input.lstrip('#')
-        
-        # Search through all pages of channels
-        cursor = None
-        while True:
-            response = client.conversations_list(
-                types="public_channel,private_channel",
-                cursor=cursor
-            )
-            
-            # Check channels on this page
-            for channel in response.get("channels", []):
-                if channel.get("name") == channel_name:
-                    return channel["id"]
-            
-            # Move to next page if available
-            cursor = response.get("response_metadata", {}).get("next_cursor")
-            if not cursor:
-                break
-        
-        raise ValueError(
-            f"Channel '{channel_input}' not found. "
-            f"Ensure: 1) Channel exists, 2) Bot is added to channel, 3) Bot has 'channels:read' permission"
-        )
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
