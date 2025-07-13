@@ -1567,6 +1567,25 @@ pandas = ">=1.4.0"
 requests = "*"
 
 [[package]]
+name = "prometheus-api-client-optional-matplotlib"
+version = "0.6.0"
+description = "A Python API client for Prometheus with optional matplotlib dependency"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "prometheus_api_client_optional_matplotlib-0.6.0-py3-none-any.whl", hash = "sha256:6bf58599f9f09a32b562400a86f000c1b3b6dec8715a76f95b4de1dae3ed20cd"},
+    {file = "prometheus_api_client_optional_matplotlib-0.6.0.tar.gz", hash = "sha256:eae86c48a6726432c19b72a648c50d26fd31f32e769149a161776637f3cd8524"},
+]
+
+[package.dependencies]
+dateparser = "*"
+httmock = "*"
+numpy = "*"
+pandas = ">=1.4.0"
+requests = "*"
+
+[[package]]
 name = "prometrix"
 version = "0.2.1"
 description = "A Python Prometheus client for all Prometheus instances."
@@ -2406,4 +2425,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.14"
-content-hash = "57cc222379852ec53405cdda41107a6a1d21f06a00822751a8b08ef3c21fb4cc"
+content-hash = "3b10d8404825dd5065b8110e95008b2e120885d5753f55aae6ffff6fc3f49b6b"
