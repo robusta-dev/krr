@@ -11,7 +11,6 @@ from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import requests
 import json
