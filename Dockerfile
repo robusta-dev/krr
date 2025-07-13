@@ -1,4 +1,4 @@
-# Use the official Python 3.9 slim image as the base image
+# Use the official Python 3.12 slim image as the base image
 FROM python:3.12-slim AS builder
 ENV LANG=C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE=1
