@@ -24,6 +24,7 @@ spec:
         app.kubernetes.io/component: krr-enforcer
       annotations:
         admission.robusta.dev/krr-mutation-mode: ignore
+        checksum/cert: {{ .Release.Revision | toString | sha256sum }}
         {{- with .Values.annotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -118,6 +119,10 @@ spec:
               value: "/etc/webhook/certs/tls.crt"
             - name: LOG_LEVEL
               value: {{ .Values.logLevel | quote }}
+            - name: KRR_MUTATION_MODE_DEFAULT
+              value: {{ .Values.mutationMode | quote }}
+            - name: UPDATE_THRESHOLD
+              value: {{ .Values.updateThreshold | quote }}
             {{- if .Values.certificate }}
             - name: CERTIFICATE
               value: {{ .Values.certificate | quote }}
