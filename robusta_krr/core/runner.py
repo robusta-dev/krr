@@ -135,13 +135,23 @@ class Runner:
             if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)
-                client.files_upload(
-                    channels=f"#{settings.slack_output}",
+                
+                # Upload file without specifying channel
+                result = client.files_upload_v2(
                     title="KRR Report",
-                    file=f"./{file_name}",
-                    initial_comment=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}',
+                    file_uploads=[{"file": f"./{file_name}", "filename": file_name, "title": "KRR Report"}],
                 )
+                file_permalink = result["file"]["permalink"]
+                
+                # Post message with file link to channel
+                channel = settings.slack_output if settings.slack_output.startswith('#') else f"#{settings.slack_output}"
+                client.chat_postMessage(
+                    channel=channel,
+                    text=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}\n{file_permalink}'
+                )
+                
                 os.remove(file_name)
+
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:

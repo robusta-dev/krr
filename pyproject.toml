@@ -23,7 +23,7 @@ plugins = "numpy.typing.mypy_plugin,pydantic.mypy"
 krr = "robusta_krr.main:run"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<=3.12.3"
+python = ">=3.9,<=3.12.9"
 typer = { extras = ["all"], version = "^0.7.0" }
 pydantic = "^1.10.7"
 kubernetes = "^26.1.0"
