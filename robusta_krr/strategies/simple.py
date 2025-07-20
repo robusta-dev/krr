@@ -25,7 +25,7 @@ from robusta_krr.core.integrations.prometheus.metrics import (
 
 
 class SimpleStrategySettings(StrategySettings):
-    cpu_percentile: float = pd.Field(95, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
+    cpu_percentile: float = pd.Field(95, gt=0, le=100, description="The percentile to use for the CPU request recommendation. CPU limits are always unset to allow unlimited bursting.")
     memory_buffer_percentage: float = pd.Field(
         15, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
@@ -92,10 +92,12 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     @property
     def description(self):
         s = textwrap.dedent(f"""\
-            CPU request: {self.settings.cpu_percentile}% percentile, limit: unset
+            CPU request: {self.settings.cpu_percentile}% percentile, limit: unset (allows unlimited bursting)
             Memory request: max + {self.settings.memory_buffer_percentage}%, limit: max + {self.settings.memory_buffer_percentage}%
             History: {self.settings.history_duration} hours
             Step: {self.settings.timeframe_duration} minutes
+            
+            This is the default strategy. If you want to se CPU limits, use 'krr simple-limit' instead.
 
             All parameters can be customized. For example: `krr simple --cpu_percentile=90 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
             """)
