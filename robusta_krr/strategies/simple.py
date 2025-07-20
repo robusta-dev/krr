@@ -97,7 +97,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             History: {self.settings.history_duration} hours
             Step: {self.settings.timeframe_duration} minutes
             
-            This is the default strategy. If you want to se CPU limits, use 'krr simple-limit' instead.
+            This is the default strategy. If you want to set CPU limits, use 'krr simple-limit' instead.
 
             All parameters can be customized. For example: `krr simple --cpu_percentile=90 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
             """)
