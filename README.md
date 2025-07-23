@@ -81,7 +81,7 @@ _View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-aut
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#integrations)
 
-_View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin)_
+_View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin), [Azure Blob Storage Export with Teams Notification](#azure-blob-teams-integration)_
 
 ### Features
 
@@ -687,6 +687,8 @@ customPlaybooks:
 
 Export KRR reports directly to Azure Blob Storage and get notified in Microsoft Teams when reports are generated.
 
+![Teams Notification Screenshot][teams-screenshot]
+
 ### Prerequisites
 
 - An Azure Storage Account with a container for storing reports
@@ -756,7 +758,6 @@ The Teams adaptive card includes:
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 </details>
-
 
 ## Creating a Custom Strategy/Formatter
 
@@ -844,3 +845,4 @@ If you have any questions, feel free to contact **support@robusta.dev** or messa
 [product-screenshot]: images/screenshot.jpeg
 [slack-screenshot]: images/krr_slack_example.png
 [ui-screenshot]: images/ui_video.gif
+[teams-screenshot]: images/krr_teams_example.png
