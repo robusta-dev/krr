@@ -745,6 +745,7 @@ krr simple -f html \
   --teams-webhook "https://outlook.office.com/webhook/..." \
   --azure-subscription-id "12345678-1234-1234-1234-123456789012" \
   --azure-resource-group "my-resource-group"
+```
 
 ### Teams Notification Features
 
