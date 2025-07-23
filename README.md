@@ -682,6 +682,7 @@ customPlaybooks:
   Installation instructions: [k9s docs](https://k9scli.io/topics/plugins/)
 </details>
 
+<details id="azure-blob-teams-integration">
 <summary>Azure Blob Storage Export with Microsoft Teams Notifications</summary>
 
 Export KRR reports directly to Azure Blob Storage and get notified in Microsoft Teams when reports are generated.
