@@ -275,8 +275,13 @@ class PrometheusMetricsService(MetricsService):
 
         logger.debug(f"Adding historic pods for {object}")
 
-        days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
-        period_literal = f"{days_literal}d"
+        period_seconds = period.total_seconds()
+        if period_seconds <= 86400:  # one day
+            hours_literal = min(int(period.total_seconds()) // 3600, 32)
+            period_literal = f"{hours_literal}h"
+        else:
+            days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
+            period_literal = f"{days_literal}d"
         pod_owners: Iterable[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
