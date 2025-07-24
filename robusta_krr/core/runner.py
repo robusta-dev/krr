@@ -287,7 +287,7 @@ class Runner:
             return storage_account, container
         except Exception as e:
             logger.error(f"Failed to extract storage info from SAS URL: {e}")
-            raise ValueError("Invalid SAS URL format. Please provide a valid Azure Blob Storage SAS URL.")
+            raise ValueError("Invalid SAS URL format. Please provide a valid Azure Blob Storage SAS URL.") from e
     
     def _build_azure_portal_url(self, storage_account: str, container: str) -> str:
         """
