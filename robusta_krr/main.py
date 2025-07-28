@@ -308,6 +308,12 @@ def load_commands() -> None:
                     help="A UUID scan identifier",
                     rich_help_panel="Publish Scan Settings",
                 ),
+                named_sinks: Optional[List[str]] = typer.Option(
+                    None,
+                    "--named_sinks",
+                    help="A list of sinks to send the scan to",
+                    rich_help_panel="Publish Scan Settings",
+                ),
                 **strategy_args,
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
@@ -359,11 +365,12 @@ def load_commands() -> None:
                         publish_scan_url=publish_scan_url,
                         start_time=start_time,
                         scan_id=scan_id,
+                        named_sinks=named_sinks,
                         )
                     Config.set_config(config)
                 except ValidationError as e:
                     logger.exception("Error occured while parsing arguments")
-                    publish_input_error( publish_scan_url, start_time, scan_id, str(e))
+                    publish_input_error( publish_scan_url, start_time, scan_id, named_sinks, str(e))
                 else:
                     runner = Runner()
                     exit_code = asyncio.run(runner.run())

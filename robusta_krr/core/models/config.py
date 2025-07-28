@@ -64,6 +64,7 @@ class Config(pd.BaseSettings):
     publish_scan_url: Optional[str] = pd.Field(None)
     start_time: Optional[str] = pd.Field(None)
     scan_id: Optional[str] = pd.Field(None)
+    named_sinks: Optional[list[str]] = pd.Field(None) 
 
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
