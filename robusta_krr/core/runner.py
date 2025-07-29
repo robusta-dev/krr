@@ -556,7 +556,7 @@ def _send_scan_payload(
         logger.debug(f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}")
         return
 
-    logger.warning(f"Preparing to send scan payload. scan_id={scan_id}, to sink {named_sinks}, is_error={is_error}")
+    logger.debug(f"Preparing to send scan payload. scan_id={scan_id}, to sink {named_sinks}, is_error={is_error}")
 
     headers = {"Content-Type": "application/json"}
 
