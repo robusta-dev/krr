@@ -6,7 +6,7 @@ import sys
 import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
@@ -110,7 +110,7 @@ class Runner:
 
         Formatter = settings.Formatter
 
-        self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, result)
+        self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, settings.named_sinks, result)
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
@@ -520,15 +520,15 @@ class Runner:
         else:
             return 0  # Exit with success
 
-    def _send_result(self, url: str, start_time: datetime, scan_id: str, result: Result):
+    def _send_result(self, url: str, start_time: datetime, scan_id: str,named_sinks: Optional[List[str]], result: Result):
         result_dict = json.loads(result.json(indent=2))
-        _send_scan_payload(url, scan_id, start_time, result_dict, is_error=False)
+        _send_scan_payload(url, scan_id, start_time, result_dict, named_sinks, is_error=False)
 
-def publish_input_error(url: str, scan_id: str, start_time: str, error: str):
-    _send_scan_payload(url, scan_id, start_time, error, is_error=True)
+def publish_input_error(url: str, scan_id: str, start_time: str, error: str, named_sinks: Optional[List[str]]):
+    _send_scan_payload(url, scan_id, start_time, error, named_sinks, is_error=True)
 
 def publish_error(error: str):
-    _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, is_error=True)
+    _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, settings.named_sinks, is_error=True)
 
 @retry(
     stop=stop_after_attempt(3),
@@ -549,13 +549,14 @@ def _send_scan_payload(
     scan_id: str,
     start_time: Union[str, datetime],
     result_data: Union[str, dict],
+    named_sinks: Optional[List[str]],
     is_error: bool = False
 ):
     if not url or not scan_id or not start_time:
         logger.debug(f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}")
         return
 
-    logger.debug(f"Preparing to send scan payload. scan_id={scan_id}, is_error={is_error}")
+    logger.debug(f"Preparing to send scan payload. scan_id={scan_id}, to sink {named_sinks}, is_error={is_error}")
 
     headers = {"Content-Type": "application/json"}
 
@@ -572,6 +573,8 @@ def _send_scan_payload(
             "start_time": start_time,
         }
     }
+    if named_sinks:
+        action_request["sinks"] = named_sinks
 
     try:
         _post_scan_request(url, headers, action_request, scan_id, is_error)
