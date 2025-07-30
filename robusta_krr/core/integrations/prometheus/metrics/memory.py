@@ -107,3 +107,93 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
                 [{duration}:{step}]
             )
         """
+
+class JVMMemoryLoader(PrometheusMetric):
+    """
+    A metric loader for loading JVM memory usage metrics.
+    This loader specifically looks for JVM heap memory usage.
+    """
+
+    query_type: QueryType = QueryType.QueryRange
+
+    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        pods_selector = "|".join(pod.name for pod in object.pods)
+        cluster_label = self.get_prometheus_cluster_label()
+        return f"""
+            max(
+                jvm_memory_bytes_used{{
+                    namespace="{object.namespace}",
+                    pod=~"{pods_selector}",
+                    container="{object.container}",
+                    area="heap"
+                    {cluster_label}
+                }}
+            ) by (container, pod, job)
+        """
+
+class MaxJVMMemoryLoader(PrometheusMetric):
+    """
+    A metric loader for loading max JVM memory usage metrics.
+    """
+
+    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        pods_selector = "|".join(pod.name for pod in object.pods)
+        cluster_label = self.get_prometheus_cluster_label()
+        return f"""
+            max_over_time(
+                max(
+                    jvm_memory_bytes_used{{
+                        namespace="{object.namespace}",
+                        pod=~"{pods_selector}",
+                        container="{object.container}",
+                        area="heap"
+                        {cluster_label}
+                    }}
+                ) by (container, pod, job)
+                [{duration}:{step}]
+            )
+        """
+
+class JVMMemoryAmountLoader(PrometheusMetric):
+    """
+    A metric loader for loading JVM memory points count.
+    """
+
+    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        pods_selector = "|".join(pod.name for pod in object.pods)
+        cluster_label = self.get_prometheus_cluster_label()
+        return f"""
+            count_over_time(
+                max(
+                    jvm_memory_bytes_used{{
+                        namespace="{object.namespace}",
+                        pod=~"{pods_selector}",
+                        container="{object.container}",
+                        area="heap"
+                        {cluster_label}
+                    }}
+                ) by (container, pod, job)
+                [{duration}:{step}]
+            )
+        """
+
+class JVMDetector(PrometheusMetric):
+    """
+    A metric loader for detecting if a container is running a JVM application.
+    """
+
+    warning_on_no_data = False
+
+    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        pods_selector = "|".join(pod.name for pod in object.pods)
+        cluster_label = self.get_prometheus_cluster_label()
+        return f"""
+            max(
+                jvm_memory_bytes_used{{
+                    namespace="{object.namespace}",
+                    pod=~"{pods_selector}",
+                    container="{object.container}"
+                    {cluster_label}
+                }}
+            ) by (container, pod, job)
+        """
