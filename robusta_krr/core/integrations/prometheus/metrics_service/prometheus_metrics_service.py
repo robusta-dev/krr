@@ -358,7 +358,9 @@ class PrometheusMetricsService(MetricsService):
         if related_pods_result == []:
             return []
 
-        related_pods = [pod["metric"]["pod"] for pod in related_pods_result]
+        related_pod_label = os.environ.get("KRR_RELATED_POD_LABEL", "pod")
+        related_pods = [pod["metric"][related_pod_label] for pod in related_pods_result]
+
         current_pods_set = set()
         del related_pods_result
 
@@ -368,13 +370,13 @@ class PrometheusMetricsService(MetricsService):
                 f"""
                     kube_pod_status_phase{{
                         phase="Running",
-                        pod=~"{group_regex}",
+                        {related_pod_label}=~"{group_regex}",
                         namespace="{object.namespace}"
                         {cluster_label}
                     }} == 1
                 """
             )
-            current_pods_set |= {pod["metric"]["pod"] for pod in pods_status_result}
+            current_pods_set |= {pod["metric"][related_pod_label] for pod in pods_status_result}
             del pods_status_result
 
         return list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})
