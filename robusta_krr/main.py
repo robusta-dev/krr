@@ -266,6 +266,12 @@ def load_commands() -> None:
                     help="Send output to Slack. Values starting with # will be interpreted to be channel names but other values may refer to channel IDs. SLACK_BOT_TOKEN env variable must exist with permissions: chat:write, files:write, chat:write.public. Bot must be added to the channel.",
                     rich_help_panel="Output Settings",
                 ),
+                slack_title: Optional[str] = typer.Option(
+                    None,
+                    "--slacktitle",
+                    help="Title of the slack message. If not provided, will use the default 'Kubernetes Resource Report for <environment>'.",
+                    rich_help_panel="Output Settings",
+                ),
                 azureblob_output: Optional[str] = typer.Option(
                     None,
                     "--azurebloboutput",
@@ -355,6 +361,7 @@ def load_commands() -> None:
                         file_output=file_output,
                         file_output_dynamic=file_output_dynamic,
                         slack_output=slack_output,
+                        slack_title=slack_title,
                         azureblob_output=azureblob_output,
                         teams_webhook=teams_webhook,
                         azure_subscription_id=azure_subscription_id,

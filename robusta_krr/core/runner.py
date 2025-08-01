@@ -157,9 +157,10 @@ class Runner:
                 file_permalink = result["file"]["permalink"]
                 
                 # Post message with file link to channel
+                slack_title = settings.slack_title if settings.slack_title else f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}'
                 client.chat_postMessage(
                     channel=settings.slack_output,
-                    text=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}\n{file_permalink}'
+                    text=f'{slack_title}\n{file_permalink}'
                 )
                 
                 os.remove(file_name)
