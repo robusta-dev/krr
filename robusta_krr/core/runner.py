@@ -158,9 +158,10 @@ class Runner:
                 
                 # Post message with file link to channel
                 channel = settings.slack_output if settings.slack_output.startswith('#') else f"#{settings.slack_output}"
+                slack_title = settings.slack_title if settings.slack_title else f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}'
                 client.chat_postMessage(
                     channel=channel,
-                    text=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}\n{file_permalink}'
+                    text=f'{slack_title}\n{file_permalink}'
                 )
                 
                 os.remove(file_name)
