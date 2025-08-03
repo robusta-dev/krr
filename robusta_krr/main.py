@@ -263,7 +263,7 @@ def load_commands() -> None:
                 slack_output: Optional[str] = typer.Option(
                     None,
                     "--slackoutput",
-                    help="Send to output to a slack channel, must have SLACK_BOT_TOKEN with permissions: chat:write, files:write, chat:write.public. Bot must be added to the channel.",
+                    help="Send output to Slack. Values starting with # will be interpreted to be channel names but other values may refer to channel IDs. SLACK_BOT_TOKEN env variable must exist with permissions: chat:write, files:write, chat:write.public. Bot must be added to the channel.",
                     rich_help_panel="Output Settings",
                 ),
                 slack_title: Optional[str] = typer.Option(
