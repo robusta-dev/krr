@@ -6,7 +6,8 @@ from .table import table
 
 @formatters.register("html")
 def html(result: Result) -> str:
-    console = Console(record=True)
+    html_width = 250
+    console = Console(record=True, width=html_width, force_terminal=False)
     table_output = table(result)
     console.print(table_output)
     return console.export_html(inline_styles=True)
