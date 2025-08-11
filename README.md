@@ -714,7 +714,10 @@ Export KRR reports directly to Azure Blob Storage and get notified in Microsoft 
      --teams-webhook "https://your-teams-webhook-url" \
      --azure-subscription-id "your-subscription-id" \
      --azure-resource-group "your-resource-group"
+     --width 250
    ```
+
+5. **Optional but recommended to increase output table width to 200 or higher for browser view**
 
 ### Features
 
