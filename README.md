@@ -748,7 +748,7 @@ krr simple -f html \
   --azure-resource-group "my-resource-group"
 ```
 
-Note: Consider adjusting the --width CLI flag for a better viewing experience in browser.
+Note: Consider adjusting the `--width` CLI flag for a better viewing experience in browser.
 
 ### Teams Notification Features
 
