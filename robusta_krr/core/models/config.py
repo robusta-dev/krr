@@ -64,11 +64,17 @@ class Config(pd.BaseSettings):
     publish_scan_url: Optional[str] = pd.Field(None)
     start_time: Optional[str] = pd.Field(None)
     scan_id: Optional[str] = pd.Field(None)
+    named_sinks: Optional[list[str]] = pd.Field(None) 
 
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
     file_output_dynamic: bool = pd.Field(False)
     slack_output: Optional[str] = pd.Field(None)
+    slack_title: Optional[str] = pd.Field(None)
+    azureblob_output: Optional[str] = pd.Field(None)
+    teams_webhook: Optional[str] = pd.Field(None)
+    azure_subscription_id: Optional[str] = pd.Field(None)
+    azure_resource_group: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
 

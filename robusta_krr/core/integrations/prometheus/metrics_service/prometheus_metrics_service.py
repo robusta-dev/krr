@@ -275,8 +275,13 @@ class PrometheusMetricsService(MetricsService):
 
         logger.debug(f"Adding historic pods for {object}")
 
-        days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
-        period_literal = f"{days_literal}d"
+        period_seconds = period.total_seconds()
+        if period_seconds <= 86400:  # one day
+            hours_literal = min(int(period.total_seconds()) // 3600, 32)
+            period_literal = f"{hours_literal}h"
+        else:
+            days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
+            period_literal = f"{days_literal}d"
         pod_owners: Iterable[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
@@ -353,7 +358,9 @@ class PrometheusMetricsService(MetricsService):
         if related_pods_result == []:
             return []
 
-        related_pods = [pod["metric"]["pod"] for pod in related_pods_result]
+        related_pod_label = os.environ.get("KRR_RELATED_POD_LABEL", "pod")
+        related_pods = [pod["metric"][related_pod_label] for pod in related_pods_result]
+
         current_pods_set = set()
         del related_pods_result
 
@@ -363,13 +370,13 @@ class PrometheusMetricsService(MetricsService):
                 f"""
                     kube_pod_status_phase{{
                         phase="Running",
-                        pod=~"{group_regex}",
+                        {related_pod_label}=~"{group_regex}",
                         namespace="{object.namespace}"
                         {cluster_label}
                     }} == 1
                 """
             )
-            current_pods_set |= {pod["metric"]["pod"] for pod in pods_status_result}
+            current_pods_set |= {pod["metric"][related_pod_label] for pod in pods_status_result}
             del pods_status_result
 
         return list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})
