@@ -4,6 +4,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
 
+RUN apk update && apk add --no-cache --upgrade \
+    sqlite-libs=3.49.2-r1 sqlite=3.49.2-r1
+    
 # Set the working directory
 WORKDIR /app/enforcer
 
