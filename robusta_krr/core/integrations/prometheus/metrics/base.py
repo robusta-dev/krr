@@ -4,6 +4,7 @@ import abc
 import asyncio
 import datetime
 import enum
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from typing import Any, Optional, TypedDict
@@ -259,3 +260,43 @@ class PrometheusMetric(BaseMetric):
         """
 
         return reduce(lambda x, y: x | y, results, {})
+
+    ## Vcluster
+    def get_vcluster_pod_real_name(self, pod_name: str, pod_namespace: str) -> str:
+        """
+        Returns the pod name on the (host) cluster, which is different from the pod name in the VCluster.
+        When not in a VCluster, just returns the pod name as is.
+
+        Args:
+        pod_name (string): The pod name in the cluster krr connected to
+        pod_namespace (string): The pod namespace in the cluster krr connected to
+
+        Returns:
+        string: the pod name in the host cluster.
+        """
+
+        if settings.vcluster_name is None:
+            return pod_name
+        else:
+            host_pod_name = f"{pod_name}-x-{pod_namespace}-x-{settings.vcluster_name}"
+            if len(host_pod_name) > 63:
+                host_pod_name_sha256 = hashlib.sha256(host_pod_name.encode()).hexdigest()
+                host_pod_name = f"{host_pod_name[:52]}-{host_pod_name_sha256[:10]}"
+            return host_pod_name
+
+    def get_pod_namespace(self, pod_namespace: str) -> str:
+        """
+        Returns the pod namespace on the (host) cluster, which is different from the pod namespace in the VCluster.
+        When not in a VCluster, just returns the pod namespace as is.
+
+        Args:
+        pod_namespace (string): The pod namespace in the cluster krr connected to
+
+        Returns:
+        string: the pod namepace in the host cluster.
+        """
+
+        if settings.vcluster_namespace is None:
+            return pod_namespace
+        else:
+            return settings.vcluster_namespace
