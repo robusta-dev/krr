@@ -2,7 +2,8 @@ import copy
 import logging
 from typing import Dict, Any, List, Optional
 from enforcer.model import ContainerRecommendation
-from enforcer.env_vars import UPDATE_THRESHOLD
+from enforcer.env_vars import UPDATE_THRESHOLD, EXCLUDED_CONTAINERS
+
 logger = logging.getLogger()
 
 REQ = "requests"
@@ -239,6 +240,11 @@ def patch_container_resources(
     patches = []
 
     if not recommendation:
+        return patches
+
+    container_name = container.get("name")
+    if container_name and container_name in EXCLUDED_CONTAINERS:
+        logging.info(f"Skipping excluded container {container_name}")
         return patches
 
     had_resources = "resources" in container
