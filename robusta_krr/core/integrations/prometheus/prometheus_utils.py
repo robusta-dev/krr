@@ -34,14 +34,11 @@ def generate_prometheus_config(
 
     # aws config
     if settings.eks_managed_prom:
-        if settings.eks_managed_prom_profile_name:
-            session = boto3.Session(profile_name=settings.eks_managed_prom_profile_name)
-        else:
-            session = boto3.Session()
+        session = boto3.Session(profile_name=settings.eks_managed_prom_profile_name)
         credentials = session.get_credentials()
         region = settings.eks_managed_prom_region if settings.eks_managed_prom_region else session.region_name
         token = None
-        
+
         if settings.eks_access_key and settings.eks_secret_key:
             # when we have both access key and secret key, don't try to read credentials which can fail
             access_key = settings.eks_access_key

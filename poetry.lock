@@ -1238,14 +1238,14 @@ requests = "*"
 
 [[package]]
 name = "prometrix"
-version = "0.2.2a2"
+version = "0.2.2"
 description = "A Python Prometheus client for all Prometheus instances."
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "prometrix-0.2.2a2-py3-none-any.whl", hash = "sha256:ead7622da5c13260b2b809caa93ab0e7c45f0da3b09da6413e34474a8c9ec84b"},
-    {file = "prometrix-0.2.2a2.tar.gz", hash = "sha256:73fd9efa2e8b00306c22b7da3524107c50e27ffea6a3d0c26b244833b65468fd"},
+    {file = "prometrix-0.2.2-py3-none-any.whl", hash = "sha256:5a32983a95e6c77fa120f00877e64df6da06a2428eef1ab9bdf3c02a4ea9767d"},
+    {file = "prometrix-0.2.2.tar.gz", hash = "sha256:f51d08c9d6e910de43a10c965f354949beecddf47dd34aa91698fe46fb47c9f5"},
 ]
 
 [package.dependencies]
@@ -2030,4 +2030,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<=3.12.9"
-content-hash = "98f585545232e36bc12d2f4886dc34b37fe7b7d2b1583b89cdea95ada3b68790"
+content-hash = "130cc5c1113661b1f7f01236df40d4c174e4aba968d32e1bcc1ee1d3e04f8db0"
