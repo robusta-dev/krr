@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  
+
+jobs:
+  docker-build:
+    name: Docker Build, Scan & Push
+    uses: alpacahq/infra/.github/workflows/ci-build.yml@cibuild
+    permissions: 
+      contents: read
+      id-token: write
+      actions: read
+      packages: read
+      security-events: write
+    with:
+      DOCKER_IMAGE_NAME: robusta-krr
+      DOCKER_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      DOCKER_FILE: ./Dockerfile
+      DOCKER_CONTEXT: .
+      DOCKER_PLATFORMS: linux/amd64
+      ARTIFACT_REGISTRY_GCP_PROJECT_ID: alpacahq
+      ARTIFACT_REGISTRY_PROJECT: devops
+      DOCKER_IMAGE_TAG: |
+        type=ref,event=pr
+        type=sha
+        type=raw,value=latest,enable={{is_default_branch}}
+      SCAN_FAIL_BUILD: true
+      ACTIONS_REF: cibuild
+    secrets:
+      ACTIONS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
