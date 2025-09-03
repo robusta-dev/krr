@@ -46,6 +46,7 @@ class Config(pd.BaseSettings):
     eks_secret_key: Optional[pd.SecretStr] = pd.Field(None)
     eks_service_name: Optional[str] = pd.Field(None)
     eks_managed_prom_region: Optional[str] = pd.Field(None)
+    eks_assume_role: Optional[str] = pd.Field(None)
     coralogix_token: Optional[pd.SecretStr] = pd.Field(None)
     openshift: bool = pd.Field(False)
 

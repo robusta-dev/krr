@@ -183,6 +183,12 @@ def load_commands() -> None:
                     help="Sets the region for eks prometheus connection.",
                     rich_help_panel="Prometheus EKS Settings",
                 ),
+                eks_assume_role: Optional[str] = typer.Option(
+                    None,
+                    "--eks-assume-role",
+                    help="Sets the assumed role for eks prometheus connection. (for cross-account role assumption)",
+                    rich_help_panel="Prometheus EKS Settings",
+                ),
                 coralogix_token: Optional[str] = typer.Option(
                     None,
                     "--coralogix-token",
@@ -343,6 +349,7 @@ def load_commands() -> None:
                         prometheus_label=prometheus_label,
                         eks_managed_prom=eks_managed_prom,
                         eks_managed_prom_region=eks_managed_prom_region,
+                        eks_assume_role=eks_assume_role,
                         eks_managed_prom_profile_name=eks_managed_prom_profile_name,
                         eks_access_key=eks_access_key,
                         eks_secret_key=eks_secret_key,

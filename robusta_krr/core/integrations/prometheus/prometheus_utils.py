@@ -60,6 +60,7 @@ def generate_prometheus_config(
             aws_region=region,
             token=token,
             service_name=service_name,
+            assume_role_arn=settings.eks_assume_role,
             **baseconfig,
         )
     # coralogix config
