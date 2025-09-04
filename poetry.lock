@@ -1238,14 +1238,14 @@ requests = "*"
 
 [[package]]
 name = "prometrix"
-version = "0.2.3"
+version = "0.2.4"
 description = "A Python Prometheus client for all Prometheus instances."
 optional = false
-python-versions = "<4.0,>=3.8"
+python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "prometrix-0.2.3-py3-none-any.whl", hash = "sha256:2fcd0d6601328b93ebc065d627b447c2d38c20b187b7c1d3c0eb6aa8767e1eef"},
-    {file = "prometrix-0.2.3.tar.gz", hash = "sha256:bd3cef457a7716005e27ea0eea6f25e44de71f5a1d17c84ea17875920c20f711"},
+    {file = "prometrix-0.2.4-py3-none-any.whl", hash = "sha256:f00f56a4a0c4b560f17c627cfdb39bd2569c53af6a48b7a73aba11e50207a9ec"},
+    {file = "prometrix-0.2.4.tar.gz", hash = "sha256:af9bd72b8266c7af0d382fd8c4cc5c4b9be79e6442b96c65f80384273ea19947"},
 ]
 
 [package.dependencies]
@@ -1256,7 +1256,7 @@ idna = ">=3.7,<4.0"
 pillow = ">=10.3.0,<11.0.0"
 prometheus-api-client = ">=0.5.3,<0.6.0"
 pydantic = ">=1.8.1,<3"
-requests = ">=2.32.0,<3.0.0"
+requests = ">2.32.4"
 urllib3 = ">=1.26.20,<2.0.0"
 zipp = ">=3.20.1,<4.0.0"
 
@@ -2030,4 +2030,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<=3.12.9"
-content-hash = "2e67d43eb32299f631b7d5ea2576b122044450f261dc831806211ba71afcf958"
+content-hash = "4cdcd3f2d4619c3bce18f48c3988697c019fd659eea432b7f148b1587e945cf0"
