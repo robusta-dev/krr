@@ -22,3 +22,6 @@ SCAN_AGE_HOURS_THRESHOLD = int(os.environ.get("SCAN_AGE_HOURS_THRESHOLD", 360)) 
 
 ENFORCER_SSL_KEY_FILE = os.environ.get("ENFORCER_SSL_KEY_FILE", "")
 ENFORCER_SSL_CERT_FILE = os.environ.get("ENFORCER_SSL_CERT_FILE", "")
+
+EXCLUDED_CONTAINERS = [container_name.strip() for container_name
+                       in os.environ.get("EXCLUDED_CONTAINERS", "").split(",") if container_name.strip()]

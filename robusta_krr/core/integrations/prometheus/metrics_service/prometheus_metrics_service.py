@@ -216,7 +216,7 @@ class PrometheusMetricsService(MetricsService):
     async def query_and_validate(self, prom_query) -> Any:
             result = await self.query(prom_query)
             if len(result) != 1:
-                logger.warning(f"Error: Expected exactly one result from Prometheus query. {prom_query}")
+                logger.warning(f"Error: Expected exactly one result from Prometheus query but instead got {len(result)}. {prom_query}")
                 return None
 
             result_value = result[0].get("value")
