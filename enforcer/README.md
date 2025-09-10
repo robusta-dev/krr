@@ -59,30 +59,35 @@ The webhook uses `failurePolicy: Ignore` by default, meaning if the webhook fail
 helm repo add robusta https://robusta-charts.storage.googleapis.com && helm repo update
 ```
 
-2. **Add cluster configuration**:
+2. **Configure Robusta Account Connection**:
 
-If the enforcer is installed in the same namespace as Robusta, it will automatically detect the Robusta account settings.
+The `Enforcer` needs access to your Robusta account to fetch KRR recommendations. Choose the appropriate configuration based on your setup:
 
-If your Robusta UI sink token, is pulled from a secret (as described [here](https://docs.robusta.dev/master/setup-robusta/configuration-secrets.html#pulling-values-from-kubernetes-secrets)), you should add the same environement variable to the `Enforcer` pod as well.
+#### Option A: Same Namespace as Robusta (Easiest)
+If the enforcer is installed in the **same namespace as Robusta**, it can automatically detect Robusta account settings and there is no need for explicit configuration.
 
-If the `Enforcer` is installed on a different namespace, you can provide your Robusta account credentials using env variables:
+**⚠️ Caveat**: If your Robusta UI token is pulled from a secret (as described [here](https://docs.robusta.dev/master/setup-robusta/configuration-secrets.html#pulling-values-from-kubernetes-secrets)),  this method won’t work and you should use Option B (described below) instead.
 
-Add your robusta credentials and cluster name: (`enforcer-values.yaml`)
+
+#### Option B: Different Namespace
+If the enforcer is installed in a **different namespace than Robusta**, provide the Robusta credentials explicitly:
 
 ```yaml
+# enforcer-values.yaml
 additionalEnvVars:
   - name: CLUSTER_NAME
-    value: my-cluster-name  # should be the same as the robusta installation on this cluster
+    value: my-cluster-name        # should match your Robusta cluster name
   - name: ROBUSTA_UI_TOKEN
-    value: "MY ROBUSTA UI TOKEN"
-#  - name: ROBUSTA_UI_TOKEN  # or pulled from a secret
-#    valueFrom:
-#      secretKeyRef:
-#        name: robusta-secrets
-#        key: robustaSinkToken
+    value: "MY_ROBUSTA_UI_TOKEN"
+  # OR pull from a secret:
+  # - name: ROBUSTA_UI_TOKEN
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: robusta-secrets
+  #       key: robustaSinkToken
 ```
 
-2. **Install with default settings**:
+3. **Install with default settings**:
 ```bash
 helm install krr-enforcer robusta/krr-enforcer -f enforcer-values.yaml
 ```
