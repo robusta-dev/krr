@@ -512,7 +512,7 @@ class ClusterLoader:
                 self.custom_objects.list_cluster_custom_object(
                     group="postgresql.cnpg.io",
                     version="v1",
-                    plural="cnpgpods",
+                    plural="clusters",
                     **kwargs,
                 )
             ),
@@ -520,7 +520,7 @@ class ClusterLoader:
                 self.custom_objects.list_namespaced_custom_object(
                     group="postgresql.cnpg.io",
                     version="v1",
-                    plural="cnpgpods",
+                    plural="clusters",
                     **kwargs,
                 )
             ),
