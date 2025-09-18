@@ -102,6 +102,7 @@ class ClusterLoader:
             self._list_deployments(),
             self._list_rollouts(),
             self._list_strimzipodsets(),
+            self._list_cnpgpods(),
             self._list_deploymentconfig(),
             self._list_all_statefulsets(),
             self._list_all_daemon_set(),
@@ -312,7 +313,7 @@ class ClusterLoader:
 
                 result.extend(self.__build_scannable_object(item, container, kind) for container in containers)
         except ApiException as e:
-            if kind in ("Rollout", "DeploymentConfig", "StrimziPodSet") and e.status in [400, 401, 403, 404]:
+            if kind in ("Rollout", "DeploymentConfig", "StrimziPodSet", "CNPGPod") and e.status in [400, 401, 403, 404]:
                 if self.__kind_available[kind]:
                     logger.debug(f"{kind} API not available in {self.cluster}")
                 self.__kind_available[kind] = False
