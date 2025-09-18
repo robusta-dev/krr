@@ -401,6 +401,30 @@ class ClusterLoader:
             extract_containers=lambda item: item.spec.pods[0].spec.containers,
         )
 
+    def _list_cnpgpods(self) -> list[K8sObjectData]:
+        # NOTE: Using custom objects API returns dicts, but all other APIs return objects
+        # We need to handle this difference using a small wrapper
+        return self._list_scannable_objects(
+            kind="Cluster",
+            all_namespaces_request=lambda **kwargs: ObjectLikeDict(
+                self.custom_objects.list_cluster_custom_object(
+                    group="postgresql.cnpg.io",
+                    version="v1",
+                    plural="cnpgpods",
+                    **kwargs,
+                )
+            ),
+            namespaced_request=lambda **kwargs: ObjectLikeDict(
+                self.custom_objects.list_namespaced_custom_object(
+                    group="postgresql.cnpg.io",
+                    version="v1",
+                    plural="cnpgpods",
+                    **kwargs,
+                )
+            ),
+            extract_containers=lambda item: item.spec.pods[0].spec.containers,
+        )
+
     def _list_deploymentconfig(self) -> list[K8sObjectData]:
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
