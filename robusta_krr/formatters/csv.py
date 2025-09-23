@@ -27,8 +27,8 @@ RESOURCE_LIMITS_HEADER = "{resource_name} Limits"
 
 
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
-    allocated = getattr(item.object.allocations, selector)[resource]
-    recommended = getattr(item.recommended, selector)[resource]
+    allocated = getattr(item.object.allocations, selector).get(resource, None)
+    recommended = getattr(item.recommended, selector).get(resource, None)
 
     if allocated is None and recommended.value is None:
         return f"{NONE_LITERAL}"
@@ -42,8 +42,8 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
 
 def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current: int) -> str:
     selector = "requests"
-    allocated = getattr(item.object.allocations, selector)[resource]
-    recommended = getattr(item.recommended, selector)[resource]
+    allocated = getattr(item.object.allocations, selector).get(resource, None)
+    recommended = getattr(item.recommended, selector).get(resource, None)
 
     return format_diff(allocated, recommended, selector, pods_current)
 
