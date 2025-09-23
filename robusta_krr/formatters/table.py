@@ -1,4 +1,5 @@
 import itertools
+import logging
 from typing import Any
 
 from rich.table import Table
@@ -9,6 +10,7 @@ from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.core.models.config import settings
 from robusta_krr.utils import resource_units
 
+logger = logging.getLogger("krr")
 
 DEFAULT_INFO_COLOR = "grey27"
 INFO_COLORS: dict[str, str] = {
@@ -17,9 +19,10 @@ INFO_COLORS: dict[str, str] = {
 
 
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
-    allocated = getattr(item.object.allocations, selector)[resource]
+    logger.debug(f"{item}")
+    allocated = getattr(item.object.allocations, selector).get(resource, None)
     info = item.recommended.info.get(resource)
-    recommended = getattr(item.recommended, selector)[resource]
+    recommended = getattr(item.recommended, selector).get(resource, None)
     severity = recommended.severity
 
     if allocated is None and recommended.value is None:
@@ -48,8 +51,8 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
 
 def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current: int) -> str:
     selector = "requests"
-    allocated = getattr(item.object.allocations, selector)[resource]
-    recommended = getattr(item.recommended, selector)[resource]
+    allocated = getattr(item.object.allocations, selector).get(resource, None)
+    recommended = getattr(item.recommended, selector).get(resource, None)
 
     # if we have more than one pod, say so (this explains to the user why the total is different than the recommendation)
     if pods_current == 1:

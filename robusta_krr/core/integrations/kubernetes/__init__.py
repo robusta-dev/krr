@@ -102,12 +102,12 @@ class ClusterLoader:
             self._list_deployments(),
             self._list_rollouts(),
             self._list_strimzipodsets(),
-            self._list_cnpgpods(),
             self._list_deploymentconfig(),
             self._list_all_statefulsets(),
             self._list_all_daemon_set(),
             self._list_all_jobs(),
             self._list_all_cronjobs(),
+            self._list_cnpg_clusters(),
         )
 
         return [
@@ -146,6 +146,9 @@ class ClusterLoader:
                 )
             ]
             selector = f"batch.kubernetes.io/controller-uid in ({','.join(ownered_jobs_uids)})"
+
+        elif object.kind == "CNPGCluster":
+            selector = f"cnpg.io/cluster={object.name}"
 
         else:
             if object.selector is None:
@@ -212,6 +215,18 @@ class ClusterLoader:
         namespace = item.metadata.namespace
         kind = kind or item.__class__.__name__[2:]
 
+        # Special handling for CNPGCluster
+        if kind == "CNPGCluster":
+            resources = getattr(item.spec, "resources", None) or item.get("spec", {}).get("resources", {})
+            allocations = ResourceAllocations(
+                requests=resources.get("requests", {}),
+                limits=resources.get("limits", {}),
+            )
+            container_name = "postgres"
+        else:
+            allocations = ResourceAllocations.from_container(container)
+            container_name = getattr(container, "name", None)
+
         labels = {}
         annotations = {}
         if item.metadata.labels:
@@ -231,8 +246,8 @@ class ClusterLoader:
             namespace=namespace,
             name=name,
             kind=kind,
-            container=container.name,
-            allocations=ResourceAllocations.from_container(container),
+            container=container_name,
+            allocations=allocations,
             hpa=self.__hpa_list.get((namespace, kind, name)),
             labels=labels,
             annotations= annotations
@@ -313,7 +328,7 @@ class ClusterLoader:
 
                 result.extend(self.__build_scannable_object(item, container, kind) for container in containers)
         except ApiException as e:
-            if kind in ("Rollout", "DeploymentConfig", "StrimziPodSet", "CNPGPod") and e.status in [400, 401, 403, 404]:
+            if kind in ("Rollout", "DeploymentConfig", "StrimziPodSet", "CNPGCluster") and e.status in [400, 401, 403, 404]:
                 if self.__kind_available[kind]:
                     logger.debug(f"{kind} API not available in {self.cluster}")
                 self.__kind_available[kind] = False
@@ -322,6 +337,29 @@ class ClusterLoader:
                 logger.error("Will skip this object type and continue.")
 
         return result
+
+    def _list_cnpg_clusters(self) -> list[K8sObjectData]:
+        # List CNPGCluster resources
+        return self._list_scannable_objects(
+            kind="CNPGCluster",
+            all_namespaces_request=lambda **kwargs: ObjectLikeDict(
+                self.custom_objects.list_cluster_custom_object(
+                    group="postgresql.cnpg.io",
+                    version="v1",
+                    plural="clusters",
+                    **kwargs,
+                )
+            ),
+            namespaced_request=lambda **kwargs: ObjectLikeDict(
+                self.custom_objects.list_namespaced_custom_object(
+                    group="postgresql.cnpg.io",
+                    version="v1",
+                    plural="clusters",
+                    **kwargs,
+                )
+            ),
+            extract_containers=lambda item: [item],  # Pass the item itself for allocation extraction
+        )
 
     def _list_deployments(self) -> list[K8sObjectData]:
         return self._list_scannable_objects(
