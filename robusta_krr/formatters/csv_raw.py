@@ -41,14 +41,14 @@ def _format_value(val: Union[float, int]) -> str:
 
 
 def _format_request_current(item: ResourceScan, resource: ResourceType, selector: str) -> str:
-    allocated = getattr(item.object.allocations, selector)[resource]
+    allocated = getattr(item.object.allocations, selector).get(resource, None)
     if allocated is None:
         return NONE_LITERAL
     return _format_value(allocated)
 
 
 def _format_request_recommend(item: ResourceScan, resource: ResourceType, selector: str) -> str:
-    recommended = getattr(item.recommended, selector)[resource]
+    recommended = getattr(item.recommended, selector).get(resource, None)
     if recommended is None:
         return NONE_LITERAL
     return _format_value(recommended.value)
