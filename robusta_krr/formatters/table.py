@@ -1,5 +1,4 @@
 import itertools
-import logging
 from typing import Any
 
 from rich.table import Table
@@ -10,7 +9,6 @@ from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.core.models.config import settings
 from robusta_krr.utils import resource_units
 
-logger = logging.getLogger("krr")
 
 DEFAULT_INFO_COLOR = "grey27"
 INFO_COLORS: dict[str, str] = {
@@ -19,7 +17,6 @@ INFO_COLORS: dict[str, str] = {
 
 
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
-    logger.debug(f"{item}")
     allocated = getattr(item.object.allocations, selector).get(resource, None)
     info = item.recommended.info.get(resource)
     recommended = getattr(item.recommended, selector).get(resource, None)
