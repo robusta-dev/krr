@@ -44,6 +44,8 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
     selector = "requests"
     allocated = getattr(item.object.allocations, selector).get(resource, None)
     recommended = getattr(item.recommended, selector).get(resource, None)
+    if recommended is None:
+        return ""
 
     return format_diff(allocated, recommended, selector, pods_current)
 
