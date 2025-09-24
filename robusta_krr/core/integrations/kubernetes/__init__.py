@@ -21,6 +21,7 @@ from kubernetes.client.models import (
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral, PodData
 from robusta_krr.core.models.result import ResourceAllocations
+from robusta_krr.core.models.result import ResourceType
 from robusta_krr.utils.object_like_dict import ObjectLikeDict
 
 from . import config_patch as _
@@ -217,10 +218,18 @@ class ClusterLoader:
 
         # Special handling for CNPGCluster
         if kind == "CNPGCluster":
-            resources = getattr(item.spec, "resources", None) or item.get("spec", {}).get("resources", {})
+            resources = getattr(item.spec, "resources", None) or item.get("spec", {}).get("resources", {}) or {}
+            req = resources.get("requests", {}) or {}
+            lim = resources.get("limits", {}) or {}
             allocations = ResourceAllocations(
-                requests=resources.get("requests", {}),
-                limits=resources.get("limits", {}),
+                requests={
+                    ResourceType.CPU: req.get("cpu"),
+                    ResourceType.Memory: req.get("memory"),
+                },
+                limits={
+                    ResourceType.CPU: lim.get("cpu"),
+                    ResourceType.Memory: lim.get("memory"),
+                },
             )
             container_name = "postgres"
         else:
