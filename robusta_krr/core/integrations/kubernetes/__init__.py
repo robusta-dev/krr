@@ -506,54 +506,40 @@ class ClusterLoader:
             namespaced_request=self.batch.list_namespaced_job,
         )
         
-        # Group jobs by individual grouping label values AND namespace (OR logic)
         grouped_jobs = defaultdict(list)
         for job in all_jobs:
             if (job.metadata.labels and 
                 not any(owner.kind == "CronJob" for owner in job.metadata.owner_references or [])):
                 
-                # Check if job has any of the grouping labels
                 for label_name in settings.job_grouping_labels:
                     if label_name in job.metadata.labels:
                         label_value = job.metadata.labels[label_name]
-                        group_key = f"{job.metadata.namespace}/{label_name}={label_value}"
+                        group_key = f"{label_name}={label_value}"
                         grouped_jobs[group_key].append(job)
         
-        # Create GroupedJob objects
         result = []
         for group_name, jobs in grouped_jobs.items():
-            # Use the first job as the template for the group
-            template_job = jobs[0]
+            jobs_by_namespace = defaultdict(list)
+            for job in jobs:
+                jobs_by_namespace[job.metadata.namespace].append(job)
             
-            # Create a virtual container that represents the group
-            # We'll use the first job's container as the template
-            template_container = template_job.spec.template.spec.containers[0]
-            
-            # Create the GroupedJob object
-            grouped_job = self.__build_scannable_object(
-                item=template_job,
-                container=template_container,
-                kind="GroupedJob"
-            )
-            
-            # Override the name to be the group name
-            grouped_job.name = group_name
-            grouped_job.namespace = template_job.metadata.namespace
-            
-            # Store all jobs in the group for later pod listing
-            grouped_job._api_resource._grouped_jobs = jobs
-            
-            # Store the label+value filter for pod listing
-            # Extract the label+value pair from the group name
-            grouped_job._api_resource._label_filters = []
-            # The group name is in format "namespace/label_name=label_value"
-            # Extract just the label=value part for the selector
-            if "/" in group_name and "=" in group_name:
-                # Split by "/" and take everything after the first "/"
-                namespace_part, label_part = group_name.split("/", 1)
-                grouped_job._api_resource._label_filters.append(label_part)
-            
-            result.append(grouped_job)
+            for namespace, namespace_jobs in jobs_by_namespace.items():
+                template_job = namespace_jobs[0]
+                template_container = template_job.spec.template.spec.containers[0]
+                
+                grouped_job = self.__build_scannable_object(
+                    item=template_job,
+                    container=template_container,
+                    kind="GroupedJob"
+                )
+                
+                grouped_job.name = group_name
+                grouped_job.namespace = namespace
+                grouped_job._api_resource._grouped_jobs = namespace_jobs
+                grouped_job._api_resource._label_filters = []
+                grouped_job._api_resource._label_filters.append(group_name)
+                
+                result.append(grouped_job)
         
         logger.debug(f"Found {len(result)} GroupedJob groups")
         return result
