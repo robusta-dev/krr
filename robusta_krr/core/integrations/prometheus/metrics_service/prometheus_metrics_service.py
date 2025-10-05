@@ -21,6 +21,8 @@ from ..metrics import PrometheusMetric
 from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
 from .base_metric_service import MetricsService
 
+PROM_REFRESH_CREDS_SEC = int(os.environ.get("PROM_REFRESH_CREDS_SEC", "600")) # 10 minutes
+
 logger = logging.getLogger("krr")
 
 
@@ -105,7 +107,16 @@ class PrometheusMetricsService(MetricsService):
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
         self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
-        self.prometheus = get_custom_prometheus_connect(self.prom_config)
+        self.get_prometheus()
+
+    def get_prometheus(self):
+        now = datetime.utcnow()
+        if (not self.prometheus
+            or not self._last_init_at
+            or now - self._last_init_at >= timedelta(seconds=PROM_REFRESH_CREDS_SEC)):
+            self.prometheus = get_custom_prometheus_connect(self.prom_config)
+            self._last_init_at = now
+        return self.prometheus
 
     def check_connection(self):
         """
@@ -113,14 +124,14 @@ class PrometheusMetricsService(MetricsService):
         Raises:
             PrometheusNotFound: If the connection to Prometheus cannot be established.
         """
-        self.prometheus.check_prometheus_connection()
+        self.get_prometheus().check_prometheus_connection()
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
-            lambda: self.prometheus.safe_custom_query(query=query)["result"],
+            lambda: self.get_prometheus().safe_custom_query(query=query)["result"],
         )
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
@@ -128,7 +139,7 @@ class PrometheusMetricsService(MetricsService):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
-            lambda: self.prometheus.safe_custom_query_range(
+            lambda: self.get_prometheus().safe_custom_query_range(
                 query=query, start_time=start, end_time=end, step=f"{step.seconds}s"
             )["result"],
         )
@@ -155,7 +166,7 @@ class PrometheusMetricsService(MetricsService):
 
     def get_cluster_names(self) -> Optional[List[str]]:
         try:
-            return self.prometheus.get_label_values(label_name=settings.prometheus_label)
+            return self.get_prometheus().get_label_values(label_name=settings.prometheus_label)
         except PrometheusApiClientException:
             logger.error("Labels api not present on prometheus client")
             return []
@@ -194,7 +205,7 @@ class PrometheusMetricsService(MetricsService):
         """
         logger.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
         try:
-            metric_loader = LoaderClass(self.prometheus, self.name(), self.executor)
+            metric_loader = LoaderClass(self.get_prometheus(), self.name(), self.executor)
             data = await metric_loader.load_data(object, period, step)
         except Exception:
             logger.exception("Failed to gather resource history data for %s", object)
