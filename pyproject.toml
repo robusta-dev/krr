@@ -52,7 +52,7 @@ flake8 = "^6.0.0"
 types-pyyaml = "^6.0.12.8"
 types-cachetools = "^5.3.0.4"
 types-requests = "^2.28.11.15"
-pyinstaller = "^5.9.0"
+pyinstaller = "^6.0.0"
 pytest = "^7.2.2"
 
 [build-system]
