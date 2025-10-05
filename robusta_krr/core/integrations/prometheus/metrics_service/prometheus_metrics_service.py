@@ -107,6 +107,7 @@ class PrometheusMetricsService(MetricsService):
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
         self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
+        self.prometheus = None
         self.get_prometheus()
 
     def get_prometheus(self):

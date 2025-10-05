@@ -220,6 +220,12 @@ def load_commands() -> None:
                     help="Max workers to use for async requests.",
                     rich_help_panel="Threading Settings",
                 ),
+                job_grouping_labels: Optional[str] = typer.Option(
+                    None,
+                    "--job-grouping-labels",
+                    help="Label name(s) to use for grouping jobs into GroupedJob workload type. Can be a single label or comma-separated labels (e.g., 'app,team').",
+                    rich_help_panel="Job Grouping Settings",
+                ),
                 format: str = typer.Option(
                     "table",
                     "--formatter",
@@ -357,6 +363,7 @@ def load_commands() -> None:
                         coralogix_token=coralogix_token,
                         openshift=openshift,
                         max_workers=max_workers,
+                        job_grouping_labels=job_grouping_labels,
                         format=format,
                         show_cluster_name=show_cluster_name,
                         verbose=verbose,

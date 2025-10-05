@@ -8,7 +8,7 @@ from robusta_krr.core.models.allocations import ResourceAllocations
 from robusta_krr.utils.batched import batched
 from kubernetes.client.models import V1LabelSelector
 
-KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "CronJob", "Rollout", "DeploymentConfig", "StrimziPodSet"]
+KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "CronJob", "Rollout", "DeploymentConfig", "StrimziPodSet", "GroupedJob"]
 
 
 class PodData(pd.BaseModel):
