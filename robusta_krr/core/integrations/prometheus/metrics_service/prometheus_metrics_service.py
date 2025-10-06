@@ -106,7 +106,8 @@ class PrometheusMetricsService(MetricsService):
             headers |= {"Authorization": self.auth_header}
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
-        self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
+        self.headers = headers
+        self.prom_config = None
         self.prometheus = None
         self.get_prometheus()
 
@@ -115,6 +116,7 @@ class PrometheusMetricsService(MetricsService):
         if (not self.prometheus
             or not self._last_init_at
             or now - self._last_init_at >= timedelta(seconds=PROM_REFRESH_CREDS_SEC)):
+            self.prom_config = generate_prometheus_config(url=self.url, headers=self.headers, metrics_service=self) # type: ignore
             self.prometheus = get_custom_prometheus_connect(self.prom_config)
             self._last_init_at = now
         return self.prometheus
