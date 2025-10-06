@@ -148,16 +148,14 @@ class ClusterLoader:
             selector = f"batch.kubernetes.io/controller-uid in ({','.join(ownered_jobs_uids)})"
 
         elif object.kind == "GroupedJob":
-            # For GroupedJob, we need to get pods using the label+value filter
-            if not hasattr(object._api_resource, '_label_filters') or not object._api_resource._label_filters:
+            if not hasattr(object._api_resource, '_label_filter') or not object._api_resource._label_filter:
                 return []
             
             # Use the label+value filter to get pods
-            label_selector = ",".join(object._api_resource._label_filters)
             ret: V1PodList = await loop.run_in_executor(
                 self.executor,
                 lambda: self.core.list_namespaced_pod(
-                    namespace=object.namespace, label_selector=label_selector
+                    namespace=object.namespace, label_selector=object._api_resource._label_filter
                 ),
             )
             
@@ -536,12 +534,11 @@ class ClusterLoader:
                 grouped_job.name = group_name
                 grouped_job.namespace = namespace
                 grouped_job._api_resource._grouped_jobs = namespace_jobs
-                grouped_job._api_resource._label_filters = []
-                grouped_job._api_resource._label_filters.append(group_name)
+                grouped_job._api_resource._label_filter = group_name
                 
                 result.append(grouped_job)
         
-        logger.debug(f"Found {len(result)} GroupedJob groups")
+        logger.debug("Found %d GroupedJob groups", len(result))
         return result
 
     async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:
