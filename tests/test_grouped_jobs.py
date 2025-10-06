@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from collections import defaultdict
 
-from robusta_krr.core.integrations.kubernetes import KubernetesLoader
+from robusta_krr.core.integrations.kubernetes import ClusterLoader
 from robusta_krr.core.models.config import Config
 from robusta_krr.api.models import K8sObjectData
 
@@ -13,17 +13,21 @@ def mock_config():
     config = MagicMock(spec=Config)
     config.job_grouping_labels = ["app", "team"]
     config.job_grouping_limit = 3  # Small limit for testing
+    config.max_workers = 4
+    config.get_kube_client = MagicMock()
+    config.resources = "*"
     return config
 
 
 @pytest.fixture
 def mock_kubernetes_loader(mock_config):
-    """Create a KubernetesLoader instance with mocked dependencies"""
+    """Create a ClusterLoader instance with mocked dependencies"""
     with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
-        loader = KubernetesLoader()
+        loader = ClusterLoader()
         loader.batch = MagicMock()
         loader.core = MagicMock()
         loader.executor = MagicMock()
+        loader._ClusterLoader__hpa_list = {} # type: ignore # needed for mock
         return loader
 
 
@@ -34,7 +38,11 @@ def create_mock_job(name: str, namespace: str, labels: dict):
     job.metadata.namespace = namespace
     job.metadata.labels = labels
     job.metadata.owner_references = []
-    job.spec.template.spec.containers = [MagicMock()]
+    
+    # Create a mock container with a proper name
+    container = MagicMock()
+    container.name = "main-container"
+    job.spec.template.spec.containers = [container]
     return job
 
 
@@ -66,8 +74,10 @@ async def test_list_all_groupedjobs_with_limit(mock_kubernetes_loader, mock_conf
     
     mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
     
-    # Call the method
-    result = await mock_kubernetes_loader._list_all_groupedjobs()
+    # Patch the settings to use our mock config
+    with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
+        # Call the method
+        result = await mock_kubernetes_loader._list_all_groupedjobs()
     
     # Verify we got 2 groups (frontend and backend)
     assert len(result) == 2
@@ -116,8 +126,10 @@ async def test_list_all_groupedjobs_with_different_namespaces(mock_kubernetes_lo
     
     mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
     
-    # Call the method
-    result = await mock_kubernetes_loader._list_all_groupedjobs()
+    # Patch the settings to use our mock config
+    with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
+        # Call the method
+        result = await mock_kubernetes_loader._list_all_groupedjobs()
     
     # Verify we got 2 groups (one per namespace)
     assert len(result) == 2
@@ -157,8 +169,10 @@ async def test_list_all_groupedjobs_with_cronjob_owner_reference(mock_kubernetes
     
     mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
     
-    # Call the method
-    result = await mock_kubernetes_loader._list_all_groupedjobs()
+    # Patch the settings to use our mock config
+    with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
+        # Call the method
+        result = await mock_kubernetes_loader._list_all_groupedjobs()
     
     # Verify we got 1 group with only 1 job (the one without CronJob owner)
     assert len(result) == 1
@@ -201,8 +215,10 @@ async def test_list_all_groupedjobs_multiple_labels(mock_kubernetes_loader, mock
     
     mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
     
-    # Call the method
-    result = await mock_kubernetes_loader._list_all_groupedjobs()
+    # Patch the settings to use our mock config
+    with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
+        # Call the method
+        result = await mock_kubernetes_loader._list_all_groupedjobs()
     
     # Verify we got 3 groups (one for each label+value combination)
     assert len(result) == 3
