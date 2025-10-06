@@ -55,6 +55,7 @@ class Config(pd.BaseSettings):
     
     # Job grouping settings
     job_grouping_labels: Union[list[str], str, None] = pd.Field(None, description="Label name(s) to use for grouping jobs into GroupedJob workload type")
+    job_grouping_limit: int = pd.Field(500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group")
 
     # Logging Settings
     format: str

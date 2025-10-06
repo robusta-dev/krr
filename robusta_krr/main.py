@@ -226,6 +226,12 @@ def load_commands() -> None:
                     help="Label name(s) to use for grouping jobs into GroupedJob workload type. Can be a single label or comma-separated labels (e.g., 'app,team').",
                     rich_help_panel="Job Grouping Settings",
                 ),
+                job_grouping_limit: int = typer.Option(
+                    500,
+                    "--job-grouping-limit",
+                    help="Maximum number of jobs/pods to query per GroupedJob group (default: 500).",
+                    rich_help_panel="Job Grouping Settings",
+                ),
                 format: str = typer.Option(
                     "table",
                     "--formatter",
@@ -364,6 +370,7 @@ def load_commands() -> None:
                         openshift=openshift,
                         max_workers=max_workers,
                         job_grouping_labels=job_grouping_labels,
+                        job_grouping_limit=job_grouping_limit,
                         format=format,
                         show_cluster_name=show_cluster_name,
                         verbose=verbose,

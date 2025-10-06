@@ -159,7 +159,9 @@ class ClusterLoader:
                 ),
             )
             
-            return [PodData(name=pod.metadata.name, deleted=False) for pod in ret.items]
+            # Apply the job grouping limit to pod results
+            limited_pods = ret.items[:settings.job_grouping_limit]
+            return [PodData(name=pod.metadata.name, deleted=False) for pod in limited_pods]
 
         else:
             if object.selector is None:
@@ -522,7 +524,8 @@ class ClusterLoader:
                 jobs_by_namespace[job.metadata.namespace].append(job)
             
             for namespace, namespace_jobs in jobs_by_namespace.items():
-                template_job = namespace_jobs[0]
+                limited_jobs = namespace_jobs[:settings.job_grouping_limit]
+                template_job = limited_jobs[0]
                 template_container = template_job.spec.template.spec.containers[0]
                 
                 grouped_job = self.__build_scannable_object(
@@ -533,7 +536,7 @@ class ClusterLoader:
                 
                 grouped_job.name = group_name
                 grouped_job.namespace = namespace
-                grouped_job._api_resource._grouped_jobs = namespace_jobs
+                grouped_job._api_resource._grouped_jobs = limited_jobs
                 grouped_job._api_resource._label_filter = group_name
                 
                 result.append(grouped_job)
