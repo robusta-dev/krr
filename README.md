@@ -353,6 +353,31 @@ python krr.py simple --selector 'app.kubernetes.io/instance in (robusta, ingress
 </details>
 
 <details>
+  <summary>Group jobs by specific labels</summary>
+
+Group jobs that have specific labels into GroupedJob objects for consolidated resource recommendations. This is useful for batch jobs, data processing pipelines, or any workload where you want to analyze resource usage across multiple related jobs.
+
+```sh
+krr simple --job-grouping-labels app,team
+```
+
+This will:
+- Group jobs that have either `app` or `team` labels (or both)
+- Create GroupedJob objects with names like `app=frontend`, `team=backend`, etc.
+- Provide resource recommendations for the entire group instead of individual jobs
+- Jobs with the specified labels will be excluded from regular Job listing
+
+You can specify multiple labels separated by commas:
+
+```sh
+krr simple --job-grouping-labels app,team,environment
+```
+
+Each job will be grouped by each label it has, so a job with `app=api,team=backend` will appear in both `app=api` and `team=backend` groups.
+
+</details>
+
+<details>
   <summary>Override the kubectl context</summary>
 
 By default krr will run in the current context. If you want to run it in a different context:
