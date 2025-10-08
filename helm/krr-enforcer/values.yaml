@@ -1,12 +1,17 @@
 certificate: "" # base64 encoded
 logLevel: INFO
 
+# Certificate job configuration
+certJob:
+  image: "alpine/k8s:1.30.0"  # Image with kubectl for certificate generation
+  installOpenssl: true  # Set to false if the image already includes openssl
+
 # fullImage: ~  # full image path can be used to override image.repository/image.name:image.tag
 
 image:
   repository: us-central1-docker.pkg.dev/genuine-flight-317411/devel
   name: krr-enforcer
-  tag: 0.3.1
+  tag: 0.3.4
 imagePullPolicy: IfNotPresent
 resources:
   requests:

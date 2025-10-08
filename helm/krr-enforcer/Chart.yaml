@@ -3,5 +3,5 @@ name: krr-enforcer
 description: KRR enforcer - auto apply KRR recommendations
 type: application
 
-version: 0.3.1
-appVersion: 0.3.1
+version: 0.3.4
+appVersion: 0.3.4
