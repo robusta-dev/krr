@@ -35,12 +35,13 @@ slack-sdk = "^3.21.3"
 pandas = "2.2.2"
 requests = ">2.32.4"
 pyyaml = "6.0.1"
-typing-extensions = "^4.12.0"
+typing-extensions = "4.6.0"
 idna = "3.7"
 urllib3 = "^1.26.20"
 setuptools = "^80.9.0"
 zipp = "^3.19.1"
 tenacity = "^9.0.0"
+pyinstaller = "^5.9.0"
 
 
 
@@ -52,17 +53,14 @@ flake8 = "^6.0.0"
 types-pyyaml = "^6.0.12.8"
 types-cachetools = "^5.3.0.4"
 types-requests = "^2.28.11.15"
-pyinstaller = "^5.9.0"
 pytest = "^7.2.2"
-pytest-asyncio = "^0.23.0"
+pytest-asyncio = ">=0.21,<0.24"
+pyinstaller = "^5.9.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
 
 [project]
 name = "robusta_krr"
