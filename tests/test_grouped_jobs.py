@@ -1,10 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from collections import defaultdict
-
 from robusta_krr.core.integrations.kubernetes import ClusterLoader
 from robusta_krr.core.models.config import Config
-from robusta_krr.api.models import K8sObjectData
 
 
 @pytest.fixture
