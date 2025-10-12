@@ -525,21 +525,33 @@ class ClusterLoader:
             
             for namespace, namespace_jobs in jobs_by_namespace.items():
                 limited_jobs = namespace_jobs[:settings.job_grouping_limit]
-                template_job = limited_jobs[0]
-                template_container = template_job.spec.template.spec.containers[0]
                 
-                grouped_job = self.__build_scannable_object(
-                    item=template_job,
-                    container=template_container,
-                    kind="GroupedJob"
-                )
+                container_names = set()
+                for job in limited_jobs:
+                    for container in job.spec.template.spec.containers:
+                        container_names.add(container.name)
                 
-                grouped_job.name = group_name
-                grouped_job.namespace = namespace
-                grouped_job._api_resource._grouped_jobs = limited_jobs
-                grouped_job._api_resource._label_filter = group_name
-                
-                result.append(grouped_job)
+                for container_name in container_names:
+                    template_job = limited_jobs[0]
+                    template_container = None
+                    for container in template_job.spec.template.spec.containers:
+                        if container.name == container_name:
+                            template_container = container
+                            break
+                    
+                    if template_container:
+                        grouped_job = self.__build_scannable_object(
+                            item=template_job,
+                            container=template_container,
+                            kind="GroupedJob"
+                        )
+                        
+                        grouped_job.name = group_name
+                        grouped_job.namespace = namespace
+                        grouped_job._api_resource._grouped_jobs = limited_jobs
+                        grouped_job._api_resource._label_filter = group_name
+                        
+                        result.append(grouped_job)
         
         logger.debug("Found %d GroupedJob groups", len(result))
         return result

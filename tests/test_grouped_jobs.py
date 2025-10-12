@@ -76,30 +76,35 @@ async def test_list_all_groupedjobs_with_limit(mock_kubernetes_loader, mock_conf
         # Call the method
         result = await mock_kubernetes_loader._list_all_groupedjobs()
     
-    # Verify we got 2 groups (frontend and backend)
+    # Verify we got 2 objects (1 frontend + 1 backend, one per unique container name)
     assert len(result) == 2
     
-    # Find the frontend group
-    frontend_group = next((g for g in result if g.name == "app=frontend"), None)
-    assert frontend_group is not None
-    assert frontend_group.namespace == "default"
+    # Group results by name to verify grouping
+    frontend_objects = [g for g in result if g.name == "app=frontend"]
+    backend_objects = [g for g in result if g.name == "app=backend"]
     
-    # Verify the frontend group is limited to 3 jobs (the limit)
-    assert len(frontend_group._api_resource._grouped_jobs) == 3
-    assert frontend_group._api_resource._grouped_jobs[0].metadata.name == "job-1"
-    assert frontend_group._api_resource._grouped_jobs[1].metadata.name == "job-2"
-    assert frontend_group._api_resource._grouped_jobs[2].metadata.name == "job-3"
+    # Verify we got 1 frontend object (one per unique container name)
+    assert len(frontend_objects) == 1
+    assert frontend_objects[0].namespace == "default"
+    assert frontend_objects[0].container == "main-container"
     
-    # Find the backend group
-    backend_group = next((g for g in result if g.name == "app=backend"), None)
-    assert backend_group is not None
-    assert backend_group.namespace == "default"
+    # Verify we got 1 backend object (one per unique container name)  
+    assert len(backend_objects) == 1
+    assert backend_objects[0].namespace == "default"
+    assert backend_objects[0].container == "main-container"
     
-    # Verify the backend group is also limited to 3 jobs
-    assert len(backend_group._api_resource._grouped_jobs) == 3
-    assert backend_group._api_resource._grouped_jobs[0].metadata.name == "job-6"
-    assert backend_group._api_resource._grouped_jobs[1].metadata.name == "job-7"
-    assert backend_group._api_resource._grouped_jobs[2].metadata.name == "job-8"
+    # Verify all objects in each group have the same grouped_jobs list
+    frontend_grouped_jobs = frontend_objects[0]._api_resource._grouped_jobs
+    assert len(frontend_grouped_jobs) == 3
+    assert frontend_grouped_jobs[0].metadata.name == "job-1"
+    assert frontend_grouped_jobs[1].metadata.name == "job-2"
+    assert frontend_grouped_jobs[2].metadata.name == "job-3"
+    
+    backend_grouped_jobs = backend_objects[0]._api_resource._grouped_jobs
+    assert len(backend_grouped_jobs) == 3
+    assert backend_grouped_jobs[0].metadata.name == "job-6"
+    assert backend_grouped_jobs[1].metadata.name == "job-7"
+    assert backend_grouped_jobs[2].metadata.name == "job-8"
 
 
 @pytest.mark.asyncio
@@ -128,20 +133,24 @@ async def test_list_all_groupedjobs_with_different_namespaces(mock_kubernetes_lo
         # Call the method
         result = await mock_kubernetes_loader._list_all_groupedjobs()
     
-    # Verify we got 2 groups (one per namespace)
+    # Verify we got 2 objects (1 per namespace, one per unique container name)
     assert len(result) == 2
     
-    # Check namespace-1 group
-    ns1_group = next((g for g in result if g.namespace == "namespace-1"), None)
-    assert ns1_group is not None
-    assert ns1_group.name == "app=frontend"
-    assert len(ns1_group._api_resource._grouped_jobs) == 2
+    # Group results by namespace
+    ns1_objects = [g for g in result if g.namespace == "namespace-1"]
+    ns2_objects = [g for g in result if g.namespace == "namespace-2"]
     
-    # Check namespace-2 group
-    ns2_group = next((g for g in result if g.namespace == "namespace-2"), None)
-    assert ns2_group is not None
-    assert ns2_group.name == "app=frontend"
-    assert len(ns2_group._api_resource._grouped_jobs) == 2
+    # Check namespace-1 objects
+    assert len(ns1_objects) == 1
+    assert ns1_objects[0].name == "app=frontend"
+    assert ns1_objects[0].container == "main-container"
+    assert len(ns1_objects[0]._api_resource._grouped_jobs) == 2
+    
+    # Check namespace-2 objects
+    assert len(ns2_objects) == 1
+    assert ns2_objects[0].name == "app=frontend"
+    assert ns2_objects[0].container == "main-container"
+    assert len(ns2_objects[0]._api_resource._grouped_jobs) == 2
 
 
 @pytest.mark.asyncio
@@ -171,12 +180,12 @@ async def test_list_all_groupedjobs_with_cronjob_owner_reference(mock_kubernetes
         # Call the method
         result = await mock_kubernetes_loader._list_all_groupedjobs()
     
-    # Verify we got 1 group with only 1 job (the one without CronJob owner)
+    # Verify we got 1 object (only the job without CronJob owner)
     assert len(result) == 1
-    group = result[0]
-    assert group.name == "app=frontend"
-    assert len(group._api_resource._grouped_jobs) == 1
-    assert group._api_resource._grouped_jobs[0].metadata.name == "job-1"
+    obj = result[0]
+    assert obj.name == "app=frontend"
+    assert len(obj._api_resource._grouped_jobs) == 1
+    assert obj._api_resource._grouped_jobs[0].metadata.name == "job-1"
 
 
 @pytest.mark.asyncio
@@ -217,10 +226,13 @@ async def test_list_all_groupedjobs_multiple_labels(mock_kubernetes_loader, mock
         # Call the method
         result = await mock_kubernetes_loader._list_all_groupedjobs()
     
-    # Verify we got 3 groups (one for each label+value combination)
+    # Verify we got 3 objects (one for each label+value combination, one per unique container name)
     assert len(result) == 3
     
     group_names = {g.name for g in result}
     assert "app=frontend" in group_names
     assert "team=backend" in group_names
     assert "app=api" in group_names
+    
+    # Verify all objects have the same container name
+    assert all(obj.container == "main-container" for obj in result)
