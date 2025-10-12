@@ -109,6 +109,7 @@ class PrometheusMetricsService(MetricsService):
         self.headers = headers
         self.prom_config = None
         self.prometheus = None
+        self._last_init_at = None
         self.get_prometheus()
 
     def get_prometheus(self):
