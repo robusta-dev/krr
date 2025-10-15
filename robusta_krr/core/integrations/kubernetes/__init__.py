@@ -107,6 +107,7 @@ class ClusterLoader:
             self._list_all_daemon_set(),
             self._list_all_jobs(),
             self._list_all_cronjobs(),
+            self._list_all_groupedjobs(),
         )
 
         return [
@@ -145,6 +146,22 @@ class ClusterLoader:
                 )
             ]
             selector = f"batch.kubernetes.io/controller-uid in ({','.join(ownered_jobs_uids)})"
+
+        elif object.kind == "GroupedJob":
+            if not hasattr(object._api_resource, '_label_filter') or not object._api_resource._label_filter:
+                return []
+            
+            # Use the label+value filter to get pods
+            ret: V1PodList = await loop.run_in_executor(
+                self.executor,
+                lambda: self.core.list_namespaced_pod(
+                    namespace=object.namespace, label_selector=object._api_resource._label_filter
+                ),
+            )
+            
+            # Apply the job grouping limit to pod results
+            limited_pods = ret.items[:settings.job_grouping_limit]
+            return [PodData(name=pod.metadata.name, deleted=False) for pod in limited_pods]
 
         else:
             if object.selector is None:
@@ -442,15 +459,24 @@ class ClusterLoader:
         )
 
     def _list_all_jobs(self) -> list[K8sObjectData]:
+        def filter_jobs(item):
+            # Skip jobs owned by CronJobs
+            if any(owner.kind == "CronJob" for owner in item.metadata.owner_references or []):
+                return False
+            
+            # Skip jobs that have any of the grouping labels (they will be handled by GroupedJob)
+            if settings.job_grouping_labels and item.metadata.labels:
+                if any(label in item.metadata.labels for label in settings.job_grouping_labels):
+                    return False
+            
+            return True
+        
         return self._list_scannable_objects(
             kind="Job",
             all_namespaces_request=self.batch.list_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_job,
             extract_containers=lambda item: item.spec.template.spec.containers,
-            # NOTE: If the job has ownerReference and it is a CronJob, then we should skip it
-            filter_workflows=lambda item: not any(
-                owner.kind == "CronJob" for owner in item.metadata.owner_references or []
-            ),
+            filter_workflows=filter_jobs,
         )
 
     def _list_all_cronjobs(self) -> list[K8sObjectData]:
@@ -460,6 +486,75 @@ class ClusterLoader:
             namespaced_request=self.batch.list_namespaced_cron_job,
             extract_containers=lambda item: item.spec.job_template.spec.template.spec.containers,
         )
+
+    async def _list_all_groupedjobs(self) -> list[K8sObjectData]:
+        """List all GroupedJob objects by grouping jobs with the specified labels."""
+        if not settings.job_grouping_labels:
+            logger.debug("No job grouping labels configured, skipping GroupedJob listing")
+            return []
+        
+        if not self._should_list_resource("GroupedJob"):
+            logger.debug("Skipping GroupedJob in cluster")
+            return []
+        
+        logger.debug(f"Listing GroupedJobs with grouping labels: {settings.job_grouping_labels}")
+        
+        # Get all jobs that have any of the grouping labels
+        all_jobs = await self._list_namespaced_or_global_objects(
+            kind="Job",
+            all_namespaces_request=self.batch.list_job_for_all_namespaces,
+            namespaced_request=self.batch.list_namespaced_job,
+        )
+        
+        grouped_jobs = defaultdict(list)
+        for job in all_jobs:
+            if (job.metadata.labels and 
+                not any(owner.kind == "CronJob" for owner in job.metadata.owner_references or [])):
+                
+                for label_name in settings.job_grouping_labels:
+                    if label_name in job.metadata.labels:
+                        label_value = job.metadata.labels[label_name]
+                        group_key = f"{label_name}={label_value}"
+                        grouped_jobs[group_key].append(job)
+        
+        result = []
+        for group_name, jobs in grouped_jobs.items():
+            jobs_by_namespace = defaultdict(list)
+            for job in jobs:
+                jobs_by_namespace[job.metadata.namespace].append(job)
+            
+            for namespace, namespace_jobs in jobs_by_namespace.items():
+                limited_jobs = namespace_jobs[:settings.job_grouping_limit]
+                
+                container_names = set()
+                for job in limited_jobs:
+                    for container in job.spec.template.spec.containers:
+                        container_names.add(container.name)
+                
+                for container_name in container_names:
+                    template_job = limited_jobs[0]
+                    template_container = None
+                    for container in template_job.spec.template.spec.containers:
+                        if container.name == container_name:
+                            template_container = container
+                            break
+                    
+                    if template_container:
+                        grouped_job = self.__build_scannable_object(
+                            item=template_job,
+                            container=template_container,
+                            kind="GroupedJob"
+                        )
+                        
+                        grouped_job.name = group_name
+                        grouped_job.namespace = namespace
+                        grouped_job._api_resource._grouped_jobs = limited_jobs
+                        grouped_job._api_resource._label_filter = group_name
+                        
+                        result.append(grouped_job)
+        
+        logger.debug("Found %d GroupedJob groups", len(result))
+        return result
 
     async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:
         loop = asyncio.get_running_loop()

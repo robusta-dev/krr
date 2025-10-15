@@ -52,6 +52,10 @@ class Config(pd.BaseSettings):
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
+    
+    # Job grouping settings
+    job_grouping_labels: Union[list[str], str, None] = pd.Field(None, description="Label name(s) to use for grouping jobs into GroupedJob workload type")
+    job_grouping_limit: int = pd.Field(500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group")
 
     # Logging Settings
     format: str
@@ -129,6 +133,15 @@ class Config(pd.BaseSettings):
         # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
         # So this will preserve the big and small letters of the resource
         return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
+
+    @pd.validator("job_grouping_labels", pre=True)
+    def validate_job_grouping_labels(cls, v: Union[list[str], str, None]) -> Union[list[str], None]:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            # Split comma-separated string into list
+            return [label.strip() for label in v.split(',')]
+        return v
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
