@@ -375,6 +375,18 @@ krr simple --job-grouping-labels app,team,environment
 
 Each job will be grouped by each label it has, so a job with `app=api,team=backend` will appear in both `app=api` and `team=backend` groups.
 
+### Limiting how many jobs are included per group
+
+Use `--job-grouping-limit <N>` to cap how many jobs are included **per group** (useful when there are many historical jobs).
+
+```sh
+krr simple --job-grouping-labels app,team --job-grouping-limit 3
+```
+
+* Each label group will include at most **N** jobs (e.g., the first 3 returned by the API).
+* Other matching jobs beyond the limit are ignored for that group.
+* If not specified, the default limit is **500** jobs per group.
+
 </details>
 
 <details>
