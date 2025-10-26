@@ -3,14 +3,19 @@ import logging
 import math
 import os
 import sys
+import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import timedelta, datetime
 from prometrix import PrometheusNotFound
 from rich.console import Console
 from slack_sdk import WebClient
-
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from urllib.parse import urlparse
+import requests
+import json
+import traceback
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
@@ -104,12 +109,14 @@ class Runner:
         result.errors = self.errors
 
         Formatter = settings.Formatter
+
+        self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, settings.named_sinks, result)
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
         custom_print(formatted, rich=rich, force=True)
 
-        if settings.file_output_dynamic or settings.file_output or settings.slack_output:
+        if settings.file_output_dynamic or settings.file_output or settings.slack_output or settings.azureblob_output:
             if settings.file_output_dynamic:
                 current_datetime = datetime.now().strftime("%Y%m%d%H%M%S")
                 file_name = f"krr-{current_datetime}.{settings.format}"
@@ -118,24 +125,179 @@ class Runner:
                 file_name = settings.file_output
             elif settings.slack_output:
                 file_name = settings.slack_output
+            elif settings.azureblob_output:
+                current_datetime = datetime.now().strftime("%Y%m%d%H%M%S")
+                file_name = f"krr-{current_datetime}.{settings.format}"
+                logger.info(f"Writing output to file: {file_name}")
 
             with open(file_name, "w") as target_file:
                 # don't use rich when writing a csv or html to avoid line wrapping etc
-                if settings.format == "csv" or settings.format == "html" or settings.format == "json" or settings.format == "yaml":
+                if settings.format in ("csv", "csv-raw", "html", "json", "yaml"):
                     target_file.write(formatted)
                 else:
                     console = Console(file=target_file, width=settings.width)
                     console.print(formatted)
+
+            if settings.azureblob_output:
+                self._upload_to_azure_blob(file_name, settings.azureblob_output)   
+                if settings.teams_webhook:
+                    storage_account, container = self._extract_storage_info_from_sas(settings.azureblob_output)
+                    self._notify_teams(settings.teams_webhook, storage_account, container)  
+                os.remove(file_name)
+
             if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)
-                client.files_upload(
-                    channels=f"#{settings.slack_output}",
+                
+                # Upload file without specifying channel
+                result = client.files_upload_v2(
                     title="KRR Report",
-                    file=f"./{file_name}",
-                    initial_comment=f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}',
+                    file_uploads=[{"file": f"./{file_name}", "filename": file_name, "title": "KRR Report"}],
                 )
+                file_permalink = result["file"]["permalink"]
+                
+                # Post message with file link to channel
+                slack_title = settings.slack_title if settings.slack_title else f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}'
+                client.chat_postMessage(
+                    channel=settings.slack_output,
+                    text=f'{slack_title}\n{file_permalink}'
+                )
+                
                 os.remove(file_name)
+
+    def _upload_to_azure_blob(self, file_name: str, base_sas_url: str):
+        try:
+            logger.info(f"Uploading {file_name} to Azure Blob Storage")
+
+            with open(file_name, "rb") as file:
+                file_data = file.read()
+
+            headers = {
+                "Content-Type": "application/octet-stream",
+                "x-ms-blob-type": "BlockBlob",
+            }
+
+            if file_name.endswith(".csv"):
+                headers["Content-Type"] = "text/csv"
+            elif file_name.endswith(".json"):
+                headers["Content-Type"] = "application/json"
+            elif file_name.endswith(".yaml"):
+                headers["Content-Type"] = "application/x-yaml"
+            elif file_name.endswith(".html"):
+                headers["Content-Type"] = "text/html"
+
+            base_url = base_sas_url.rstrip('/')
+            url_part, query_part = base_url.split('?', 1)
+            full_sas_url = f"{url_part}/{file_name}?{query_part}"
+
+            response = requests.put(full_sas_url, headers=headers, data=file_data)
+
+            if response.status_code == 201:
+                logger.info(f"Successfully uploaded {file_name} to Azure Blob Storage")
+            else:
+                logger.error(f"Failed to upload {file_name} to Azure Blob Storage. Status code: {response.status_code}")
+                logger.error(f"Response: {response.text}")
+        except Exception as e:
+            logger.error(f"An error occurred while uploading {file_name} to Azure Blob Storage: {e}", exc_info=True)
+
+    def _notify_teams(self, webhook_url: str, storage_account: str, container: str):
+        """Send notification to Teams with configurable webhook URL."""
+        try:
+            azure_portal_url = self._build_azure_portal_url(storage_account, container)
+            
+            adaptive_card = {
+                "type": "message",
+                "attachments": [
+                    {
+                        "contentType": "application/vnd.microsoft.card.adaptive",
+                        "content": {
+                            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                            "type": "AdaptiveCard",
+                            "version": "1.2",
+                            "body": [
+                                {
+                                    "type": "TextBlock",
+                                    "text": "📊 KRR Report Generated",
+                                    "weight": "Bolder",
+                                    "size": "Medium",
+                                    "color": "Good"
+                                },
+                                {
+                                    "type": "TextBlock",
+                                    "text": f"Kubernetes Resource Report for {(' '.join(settings.namespaces))} has been generated and uploaded to Azure Blob Storage.",
+                                    "wrap": True,
+                                    "spacing": "Medium"
+                                },
+                                {
+                                    "type": "FactSet",
+                                    "facts": [
+                                        {
+                                            "title": "Namespaces:",
+                                            "value": ' '.join(settings.namespaces)
+                                        },
+                                        {
+                                            "title": "Format:",
+                                            "value": settings.format
+                                        },
+                                        {
+                                            "title": "Storage Account:",
+                                            "value": storage_account
+                                        },
+                                        {
+                                            "title": "Container:",
+                                            "value": container
+                                        },
+                                        {
+                                            "title": "Generated:",
+                                            "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                        }
+                                    ]
+                                }
+                            ],
+                            "actions": [
+                                {
+                                    "type": "Action.OpenUrl",
+                                    "title": "View in Azure Storage",
+                                    "url": azure_portal_url
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+            
+            response = requests.post(webhook_url, json=adaptive_card)
+            if response.status_code == 202:
+                logger.info("Successfully notified Microsoft Teams about the report generation.")
+            else:
+                logger.error(f"Failed to notify Microsoft Teams. Status code: {response.status_code}")
+                logger.error(f"Response: {response.text}")
+        except Exception as e:
+            logger.error(f"Error sending Teams notification: {e}", exc_info=True)
+
+    def _extract_storage_info_from_sas(self, sas_url: str) -> tuple[str, str]:
+        """
+        Extracts the storage account name and container name from the SAS URL.
+        """
+        try:
+            parsed = urlparse(sas_url)
+            storage_account = parsed.hostname.split('.')[0]  # Extract the storage account name from the hostname
+            container = parsed.path.strip('/').split('/')[0]  # Extract the first part of the path as the container name
+
+            return storage_account, container
+        except Exception as e:
+            logger.error(f"Failed to extract storage info from SAS URL: {e}")
+            raise ValueError("Invalid SAS URL format. Please provide a valid Azure Blob Storage SAS URL.") from e
+    
+    def _build_azure_portal_url(self, storage_account: str, container: str) -> str:
+        """
+        Builds the Azure portal URL to view the specified storage account and container.
+        """
+
+        if not settings.azure_subscription_id or not settings.azure_resource_group:
+            # Return a generic Azure portal link if specific info is missing
+            logger.warning("Azure subscription ID or resource group not provided. Azure portal link will not be specific.")
+        return f"https://portal.azure.com/#view/Microsoft_Azure_Storage/ContainerMenuBlade/~/overview/storageAccountId/%2Fsubscriptions%2F{settings.azure_subscription_id}%2FresourceGroups%2F{settings.azure_resource_group}%2Fproviders%2FMicrosoft.Storage%2FstorageAccounts%2F{storage_account}/path/{container}"
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
         if resource == ResourceType.CPU:
@@ -329,6 +491,7 @@ class Runner:
         except Exception as e:
             logger.error(f"Could not load kubernetes configuration: {e}")
             logger.error("Try to explicitly set --context and/or --kubeconfig flags.")
+            publish_error(f"Could not load kubernetes configuration: {e}")
             return 1  # Exit with error
 
         try:
@@ -348,9 +511,74 @@ class Runner:
             self._process_result(result)
         except (ClusterNotSpecifiedException, CriticalRunnerException) as e:
             logger.critical(e)
+            publish_error(traceback.format_exc())
             return 1  # Exit with error
         except Exception:
             logger.exception("An unexpected error occurred")
+            publish_error(traceback.format_exc())
             return 1  # Exit with error
         else:
             return 0  # Exit with success
+
+    def _send_result(self, url: str, start_time: datetime, scan_id: str,named_sinks: Optional[List[str]], result: Result):
+        result_dict = json.loads(result.json(indent=2))
+        _send_scan_payload(url, scan_id, start_time, result_dict, named_sinks, is_error=False)
+
+def publish_input_error(url: str, scan_id: str, start_time: str, error: str, named_sinks: Optional[List[str]]):
+    _send_scan_payload(url, scan_id, start_time, error, named_sinks, is_error=True)
+
+def publish_error(error: str):
+    _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, settings.named_sinks, is_error=True)
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=8),
+    reraise=True
+)
+def _post_scan_request(url: str, headers: dict, payload: dict, scan_id: str, is_error: bool):
+    logger_msg = "Sending error scan" if is_error else "Sending scan"
+    logger.info(f"{logger_msg} for scan_id={scan_id} to url={url}")
+    response = requests.post(url, headers=headers, json=payload)
+    logger.info(f"scan_id={scan_id} | Status code: {response.status_code}")
+    logger.info(f"scan_id={scan_id} | Response body: {response.text}")
+    return response
+
+
+def _send_scan_payload(
+    url: str,
+    scan_id: str,
+    start_time: Union[str, datetime],
+    result_data: Union[str, dict],
+    named_sinks: Optional[List[str]],
+    is_error: bool = False
+):
+    if not url or not scan_id or not start_time:
+        logger.debug(f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}")
+        return
+
+    logger.debug(f"Preparing to send scan payload. scan_id={scan_id}, to sink {named_sinks}, is_error={is_error}")
+
+    headers = {"Content-Type": "application/json"}
+
+    if isinstance(start_time, datetime):
+        logger.debug(f"Converting datetime to ISO format for scan_id={scan_id}")
+        start_time = start_time.isoformat()
+
+    action_request = {
+        "action_name": "process_scan",
+        "action_params": {
+            "result": result_data,
+            "scan_type": "krr",
+            "scan_id": scan_id,
+            "start_time": start_time,
+        }
+    }
+    if named_sinks:
+        action_request["sinks"] = named_sinks
+
+    try:
+        _post_scan_request(url, headers, action_request, scan_id, is_error)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"scan_id={scan_id} | All retry attempts failed due to RequestException: {e}", exc_info=True)
+    except Exception as e:
+        logger.error(f"scan_id={scan_id} | Unexpected error after retries: {e}", exc_info=True)

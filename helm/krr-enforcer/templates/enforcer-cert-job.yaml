@@ -1,0 +1,209 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer-cert-job
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: krr-enforcer-cert-job
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-5"
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: krr-enforcer
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: krr-enforcer-cert-job
+    spec:
+      serviceAccountName: {{ .Release.Name }}-krr-enforcer-cert-job
+      restartPolicy: OnFailure
+      volumes:
+        - name: workdir
+          emptyDir: {}
+      containers:
+        - name: cert-job
+          image: {{ .Values.certJob.image | quote }}
+          workingDir: /tmp/certs
+          volumeMounts:
+            - name: workdir
+              mountPath: /tmp/certs
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              {{- if .Values.certJob.installOpenssl }}
+              # Install openssl if needed
+              echo "Installing openssl..."
+              apk add --no-cache openssl
+              {{- end }}
+
+              # Generate a CA key and certificate
+              echo "Generating CA certificate..."
+              openssl genrsa -out ca.key 2048
+              openssl req -x509 -new -nodes -key ca.key -subj "/CN=robusta-krr-enforcer-ca" -days 365 -out ca.crt
+
+              # Generate a server key and certificate signing request (CSR)
+              echo "Generating server certificate..."
+              SERVICE_NAME={{ .Release.Name }}-krr-enforcer
+              NAMESPACE={{ .Release.Namespace }}
+              DNS_NAME=${SERVICE_NAME}.${NAMESPACE}.svc
+              
+              openssl genrsa -out server.key 2048
+              cat > server.conf <<EOF
+              [req]
+              req_extensions = v3_req
+              distinguished_name = req_distinguished_name
+              [req_distinguished_name]
+              [v3_req]
+              basicConstraints = CA:FALSE
+              keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+              extendedKeyUsage = serverAuth
+              subjectAltName = @alt_names
+              [alt_names]
+              DNS.1 = ${SERVICE_NAME}
+              DNS.2 = ${SERVICE_NAME}.${NAMESPACE}
+              DNS.3 = ${DNS_NAME}
+              DNS.4 = ${DNS_NAME}.cluster.local
+              EOF
+              
+              openssl req -new -key server.key -out server.csr -subj "/CN=${DNS_NAME}" -config server.conf
+
+              # Sign the server certificate with our CA
+              echo "Signing server certificate..."
+              cat > server-ext.conf <<EOF
+              [v3_req]
+              basicConstraints = CA:FALSE
+              keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+              extendedKeyUsage = serverAuth
+              subjectAltName = @alt_names
+              [alt_names]
+              DNS.1 = ${SERVICE_NAME}
+              DNS.2 = ${SERVICE_NAME}.${NAMESPACE}
+              DNS.3 = ${DNS_NAME}
+              DNS.4 = ${DNS_NAME}.cluster.local
+              EOF
+              
+              openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -extensions v3_req -extfile server-ext.conf
+
+              # Create a Secret with the certificates
+              echo "Creating/updating secret..."
+              kubectl create secret tls ${SERVICE_NAME}-certs \
+                --cert=server.crt --key=server.key \
+                --dry-run=client -o yaml | kubectl apply -f -
+
+              # Update the secret to include the CA certificate
+              kubectl get secret ${SERVICE_NAME}-certs -o json | \
+                jq --arg ca "$(cat ca.crt | base64 | tr -d '\n')" \
+                  '.data["ca.crt"] = $ca' | \
+                kubectl apply -f -
+
+              # Get the CA bundle for the webhook
+              CA_BUNDLE=$(cat ca.crt | base64 | tr -d '\n')
+
+              # Set up the webhook configuration
+              echo "Creating/updating webhook configuration..."
+              cat <<EOF | kubectl apply -f -
+              apiVersion: admissionregistration.k8s.io/v1
+              kind: MutatingWebhookConfiguration
+              metadata:
+                name: ${SERVICE_NAME}
+                labels:
+                  app.kubernetes.io/name: {{ .Release.Name }}
+                  app.kubernetes.io/instance: {{ .Release.Name }}
+                  app.kubernetes.io/component: krr-enforcer
+              webhooks:
+              - name: enforcer.${SERVICE_NAME}.svc
+                sideEffects: None
+                admissionReviewVersions: ["v1"]
+                clientConfig:
+                  service:
+                    name: ${SERVICE_NAME}
+                    namespace: ${NAMESPACE}
+                    path: "/mutate"
+                  caBundle: ${CA_BUNDLE}
+                rules:
+                - operations: ["CREATE"]
+                  apiGroups: [""]
+                  apiVersions: ["v1"]
+                  resources: ["pods"]
+                - operations: ["CREATE", "DELETE"]
+                  apiGroups: ["apps"]
+                  apiVersions: ["v1"]
+                  resources: ["replicasets"]
+                failurePolicy: Ignore
+                timeoutSeconds: 30
+                matchPolicy: Equivalent
+                namespaceSelector:
+                  matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: NotIn
+                    values: ["kube-system"]
+              EOF
+              
+              # Restart the enforcer deployment to pick up new certificates (only if it exists)
+              echo "Checking if enforcer deployment exists..."
+              if kubectl get deployment ${SERVICE_NAME} -n ${NAMESPACE} >/dev/null 2>&1; then
+                echo "Restarting enforcer deployment..."
+                kubectl rollout restart deployment ${SERVICE_NAME} -n ${NAMESPACE}
+              else
+                echo "Deployment ${SERVICE_NAME} does not exist yet, skipping restart"
+              fi
+              
+              echo "Job completed successfully!"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer-cert-job
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: krr-enforcer-cert-job
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-6"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer-cert-job
+  labels:
+    app.kubernetes.io/component: krr-enforcer-cert-job
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-6"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "update", "patch"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["create", "get", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer-cert-job
+  labels:
+    app.kubernetes.io/component: krr-enforcer-cert-job
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-6"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Name }}-krr-enforcer-cert-job
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-krr-enforcer-cert-job
+    namespace: {{ .Release.Namespace }}
