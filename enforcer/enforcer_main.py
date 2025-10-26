@@ -1,7 +1,7 @@
 import sys
 import os
 
-# Add parent directory to Python path so we can import enforcer modules  
+# Add parent directory to Python path so we can import enforcer modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from enforcer.utils import add_custom_certificate
