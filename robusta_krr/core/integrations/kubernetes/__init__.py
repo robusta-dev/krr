@@ -261,6 +261,81 @@ class ClusterLoader:
             return True
         return resource in settings.resources
 
+    async def _list_namespaced_or_global_objects_batched(
+        self,
+        kind: KindLiteral,
+        all_namespaces_request: Callable,
+        namespaced_request: Callable,
+        limit: Optional[int] = None,
+        continue_ref: Optional[str] = None,
+    ) -> tuple[list[Any], Optional[str]]:
+        logger.debug(f"Listing {kind}s in {self.cluster} with batching (limit={limit})")
+        loop = asyncio.get_running_loop()
+
+        try:
+            if self.namespaces == "*":
+                requests = [
+                    loop.run_in_executor(
+                        self.executor,
+                        lambda: all_namespaces_request(
+                            watch=False,
+                            label_selector=settings.selector,
+                            limit=limit,
+                            _continue=continue_ref,
+                        ),
+                    )
+                ]
+            else:
+                requests = [
+                    loop.run_in_executor(
+                        self.executor,
+                        lambda ns=namespace: namespaced_request(
+                            namespace=ns,
+                            watch=False,
+                            label_selector=settings.selector,
+                            limit=limit,
+                            _continue=continue_ref,
+                        ),
+                    )
+                    for namespace in self.namespaces
+                ]
+
+            result = [
+                item
+                for request_result in await asyncio.gather(*requests)
+                for item in request_result.items
+            ]
+
+            # Extract continue token from the first result
+            next_continue_ref = None
+            if requests:
+                first_result = await requests[0]
+                next_continue_ref = getattr(first_result.metadata, '_continue', None)
+
+            logger.debug(f"Found {len(result)} {kind} in {self.cluster}")
+            return result, next_continue_ref
+
+        except ApiException as e:
+            if e.status == 410 and e.body:
+                # Continue token expired, extract new token from error and continue
+                import json
+                try:
+                    error_body = json.loads(e.body)
+                    new_continue_token = error_body.get("metadata", {}).get("continue")
+                    if new_continue_token:
+                        logger.info("Continue token expired for jobs listing. Continuing")
+                        # Retry with new continue token
+                        return await self._list_namespaced_or_global_objects_batched(
+                            kind=kind,
+                            all_namespaces_request=all_namespaces_request,
+                            namespaced_request=namespaced_request,
+                            limit=limit,
+                            continue_ref=new_continue_token,
+                        )
+                except (json.JSONDecodeError, KeyError):
+                    pass
+            raise
+
     async def _list_namespaced_or_global_objects(
         self,
         kind: KindLiteral,
@@ -458,26 +533,57 @@ class ClusterLoader:
             extract_containers=lambda item: item.spec.template.spec.containers,
         )
 
-    def _list_all_jobs(self) -> list[K8sObjectData]:
-        def filter_jobs(item):
-            # Skip jobs owned by CronJobs
-            if any(owner.kind == "CronJob" for owner in item.metadata.owner_references or []):
-                return False
-            
-            # Skip jobs that have any of the grouping labels (they will be handled by GroupedJob)
-            if settings.job_grouping_labels and item.metadata.labels:
-                if any(label in item.metadata.labels for label in settings.job_grouping_labels):
-                    return False
-            
-            return True
+
+    async def _list_all_jobs(self) -> list[K8sObjectData]:
+        """List all jobs using batched loading with 500 batch size."""
+        if not self._should_list_resource("Job"):
+            return []
         
-        return self._list_scannable_objects(
-            kind="Job",
-            all_namespaces_request=self.batch.list_job_for_all_namespaces,
-            namespaced_request=self.batch.list_namespaced_job,
-            extract_containers=lambda item: item.spec.template.spec.containers,
-            filter_workflows=filter_jobs,
-        )
+        all_jobs = []
+        try:
+            continue_ref: Optional[str] = None
+            batch_count = 0
+            
+            while batch_count < settings.discovery_job_max_batches:
+                jobs_batch, next_continue_ref = await self._list_namespaced_or_global_objects_batched(
+                    kind="Job",
+                    all_namespaces_request=self.batch.list_job_for_all_namespaces,
+                    namespaced_request=self.batch.list_namespaced_job,
+                    limit=settings.discovery_job_batch_size,
+                    continue_ref=continue_ref,
+                )
+                
+                # Process jobs in this batch
+                for job in jobs_batch:
+                    # Skip jobs owned by CronJobs
+                    if any(owner.kind == "CronJob" for owner in job.metadata.owner_references or []):
+                        continue
+                    
+                    # Skip jobs that have any of the grouping labels (they will be handled by GroupedJob)
+                    if settings.job_grouping_labels and job.metadata.labels:
+                        if any(label in job.metadata.labels for label in settings.job_grouping_labels):
+                            continue
+                    
+                    # Add regular jobs
+                    for container in job.spec.template.spec.containers:
+                        all_jobs.append(self.__build_scannable_object(job, container, "Job"))
+                
+                batch_count += 1
+                
+                # Check if we have more batches
+                continue_ref = next_continue_ref
+                if not continue_ref:
+                    break
+            
+            logger.debug("Found %d regular jobs", len(all_jobs))
+            return all_jobs
+            
+        except Exception as e:
+            logger.error(
+                "Failed to run jobs discovery",
+                exc_info=True,
+            )
+            return all_jobs
 
     def _list_all_cronjobs(self) -> list[K8sObjectData]:
         return self._list_scannable_objects(
@@ -497,25 +603,47 @@ class ClusterLoader:
             logger.debug("Skipping GroupedJob in cluster")
             return []
         
-        logger.debug(f"Listing GroupedJobs with grouping labels: {settings.job_grouping_labels}")
+        logger.debug("Listing GroupedJobs with grouping labels: %s", settings.job_grouping_labels)
         
-        # Get all jobs that have any of the grouping labels
-        all_jobs = await self._list_namespaced_or_global_objects(
-            kind="Job",
-            all_namespaces_request=self.batch.list_job_for_all_namespaces,
-            namespaced_request=self.batch.list_namespaced_job,
-        )
-        
+        # Get all jobs that have any of the grouping labels using batched loading
         grouped_jobs = defaultdict(list)
-        for job in all_jobs:
-            if (job.metadata.labels and 
-                not any(owner.kind == "CronJob" for owner in job.metadata.owner_references or [])):
+        continue_ref: Optional[str] = None
+        batch_count = 0
+        
+        try:
+            while batch_count < settings.discovery_job_max_batches:
+                jobs_batch, next_continue_ref = await self._list_namespaced_or_global_objects_batched(
+                    kind="Job",
+                    all_namespaces_request=self.batch.list_job_for_all_namespaces,
+                    namespaced_request=self.batch.list_namespaced_job,
+                    limit=settings.discovery_job_batch_size,
+                    continue_ref=continue_ref,
+                )
                 
-                for label_name in settings.job_grouping_labels:
-                    if label_name in job.metadata.labels:
-                        label_value = job.metadata.labels[label_name]
-                        group_key = f"{label_name}={label_value}"
-                        grouped_jobs[group_key].append(job)
+                # Process jobs in this batch immediately - only keep grouped jobs
+                for job in jobs_batch:
+                    if (job.metadata.labels and 
+                        not any(owner.kind == "CronJob" for owner in job.metadata.owner_references or [])):
+                        
+                        for label_name in settings.job_grouping_labels:
+                            if label_name in job.metadata.labels:
+                                label_value = job.metadata.labels[label_name]
+                                group_key = f"{label_name}={label_value}"
+                                grouped_jobs[group_key].append(job)
+                                break  # Only add to first matching group
+                
+                batch_count += 1
+                
+                continue_ref = next_continue_ref
+                if not continue_ref:
+                    break
+        
+        except Exception as e:
+            logger.error(
+                "Failed to run grouped jobs discovery",
+                exc_info=True,
+            )
+            raise e
         
         result = []
         for group_name, jobs in grouped_jobs.items():
