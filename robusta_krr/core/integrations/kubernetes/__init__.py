@@ -23,6 +23,14 @@ from robusta_krr.core.models.objects import HPAData, K8sObjectData, KindLiteral,
 from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.object_like_dict import ObjectLikeDict
 
+
+class LightweightJobInfo:
+    """Lightweight job object containing only the fields needed for GroupedJob processing."""
+    def __init__(self, name: str, namespace: str):
+        self.name = name
+        self.namespace = namespace
+
+
 from . import config_patch as _
 
 logger = logging.getLogger("krr")
@@ -606,7 +614,9 @@ class ClusterLoader:
         logger.debug("Listing GroupedJobs with grouping labels: %s", settings.job_grouping_labels)
         
         # Get all jobs that have any of the grouping labels using batched loading
+
         grouped_jobs = defaultdict(list)
+        grouped_jobs_template = {}  # Store only ONE full job as template per group
         continue_ref: Optional[str] = None
         batch_count = 0
         
@@ -629,8 +639,15 @@ class ClusterLoader:
                             if label_name in job.metadata.labels:
                                 label_value = job.metadata.labels[label_name]
                                 group_key = f"{label_name}={label_value}"
-                                grouped_jobs[group_key].append(job)
-                                break  # Only add to first matching group
+                                # Store lightweight job info only
+                                lightweight_job = LightweightJobInfo(
+                                    name=job.metadata.name,
+                                    namespace=job.metadata.namespace
+                                )
+                                grouped_jobs[group_key].append(lightweight_job)
+                                # Keep only ONE full job as template per group
+                                if group_key not in grouped_jobs_template:
+                                    grouped_jobs_template[group_key] = job
                 
                 batch_count += 1
                 
@@ -646,21 +663,23 @@ class ClusterLoader:
             raise e
         
         result = []
-        for group_name, jobs in grouped_jobs.items():
-            jobs_by_namespace = defaultdict(list)
-            for job in jobs:
-                jobs_by_namespace[job.metadata.namespace].append(job)
+        for group_name, lightweight_jobs in grouped_jobs.items():
+            # Get the one template job for this group
+            template_job = grouped_jobs_template[group_name]
             
-            for namespace, namespace_jobs in jobs_by_namespace.items():
-                limited_jobs = namespace_jobs[:settings.job_grouping_limit]
+            # Group lightweight jobs by namespace
+            lightweight_jobs_by_namespace = defaultdict(list)
+            for lightweight_job in lightweight_jobs:
+                lightweight_jobs_by_namespace[lightweight_job.namespace].append(lightweight_job)
+            
+            for namespace, namespace_lightweight_jobs in lightweight_jobs_by_namespace.items():
+                limited_lightweight_jobs = namespace_lightweight_jobs[:settings.job_grouping_limit]
                 
                 container_names = set()
-                for job in limited_jobs:
-                    for container in job.spec.template.spec.containers:
-                        container_names.add(container.name)
+                for container in template_job.spec.template.spec.containers:
+                    container_names.add(container.name)
                 
                 for container_name in container_names:
-                    template_job = limited_jobs[0]
                     template_container = None
                     for container in template_job.spec.template.spec.containers:
                         if container.name == container_name:
@@ -676,7 +695,8 @@ class ClusterLoader:
                         
                         grouped_job.name = group_name
                         grouped_job.namespace = namespace
-                        grouped_job._api_resource._grouped_jobs = limited_jobs
+                        # Store only lightweight job info
+                        grouped_job._api_resource._grouped_jobs = limited_lightweight_jobs
                         grouped_job._api_resource._label_filter = group_name
                         
                         result.append(grouped_job)
