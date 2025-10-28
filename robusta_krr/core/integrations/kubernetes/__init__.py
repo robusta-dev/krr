@@ -318,16 +318,17 @@ class ClusterLoader:
                     for namespace in self.namespaces
                 ]
 
+            gathered_results = await asyncio.gather(*requests)
+            
             result = [
                 item
-                for request_result in await asyncio.gather(*requests)
+                for request_result in gathered_results
                 for item in request_result.items
             ]
 
             next_continue_ref = None
-            if requests:
-                first_result = await requests[0]
-                next_continue_ref = getattr(first_result.metadata, '_continue', None)
+            if gathered_results:
+                next_continue_ref = getattr(gathered_results[0].metadata, '_continue', None)
 
             return result, next_continue_ref
 
