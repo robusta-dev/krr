@@ -277,7 +277,7 @@ class ClusterLoader:
         limit: Optional[int] = None,
         continue_ref: Optional[str] = None,
     ) -> tuple[list[Any], Optional[str]]:
-        logger.debug(f"Listing {kind}s in {self.cluster} with batching (limit={limit})")
+        logger.debug("Listing %s in %s with batching (limit=%d)", kind, self.cluster, limit)
         loop = asyncio.get_running_loop()
 
         try:
