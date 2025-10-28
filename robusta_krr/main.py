@@ -233,13 +233,13 @@ def load_commands() -> None:
                     rich_help_panel="Job Grouping Settings",
                 ),
                 discovery_job_batch_size: int = typer.Option(
-                    1000,
+                    250,
                     "--discovery-job-batch-size",
                     help="Batch size for Kubernetes job API calls (default: 1000).",
                     rich_help_panel="Job Discovery Settings",
                 ),
                 discovery_job_max_batches: int = typer.Option(
-                    50,
+                    100,
                     "--discovery-job-max-batches",
                     help="Maximum number of job batches to process to prevent infinite loops (default: 50).",
                     rich_help_panel="Job Discovery Settings",
