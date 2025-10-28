@@ -269,6 +269,16 @@ class ClusterLoader:
             return True
         return resource in settings.resources
 
+    def _is_job_owned_by_cronjob(self, job: V1Job) -> bool:
+        """Check if a job is owned by a CronJob."""
+        return any(owner.kind == "CronJob" for owner in job.metadata.owner_references or [])
+
+    def _is_job_grouped(self, job: V1Job) -> bool:
+        """Check if a job has any of the grouping labels."""
+        if not settings.job_grouping_labels or not job.metadata.labels:
+            return False
+        return any(label in job.metadata.labels for label in settings.job_grouping_labels)
+
     async def _list_namespaced_or_global_objects_batched(
         self,
         kind: KindLiteral,
@@ -314,25 +324,22 @@ class ClusterLoader:
                 for item in request_result.items
             ]
 
-            # Extract continue token from the first result
             next_continue_ref = None
             if requests:
                 first_result = await requests[0]
                 next_continue_ref = getattr(first_result.metadata, '_continue', None)
 
-            logger.debug(f"Found {len(result)} {kind} in {self.cluster}")
             return result, next_continue_ref
 
         except ApiException as e:
             if e.status == 410 and e.body:
-                # Continue token expired, extract new token from error and continue
+                # Continue token expired
                 import json
                 try:
                     error_body = json.loads(e.body)
                     new_continue_token = error_body.get("metadata", {}).get("continue")
                     if new_continue_token:
                         logger.info("Continue token expired for jobs listing. Continuing")
-                        # Retry with new continue token
                         return await self._list_namespaced_or_global_objects_batched(
                             kind=kind,
                             all_namespaces_request=all_namespaces_request,
@@ -561,25 +568,23 @@ class ClusterLoader:
                     continue_ref=continue_ref,
                 )
                 
-                # Process jobs in this batch
+                batch_count += 1
+                continue_ref = next_continue_ref
+
+                # refreshed continue token
+                if not jobs_batch and continue_ref:
+                    continue
+                
                 for job in jobs_batch:
-                    # Skip jobs owned by CronJobs
-                    if any(owner.kind == "CronJob" for owner in job.metadata.owner_references or []):
+                    if self._is_job_owned_by_cronjob(job):
                         continue
                     
-                    # Skip jobs that have any of the grouping labels (they will be handled by GroupedJob)
-                    if settings.job_grouping_labels and job.metadata.labels:
-                        if any(label in job.metadata.labels for label in settings.job_grouping_labels):
-                            continue
+                    if self._is_job_grouped(job):
+                        continue
                     
-                    # Add regular jobs
                     for container in job.spec.template.spec.containers:
                         all_jobs.append(self.__build_scannable_object(job, container, "Job"))
-                
-                batch_count += 1
-                
-                # Check if we have more batches
-                continue_ref = next_continue_ref
+                                
                 if not continue_ref:
                     break
             
@@ -613,10 +618,8 @@ class ClusterLoader:
         
         logger.debug("Listing GroupedJobs with grouping labels: %s", settings.job_grouping_labels)
         
-        # Get all jobs that have any of the grouping labels using batched loading
-
         grouped_jobs = defaultdict(list)
-        grouped_jobs_template = {}  # Store only ONE full job as template per group
+        grouped_jobs_template = {}  # Store only ONE full job as template per group - needed for class K8sObjectData
         continue_ref: Optional[str] = None
         batch_count = 0
         
@@ -630,28 +633,34 @@ class ClusterLoader:
                     continue_ref=continue_ref,
                 )
                 
-                # Process jobs in this batch immediately - only keep grouped jobs
-                for job in jobs_batch:
-                    if (job.metadata.labels and 
-                        not any(owner.kind == "CronJob" for owner in job.metadata.owner_references or [])):
-                        
-                        for label_name in settings.job_grouping_labels:
-                            if label_name in job.metadata.labels:
-                                label_value = job.metadata.labels[label_name]
-                                group_key = f"{label_name}={label_value}"
-                                # Store lightweight job info only
-                                lightweight_job = LightweightJobInfo(
-                                    name=job.metadata.name,
-                                    namespace=job.metadata.namespace
-                                )
-                                grouped_jobs[group_key].append(lightweight_job)
-                                # Keep only ONE full job as template per group
-                                if group_key not in grouped_jobs_template:
-                                    grouped_jobs_template[group_key] = job
-                
                 batch_count += 1
-                
                 continue_ref = next_continue_ref
+
+                # refreshed continue token
+                if not jobs_batch and continue_ref:
+                    continue
+                
+                for job in jobs_batch:
+                    if not job.metadata.labels or self._is_job_owned_by_cronjob(job) or not self._is_job_grouped(job):
+                        continue
+                    
+                    for label_name in settings.job_grouping_labels:
+                        if label_name not in job.metadata.labels:
+                            continue
+
+                        # label_name is value of grouped job label
+                        label_value = job.metadata.labels[label_name]
+                        group_key = f"{label_name}={label_value}"
+                        # Store lightweight job info only
+                        lightweight_job = LightweightJobInfo(
+                            name=job.metadata.name,
+                            namespace=job.metadata.namespace
+                        )
+                        grouped_jobs[group_key].append(lightweight_job)
+                        # Keep only ONE full job as template per group
+                        if group_key not in grouped_jobs_template:
+                            grouped_jobs_template[group_key] = job
+            
                 if not continue_ref:
                     break
         
