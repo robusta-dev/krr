@@ -651,11 +651,11 @@ class ClusterLoader:
                         # label_name is value of grouped job label
                         label_value = job.metadata.labels[label_name]
                         group_key = f"{label_name}={label_value}"
-                        # Store lightweight job info only
                         lightweight_job = LightweightJobInfo(
                             name=job.metadata.name,
                             namespace=job.metadata.namespace
                         )
+                        # Store lightweight job info only for grouped jobs
                         grouped_jobs[group_key].append(lightweight_job)
                         # Keep only ONE full job as template per group
                         if group_key not in grouped_jobs_template:
@@ -673,10 +673,8 @@ class ClusterLoader:
         
         result = []
         for group_name, jobs in grouped_jobs.items():
-            # Get the one template job for this group
             template_job = grouped_jobs_template[group_name]
             
-            # Group lightweight jobs by namespace
             jobs_by_namespace = defaultdict(list)
             for job in jobs:
                 jobs_by_namespace[job.namespace].append(job)
@@ -704,7 +702,6 @@ class ClusterLoader:
                         
                         grouped_job.name = group_name
                         grouped_job.namespace = namespace
-                        # Store only lightweight job info
                         grouped_job._api_resource._grouped_jobs = limited_jobs
                         grouped_job._api_resource._label_filter = group_name
                         
