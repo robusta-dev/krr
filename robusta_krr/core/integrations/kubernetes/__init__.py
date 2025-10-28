@@ -672,17 +672,17 @@ class ClusterLoader:
             raise e
         
         result = []
-        for group_name, lightweight_jobs in grouped_jobs.items():
+        for group_name, jobs in grouped_jobs.items():
             # Get the one template job for this group
             template_job = grouped_jobs_template[group_name]
             
             # Group lightweight jobs by namespace
             jobs_by_namespace = defaultdict(list)
-            for lightweight_job in lightweight_jobs:
-                jobs_by_namespace[lightweight_job.namespace].append(lightweight_job)
+            for job in jobs:
+                jobs_by_namespace[job.namespace].append(job)
             
             for namespace, namespace_jobs in jobs_by_namespace.items():
-                limited_lightweight_jobs = namespace_jobs[:settings.job_grouping_limit]
+                limited_jobs = namespace_jobs[:settings.job_grouping_limit]
                 
                 container_names = set()
                 for container in template_job.spec.template.spec.containers:
@@ -705,7 +705,7 @@ class ClusterLoader:
                         grouped_job.name = group_name
                         grouped_job.namespace = namespace
                         # Store only lightweight job info
-                        grouped_job._api_resource._grouped_jobs = limited_lightweight_jobs
+                        grouped_job._api_resource._grouped_jobs = limited_jobs
                         grouped_job._api_resource._label_filter = group_name
                         
                         result.append(grouped_job)
