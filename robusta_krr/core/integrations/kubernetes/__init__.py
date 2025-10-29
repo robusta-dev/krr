@@ -341,13 +341,7 @@ class ClusterLoader:
                     new_continue_token = error_body.get("metadata", {}).get("continue")
                     if new_continue_token:
                         logger.info("Continue token expired for jobs listing. Continuing")
-                        return await self._list_namespaced_or_global_objects_batched(
-                            kind=kind,
-                            all_namespaces_request=all_namespaces_request,
-                            namespaced_request=namespaced_request,
-                            limit=limit,
-                            continue_ref=new_continue_token,
-                        )
+                        return [], new_continue_token
                 except (json.JSONDecodeError, KeyError):
                     pass
             raise
