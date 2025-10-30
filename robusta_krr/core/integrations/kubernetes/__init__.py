@@ -563,16 +563,17 @@ class ClusterLoader:
                         limit=settings.discovery_job_batch_size,
                         continue_ref=continue_ref,
                     )
-                    batch_count += 1
                     continue_ref = next_continue_ref
 
-                    # refreshed continue token
                     if not jobs_batch and continue_ref:
+                        # refreshed continue token, count error batches
+                        batch_count += 1
                         continue
                     if not jobs_batch:
-                        # no more jobs to batch
+                        # no more jobs to batch do not count empty batches
                         break
-
+                    
+                    batch_count += 1
                     for job in jobs_batch:
                         if self._is_job_owned_by_cronjob(job):
                             continue
@@ -632,16 +633,17 @@ class ClusterLoader:
                         continue_ref=continue_ref,
                     )
  
-                    batch_count += 1
                     continue_ref = next_continue_ref
 
-                    # refreshed continue token
                     if not jobs_batch and continue_ref:
+                        # refreshed continue token, count error batches
+                        batch_count += 1
                         continue
                     if not jobs_batch:
-                        # no more jobs to batch
+                        # no more jobs to batch do not count empty batches
                         break
 
+                    batch_count += 1
                     for job in jobs_batch:
                         if not job.metadata.labels or self._is_job_owned_by_cronjob(job) or not self._is_job_grouped(job):
                             continue
