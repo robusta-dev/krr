@@ -284,6 +284,7 @@ class ClusterLoader:
         kind: KindLiteral,
         all_namespaces_request: Callable,
         namespaced_request: Callable,
+        namespace: str,
         limit: Optional[int] = None,
         continue_ref: Optional[str] = None,
     ) -> tuple[list[Any], Optional[str]]:
@@ -291,7 +292,7 @@ class ClusterLoader:
         loop = asyncio.get_running_loop()
 
         try:
-            if self.namespaces == "*":
+            if namespace == "*":
                 requests = [
                     loop.run_in_executor(
                         self.executor,
@@ -307,16 +308,14 @@ class ClusterLoader:
                 requests = [
                     loop.run_in_executor(
                         self.executor,
-                        lambda ns=namespace: namespaced_request(
-                            namespace=ns,
+                        lambda: namespaced_request(
+                            namespace=namespace,
                             watch=False,
                             label_selector=settings.selector,
                             limit=limit,
                             _continue=continue_ref,
                         ),
-                    )
-                    for namespace in self.namespaces
-                ]
+                    )                ]
 
             gathered_results = await asyncio.gather(*requests)
             
@@ -549,39 +548,40 @@ class ClusterLoader:
         if not self._should_list_resource("Job"):
             return []
         
+        namespaces = self.namespaces if self.namespaces != "*" else ["*"]
         all_jobs = []
         try:
-            continue_ref: Optional[str] = None
             batch_count = 0
-            
-            while batch_count < settings.discovery_job_max_batches:
-                jobs_batch, next_continue_ref = await self._list_namespaced_or_global_objects_batched(
-                    kind="Job",
-                    all_namespaces_request=self.batch.list_job_for_all_namespaces,
-                    namespaced_request=self.batch.list_namespaced_job,
-                    limit=settings.discovery_job_batch_size,
-                    continue_ref=continue_ref,
-                )
-                
-                batch_count += 1
-                continue_ref = next_continue_ref
+            for namespace in namespaces:
+                continue_ref: Optional[str] = None
+                while batch_count < settings.discovery_job_max_batches:
+                    jobs_batch, next_continue_ref = await self._list_namespaced_or_global_objects_batched(
+                        kind="Job",
+                        all_namespaces_request=self.batch.list_job_for_all_namespaces,
+                        namespaced_request=self.batch.list_namespaced_job,
+                        namespace=namespace,
+                        limit=settings.discovery_job_batch_size,
+                        continue_ref=continue_ref,
+                    )
+                    batch_count += 1
+                    continue_ref = next_continue_ref
 
-                # refreshed continue token
-                if not jobs_batch and continue_ref:
-                    continue
-                
-                for job in jobs_batch:
-                    if self._is_job_owned_by_cronjob(job):
+                    # refreshed continue token
+                    if not jobs_batch and continue_ref:
                         continue
-                    
-                    if self._is_job_grouped(job):
-                        continue
-                    
-                    for container in job.spec.template.spec.containers:
-                        all_jobs.append(self.__build_scannable_object(job, container, "Job"))
-                                
-                if not continue_ref:
-                    break
+                    if not jobs_batch:
+                        # no more jobs to batch
+                        break
+
+                    for job in jobs_batch:
+                        if self._is_job_owned_by_cronjob(job):
+                            continue
+                        if self._is_job_grouped(job):
+                            continue
+                        for container in job.spec.template.spec.containers:
+                            all_jobs.append(self.__build_scannable_object(job, container, "Job"))
+                    if not continue_ref:
+                        break
             
             logger.debug("Found %d regular jobs", len(all_jobs))
             return all_jobs
@@ -617,47 +617,51 @@ class ClusterLoader:
         grouped_jobs_template = {}  # Store only ONE full job as template per group - needed for class K8sObjectData
         continue_ref: Optional[str] = None
         batch_count = 0
-        
+        namespaces = self.namespaces if self.namespaces != "*" else ["*"]
         try:
-            while batch_count < settings.discovery_job_max_batches:
-                jobs_batch, next_continue_ref = await self._list_namespaced_or_global_objects_batched(
-                    kind="Job",
-                    all_namespaces_request=self.batch.list_job_for_all_namespaces,
-                    namespaced_request=self.batch.list_namespaced_job,
-                    limit=settings.discovery_job_batch_size,
-                    continue_ref=continue_ref,
-                )
-                
-                batch_count += 1
-                continue_ref = next_continue_ref
+            batch_count = 0
+            for namespace in namespaces:
+                continue_ref = None
+                while batch_count < settings.discovery_job_max_batches:
+                    jobs_batch, next_continue_ref = await self._list_namespaced_or_global_objects_batched(
+                        kind="Job",
+                        all_namespaces_request=self.batch.list_job_for_all_namespaces,
+                        namespaced_request=self.batch.list_namespaced_job,
+                        namespace=namespace,
+                        limit=settings.discovery_job_batch_size,
+                        continue_ref=continue_ref,
+                    )
+ 
+                    batch_count += 1
+                    continue_ref = next_continue_ref
 
-                # refreshed continue token
-                if not jobs_batch and continue_ref:
-                    continue
-                
-                for job in jobs_batch:
-                    if not job.metadata.labels or self._is_job_owned_by_cronjob(job) or not self._is_job_grouped(job):
+                    # refreshed continue token
+                    if not jobs_batch and continue_ref:
                         continue
-                    
-                    for label_name in settings.job_grouping_labels:
-                        if label_name not in job.metadata.labels:
-                            continue
+                    if not jobs_batch:
+                        # no more jobs to batch
+                        break
 
-                        # label_name is value of grouped job label
-                        label_value = job.metadata.labels[label_name]
-                        group_key = f"{label_name}={label_value}"
-                        lightweight_job = LightweightJobInfo(
-                            name=job.metadata.name,
-                            namespace=job.metadata.namespace
-                        )
-                        # Store lightweight job info only for grouped jobs
-                        grouped_jobs[group_key].append(lightweight_job)
-                        # Keep only ONE full job as template per group
-                        if group_key not in grouped_jobs_template:
-                            grouped_jobs_template[group_key] = job
-            
-                if not continue_ref:
-                    break
+                    for job in jobs_batch:
+                        if not job.metadata.labels or self._is_job_owned_by_cronjob(job) or not self._is_job_grouped(job):
+                            continue
+                        for label_name in settings.job_grouping_labels:
+                            if label_name not in job.metadata.labels:
+                                continue
+                            # label_name is value of grouped job label
+                            label_value = job.metadata.labels[label_name]
+                            group_key = f"{label_name}={label_value}"
+                            lightweight_job = LightweightJobInfo(
+                                name=job.metadata.name,
+                                namespace=job.metadata.namespace
+                            )
+                            # Store lightweight job info only for grouped jobs
+                            grouped_jobs[group_key].append(lightweight_job)
+                            # Keep only ONE full job as template per group
+                            if group_key not in grouped_jobs_template:
+                                grouped_jobs_template[group_key] = job
+                    if not continue_ref:
+                        break
         
         except Exception as e:
             logger.error(
