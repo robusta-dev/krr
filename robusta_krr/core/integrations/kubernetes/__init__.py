@@ -670,7 +670,7 @@ class ClusterLoader:
                 "Failed to run grouped jobs discovery",
                 exc_info=True,
             )
-            raise e
+            raise
         
         result = []
         for group_name, jobs in grouped_jobs.items():
