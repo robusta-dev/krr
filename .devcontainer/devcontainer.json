@@ -1,14 +1,12 @@
 {
   "name": "Robusta KRR Dev",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
 
   "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
   },
-
   "customizations": {
     "vscode": {
       "extensions": [
@@ -28,16 +26,13 @@
       }
     }
   },
-
   "remoteUser": "root",
-
   "hostRequirements": {
     "cpus": 2,
-    "memory": "4gb"
+    "memory": "2gb"
   },
-
-  "postCreateCommand": "pip install -r requirements.txt && pip install pyinstaller",
-
+  "initializeCommand": "rm -rf build && rm -rf dist",
+  "postCreateCommand": "apt-get update && apt-get install -y build-essential zip binutils && pip install 'urllib3<2' && pip install pyinstaller poetry && poetry install",
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ]
