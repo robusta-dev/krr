@@ -11,7 +11,7 @@ RUN apt-get update && \
 COPY ./requirements.txt requirements.txt
 
 # Install the project dependencies
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install curl and unzip for awscli 
 RUN apt-get -y update; apt-get -y install curl; apt-get -y install unzip

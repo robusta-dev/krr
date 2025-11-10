@@ -17,8 +17,8 @@ class Recommendation(pd.BaseModel):
 
 
 class ResourceRecommendation(pd.BaseModel):
-    requests: dict[ResourceType, RecommendationValue]
-    limits: dict[ResourceType, RecommendationValue]
+    requests: dict[ResourceType, Union[RecommendationValue, Recommendation]]
+    limits: dict[ResourceType, Union[RecommendationValue, Recommendation]]
     info: dict[ResourceType, Optional[str]]
 
 
@@ -40,6 +40,7 @@ class ResourceScan(pd.BaseModel):
 
                 current_severity = Severity.calculate(current, recommended, resource_type)
 
+                #TODO: consider... changing field after model created doesn't validate it.
                 getattr(recommendation_processed, selector)[resource_type] = Recommendation(
                     value=recommended, severity=current_severity
                 )
@@ -65,6 +66,7 @@ class Result(pd.BaseModel):
     description: Optional[str] = None
     strategy: StrategyData
     errors: list[dict[str, Any]] = pd.Field(default_factory=list)
+    clusterSummary: dict[str, Any] = {}
     config: Optional[Config] = pd.Field(default_factory=Config.get_config)
 
     def __init__(self, *args, **kwargs) -> None:

@@ -8,7 +8,7 @@ from robusta_krr.core.models.allocations import ResourceAllocations
 from robusta_krr.utils.batched import batched
 from kubernetes.client.models import V1LabelSelector
 
-KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "CronJob", "Rollout", "DeploymentConfig"]
+KindLiteral = Literal["Deployment", "DaemonSet", "StatefulSet", "Job", "CronJob", "Rollout", "DeploymentConfig", "StrimziPodSet", "GroupedJob"]
 
 
 class PodData(pd.BaseModel):
@@ -46,6 +46,8 @@ class K8sObjectData(pd.BaseModel):
     kind: KindLiteral
     allocations: ResourceAllocations
     warnings: set[PodWarning] = set()
+    labels: Optional[dict[str, str]]
+    annotations: Optional[dict[str, str]]
 
     _api_resource = pd.PrivateAttr(None)
 
@@ -98,6 +100,8 @@ class K8sObjectData(pd.BaseModel):
                 namespace=self.namespace,
                 kind=self.kind,
                 allocations=self.allocations,
+                labels=self.labels,
+                annotations=self.annotations,
             )
             for batch in batched(self.pods, n)
         ]

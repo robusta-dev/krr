@@ -9,4 +9,7 @@
 
 Thanks for using Robusta KRR. If you have any questions or feedback, please feel free to reach out to us at
 https://github.com/robusta-dev/krr/issues
+
+Watch our latest video to optimize your workloads and save costs: https://www.youtube.com/watch?v=TYRA2QcDIuI
+
 [/bold magenta]

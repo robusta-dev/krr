@@ -4,33 +4,10 @@ from typing import Any
 from rich.table import Table
 
 from robusta_krr.core.abstract import formatters
-from robusta_krr.core.models.allocations import RecommendationValue
+from robusta_krr.core.models.allocations import RecommendationValue, format_recommendation_value, format_diff, NONE_LITERAL, NAN_LITERAL
 from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.core.models.config import settings
 from robusta_krr.utils import resource_units
-
-NONE_LITERAL = "unset"
-NAN_LITERAL = "?"
-
-
-def _format(value: RecommendationValue) -> str:
-    if value is None:
-        return NONE_LITERAL
-    elif isinstance(value, str):
-        return NAN_LITERAL
-    else:
-        return resource_units.format(value)
-
-
-def __calc_diff(allocated, recommended, selector, multiplier=1) -> str:
-    if recommended is None or isinstance(recommended.value, str) or selector != "requests":
-        return ""
-    else:
-        reccomended_val = recommended.value if isinstance(recommended.value, (int, float)) else 0
-        allocated_val = allocated if isinstance(allocated, (int, float)) else 0
-        diff_val = reccomended_val - allocated_val
-        diff_sign = "[green]+[/green]" if diff_val >= 0 else "[red]-[/red]"
-        return f"{diff_sign}{_format(abs(diff_val) * multiplier)}"
 
 
 DEFAULT_INFO_COLOR = "grey27"
@@ -48,7 +25,7 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
     if allocated is None and recommended.value is None:
         return f"[{severity.color}]{NONE_LITERAL}[/{severity.color}]"
 
-    diff = __calc_diff(allocated, recommended, selector)
+    diff = format_diff(allocated, recommended, selector, colored=True)
     if diff != "":
         diff = f"({diff}) "
 
@@ -61,9 +38,9 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
     return (
         diff
         + f"[{severity.color}]"
-        + _format(allocated)
+        + format_recommendation_value(allocated)
         + " -> "
-        + _format(recommended.value)
+        + format_recommendation_value(recommended.value)
         + f"[/{severity.color}]"
         + info_formatted
     )
@@ -74,7 +51,13 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
     allocated = getattr(item.object.allocations, selector)[resource]
     recommended = getattr(item.recommended, selector)[resource]
 
-    return __calc_diff(allocated, recommended, selector, pods_current)
+    # if we have more than one pod, say so (this explains to the user why the total is different than the recommendation)
+    if pods_current == 1:
+        pods_info = ""
+    else:
+        pods_info = f"\n({pods_current} pods)"
+
+    return f"{format_diff(allocated, recommended, selector, pods_current, colored=True)}{pods_info}"
 
 
 @formatters.register(rich_console=True)

@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
+import click
 import typer
 import urllib3
 from pydantic import ValidationError  # noqa: F401
@@ -16,10 +17,15 @@ from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import BaseStrategy
 from robusta_krr.core.models.config import Config
-from robusta_krr.core.runner import Runner
+from robusta_krr.core.runner import Runner, publish_input_error
 from robusta_krr.utils.version import get_version
 
-app = typer.Typer(pretty_exceptions_show_locals=False, pretty_exceptions_short=True, no_args_is_help=True)
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    pretty_exceptions_short=True,
+    no_args_is_help=True,
+    help="IMPORTANT: Run `krr simple --help` to see all cli flags!",
+)
 
 # NOTE: Disable insecure request warnings, as it might be expected to use self-signed certificates inside the cluster
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -92,14 +98,14 @@ def load_commands() -> None:
                     None,
                     "--resource",
                     "-r",
-                    help="List of resources to run on (Deployment, StatefulSet, DaemonSet, Job, Rollout). By default, will run on all resources. Case insensitive.",
+                    help="List of resources to run on (Deployment, StatefulSet, DaemonSet, Job, Rollout, StrimziPodSet). By default, will run on all resources. Case insensitive.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 selector: Optional[str] = typer.Option(
                     None,
                     "--selector",
                     "-s",
-                    help="Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -s key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.",
+                    help="Selector (label query) to filter workloads. Applied to labels on the workload (e.g. deployment) not on the individual pod! Supports '=', '==', and '!='.(e.g. -s key1=value1,key2=value2). Matching objects must satisfy all of the specified label constraints.",
                     rich_help_panel="Kubernetes Settings",
                 ),
                 prometheus_url: Optional[str] = typer.Option(
@@ -177,6 +183,12 @@ def load_commands() -> None:
                     help="Sets the region for eks prometheus connection.",
                     rich_help_panel="Prometheus EKS Settings",
                 ),
+                eks_assume_role: Optional[str] = typer.Option(
+                    None,
+                    "--eks-assume-role",
+                    help="Sets the assumed role for eks prometheus connection. (for cross-account role assumption)",
+                    rich_help_panel="Prometheus EKS Settings",
+                ),
                 coralogix_token: Optional[str] = typer.Option(
                     None,
                     "--coralogix-token",
@@ -208,6 +220,18 @@ def load_commands() -> None:
                     help="Max workers to use for async requests.",
                     rich_help_panel="Threading Settings",
                 ),
+                job_grouping_labels: Optional[str] = typer.Option(
+                    None,
+                    "--job-grouping-labels",
+                    help="Label name(s) to use for grouping jobs into GroupedJob workload type. Can be a single label or comma-separated labels (e.g., 'app,team').",
+                    rich_help_panel="Job Grouping Settings",
+                ),
+                job_grouping_limit: int = typer.Option(
+                    500,
+                    "--job-grouping-limit",
+                    help="Maximum number of jobs/pods to query per GroupedJob group (default: 500).",
+                    rich_help_panel="Job Grouping Settings",
+                ),
                 format: str = typer.Option(
                     "table",
                     "--formatter",
@@ -216,7 +240,16 @@ def load_commands() -> None:
                     rich_help_panel="Logging Settings",
                 ),
                 show_cluster_name: bool = typer.Option(
-                    False, "--show-cluster-name", help="In table output, always show the cluster name even for a single cluster", rich_help_panel="Output Settings"
+                    False,
+                    "--show-cluster-name",
+                    help="In table output, always show the cluster name even for a single cluster",
+                    rich_help_panel="Output Settings",
+                ),
+                show_severity: bool = typer.Option(
+                    True,
+                    " /--exclude-severity",
+                    help="Whether to include the severity in the output or not",
+                    rich_help_panel="Output Settings",
                 ),
                 verbose: bool = typer.Option(
                     False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
@@ -234,17 +267,82 @@ def load_commands() -> None:
                     rich_help_panel="Logging Settings",
                 ),
                 file_output: Optional[str] = typer.Option(
-                    None, "--fileoutput", help="Print the output to a file", rich_help_panel="Output Settings"
+                    None,
+                    "--fileoutput",
+                    help="Filename to write output to (if not specified, file output is disabled)",
+                    rich_help_panel="Output Settings",
+                ),
+                file_output_dynamic: bool = typer.Option(
+                    False,
+                    "--fileoutput-dynamic",
+                    help="Ignore --fileoutput and write files to the current directory in the format krr-{datetime}.{format} (e.g. krr-20240518223924.csv)",
+                    rich_help_panel="Output Settings",
                 ),
                 slack_output: Optional[str] = typer.Option(
                     None,
                     "--slackoutput",
-                    help="Send to output to a slack channel, must have SLACK_BOT_TOKEN",
+                    help="Send output to Slack. Values starting with # will be interpreted to be channel names but other values may refer to channel IDs. SLACK_BOT_TOKEN env variable must exist with permissions: chat:write, files:write, chat:write.public. Bot must be added to the channel.",
                     rich_help_panel="Output Settings",
+                ),
+                slack_title: Optional[str] = typer.Option(
+                    None,
+                    "--slacktitle",
+                    help="Title of the slack message. If not provided, will use the default 'Kubernetes Resource Report for <environment>'.",
+                    rich_help_panel="Output Settings",
+                ),
+                azureblob_output: Optional[str] = typer.Option(
+                    None,
+                    "--azurebloboutput",
+                    help="Provide Azure Blob Storage SAS URL (with the container) to upload the output file to (e.g., https://mystorageaccount.blob.core.windows.net/container?sv=...). The filename will be automatically appended.",
+                    rich_help_panel="Output Settings",
+                ),
+                teams_webhook: Optional[str] = typer.Option(
+                    None,
+                    "--teams-webhook",
+                    help="Microsoft Teams webhook URL to send notifications when files are uploaded to Azure Blob Storage",
+                    rich_help_panel="Output Settings",
+                ),
+                azure_subscription_id: Optional[str] = typer.Option(
+                    None,
+                    "--azure-subscription-id",
+                    help="Azure Subscription ID for Teams notification Azure Portal links",
+                    rich_help_panel="Output Settings",
+                ),
+                azure_resource_group: Optional[str] = typer.Option(
+                    None,
+                    "--azure-resource-group",
+                    help="Azure Resource Group for Teams notification Azure Portal links",
+                    rich_help_panel="Output Settings",
+                ),
+                publish_scan_url: Optional[str] = typer.Option(
+                    None,
+                    "--publish_scan_url",
+                    help="Sends the output to a robusta_runner instance",
+                    rich_help_panel="Publish Scan Settings",
+                ),
+                start_time: Optional[str] = typer.Option(
+                    None,
+                    "--start_time",
+                    help="Start time of the scan",
+                    rich_help_panel="Publish Scan Settings",
+                ),
+                scan_id: Optional[str] = typer.Option(
+                    None,
+                    "--scan_id",
+                    help="A UUID scan identifier",
+                    rich_help_panel="Publish Scan Settings",
+                ),
+                named_sinks: Optional[List[str]] = typer.Option(
+                    None,
+                    "--named_sinks",
+                    help="A list of sinks to send the scan to",
+                    rich_help_panel="Publish Scan Settings",
                 ),
                 **strategy_args,
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
+                if not show_severity and format != "csv":
+                    raise click.BadOptionUsage("--exclude-severity", "--exclude-severity works only with format=csv")
 
                 try:
                     config = Config(
@@ -263,6 +361,7 @@ def load_commands() -> None:
                         prometheus_label=prometheus_label,
                         eks_managed_prom=eks_managed_prom,
                         eks_managed_prom_region=eks_managed_prom_region,
+                        eks_assume_role=eks_assume_role,
                         eks_managed_prom_profile_name=eks_managed_prom_profile_name,
                         eks_access_key=eks_access_key,
                         eks_secret_key=eks_secret_key,
@@ -270,6 +369,8 @@ def load_commands() -> None:
                         coralogix_token=coralogix_token,
                         openshift=openshift,
                         max_workers=max_workers,
+                        job_grouping_labels=job_grouping_labels,
+                        job_grouping_limit=job_grouping_limit,
                         format=format,
                         show_cluster_name=show_cluster_name,
                         verbose=verbose,
@@ -279,13 +380,25 @@ def load_commands() -> None:
                         log_to_stderr=log_to_stderr,
                         width=width,
                         file_output=file_output,
+                        file_output_dynamic=file_output_dynamic,
                         slack_output=slack_output,
+                        slack_title=slack_title,
+                        azureblob_output=azureblob_output,
+                        teams_webhook=teams_webhook,
+                        azure_subscription_id=azure_subscription_id,
+                        azure_resource_group=azure_resource_group,
+                        show_severity=show_severity,
                         strategy=_strategy_name,
                         other_args=strategy_args,
-                    )
+                        publish_scan_url=publish_scan_url,
+                        start_time=start_time,
+                        scan_id=scan_id,
+                        named_sinks=named_sinks,
+                        )
                     Config.set_config(config)
-                except ValidationError:
+                except ValidationError as e:
                     logger.exception("Error occured while parsing arguments")
+                    publish_input_error( publish_scan_url, scan_id, start_time, str(e), named_sinks)
                 else:
                     runner = Runner()
                     exit_code = asyncio.run(runner.run())

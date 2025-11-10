@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: krr-enforcer
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: krr-enforcer
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: krr-enforcer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: krr-enforcer
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: krr-enforcer
+      annotations:
+        admission.robusta.dev/krr-mutation-mode: ignore
+        {{- with .Values.annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}-krr-enforcer
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- with .Values.securityContext.pod }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: playbooks-config-secret
+          secret:
+            secretName: robusta-playbooks-config-secret
+            optional: true
+        - name: certs
+          secret:
+            secretName: {{ .Release.Name }}-krr-enforcer-certs
+      containers:
+        - name: enforcer
+          {{- if .Values.fullImage }}
+          image: "{{ .Values.fullImage }}"
+          {{- else }}
+          image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- with .Values.securityContext.container }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          volumeMounts:
+            - name: certs
+              mountPath: /etc/webhook/certs
+              readOnly: true
+            - name: playbooks-config-secret
+              mountPath: /etc/robusta/config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- if .Values.resources.requests }}
+            requests:
+              {{- if .Values.resources.requests.cpu }}
+              cpu: {{ .Values.resources.requests.cpu }}
+              {{- end }}
+              {{- if .Values.resources.requests.memory }}
+              memory: {{ .Values.resources.requests.memory }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.resources.limits }}
+            limits:
+              {{- if .Values.resources.limits.cpu }}
+              cpu: {{ .Values.resources.limits.cpu }}
+              {{- end }}
+              {{- if .Values.resources.limits.memory }}
+              memory: {{ .Values.resources.limits.memory }}
+              {{- end }}
+            {{- end }}
+          env:
+            - name: ENFORCER_SSL_KEY_FILE
+              value: "/etc/webhook/certs/tls.key"
+            - name: ENFORCER_SSL_CERT_FILE
+              value: "/etc/webhook/certs/tls.crt"
+            - name: LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
+            {{- if .Values.certificate }}
+            - name: CERTIFICATE
+              value: {{ .Values.certificate | quote }}
+            {{- end }}
+            {{- if .Values.additionalEnvVars }}
+            {{- toYaml .Values.additionalEnvVars | nindent 12 }}
+            {{- end }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-krr-enforcer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: krr-enforcer
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: krr-enforcer
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 443
+      targetPort: https
+      protocol: TCP
+      name: https
+  selector:
+    app.kubernetes.io/name: krr-enforcer
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: krr-enforcer

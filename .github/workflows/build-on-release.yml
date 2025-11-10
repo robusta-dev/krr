@@ -8,7 +8,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # we build on macos-13 for x86 builds
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
 
     runs-on: ${{ matrix.os }}
 
@@ -32,7 +33,7 @@ jobs:
         sudo apt-get install -y binutils
 
     - name: Install the Apple certificate and provisioning profile
-      if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-latest' || matrix.os == 'macos-13' 
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -62,7 +63,7 @@ jobs:
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
     - name: Set version in code (Unix)
-      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-13' 
       run: |
         awk 'NR==3{$0="__version__ = \"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
         cat ./robusta_krr/__init__.py
@@ -79,16 +80,16 @@ jobs:
         GITHUB_REF_NAME: ${{ github.ref_name }}
 
     - name: Build with PyInstaller
-      if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-latest' 
       shell: bash
       run: |
-        pyinstaller --target-architecture universal2 krr.py
+        pyinstaller --target-architecture arm64 krr.py
         mkdir -p ./dist/krr/grapheme/data
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
         cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Build with PyInstaller
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os != 'macos-latest'
       shell: bash
       run: |
         pyinstaller krr.py
@@ -97,7 +98,7 @@ jobs:
         cp ./intro.txt ./dist/krr/intro.txt
 
     - name: Zip the application (Unix)
-      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-13'
       run: |
         cd dist
         zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip krr
@@ -123,13 +124,13 @@ jobs:
         asset_content_type: application/octet-stream
 
     - name: Upload build as artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: krr-${{ matrix.os }}-${{ github.ref_name }}
         path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
 
     - name: Clean up keychain and provisioning profile
-      if: (matrix.os == 'macos-latest') && always()
+      if: (matrix.os == 'macos-latest' || matrix.os == 'macos-13') && always()
       run: |
         security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
         rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
@@ -158,7 +159,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: Download MacOS artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: krr-macos-latest-${{ github.ref_name }}
       - name: Calculate hash
@@ -176,7 +177,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: Download Linux artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: krr-ubuntu-latest-${{ github.ref_name }}
       - name: Calculate hash
