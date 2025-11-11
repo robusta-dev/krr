@@ -478,11 +478,21 @@ Get a free breakdown of KRR recommendations in the [Robusta SaaS](#free-krr-ui-o
 
 ### Algorithm
 
-By default, we use a _simple_ strategy to calculate resource recommendations. It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
+KRR provides multiple strategies for calculating resource recommendations:
 
-- For CPU, we set a request at the 95th percentile with no limit. Meaning, in 95% of the cases, your CPU request will be sufficient. For the remaining 5%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
+#### Simple Strategy (default)
+By default, we use the _simple_ strategy (`krr simple`). It is calculated as follows (_The exact numbers can be customized in CLI arguments_):
 
-- For memory, we take the maximum value over the past week and add a 15% buffer.
+- **CPU**: Request at the 95th percentile, **limit unset** (allows unlimited bursting)
+- **Memory**: Maximum value over the past week + 15% buffer (same for request and limit)
+
+#### Simple-Limit Strategy  
+The _simple-limit_ strategy (`krr simple_limit`) provides both CPU requests and limits:
+
+- **CPU**: Request and limit both set to configurable percentiles (default 95th percentile for both)
+- **Memory**: Maximum value over the past week + 15% buffer (same for request and limit)
+
+**Key difference**: The simple strategy leaves CPU limits unset to allow unlimited bursting, while simple-limit sets explicit CPU limits.
 
 ### Prometheus connection
 
