@@ -41,12 +41,10 @@ urllib3 = "^1.26.20"
 setuptools = "^80.9.0"
 zipp = "^3.19.1"
 tenacity = "^9.0.0"
-pyinstaller = "^5.9.0"
-
 
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.0.1"
+mypy = "^1.18.2"
 black = "^23.1.0"
 isort = "^5.12.0"
 flake8 = "^6.0.0"
@@ -55,7 +53,6 @@ types-cachetools = "^5.3.0.4"
 types-requests = "^2.28.11.15"
 pytest = "^7.2.2"
 pytest-asyncio = ">=0.21,<0.24"
-pyinstaller = "^5.9.0"
 
 [build-system]
 requires = ["poetry-core"]
