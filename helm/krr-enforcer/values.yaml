@@ -1,3 +1,9 @@
+globalConfig:
+  clusterName: "phenom-pie-poc1"
+
+krr:
+  enforcer:
+    enabled: true
 certificate: "" # base64 encoded
 logLevel: INFO
 
