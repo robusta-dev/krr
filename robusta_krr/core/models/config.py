@@ -54,7 +54,7 @@ class Config(pd.BaseSettings):
     max_workers: int = pd.Field(6, ge=1)
     
     # Discovery settings
-    discovery_job_batch_size: int = pd.Field(1000, ge=1, description="Batch size for Kubernetes job API calls")
+    discovery_job_batch_size: int = pd.Field(5000, ge=1, description="Batch size for Kubernetes job API calls")
     discovery_job_max_batches: int = pd.Field(100, ge=1, description="Maximum number of job batches to process to prevent infinite loops")
     
     # Job grouping settings
