@@ -1,19 +1,21 @@
 #!/bin/bash
-# Script di test rapido per KRR con GCP Managed Prometheus (singolo namespace)
+# Quick test script for KRR with GCP Managed Prometheus (single namespace)
 #
-# Questo script esegue KRR su un singolo namespace per evitare rate limiting.
-# Uso: ./test_gcp_quick.sh <namespace>
-# Esempio: ./test_gcp_quick.sh gmp-test
+# This script runs KRR on a single namespace to avoid rate limiting.
+# Usage: ./test_gcp_quick.sh <namespace> [context]
+# Example: ./test_gcp_quick.sh gmp-test
+# Example with context: ./test_gcp_quick.sh elyca-prd connectgateway_potent-bloom-361714_global_prd-user-cluster-01
 
 set -e
 
-# Configurazione
+# Configuration
 PROJECT_ID="potent-bloom-361714"
 CLUSTER_NAME="prd-user-cluster-01"
 LOCATION="global"
 NAMESPACE="${1:-gmp-test}"  # Default: gmp-test
+CONTEXT="${2:-}"  # Optional: Kubernetes context
 
-# Colori
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -23,30 +25,40 @@ echo -e "${GREEN}KRR GCP Quick Test (Namespace: ${NAMESPACE})${NC}"
 echo "=================================================="
 echo ""
 
-# Verifica Python
+# Verify Python
 PYTHON_CMD=$(command -v python3 || command -v python)
 
-# Ottieni token
-echo -e "${YELLOW}Ottenendo token GCP...${NC}"
+# Get token
+echo -e "${YELLOW}Getting GCP token...${NC}"
 TOKEN=$(gcloud auth print-access-token 2>/dev/null)
 
 if [ -z "$TOKEN" ]; then
-    echo -e "${RED}Errore: Token non disponibile${NC}"
+    echo -e "${RED}Error: Token not available${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✓ Token ottenuto${NC}"
+echo -e "${GREEN}✓ Token obtained${NC}"
 echo ""
 
-# URL Prometheus
+# Prometheus URL
 PROMETHEUS_URL="https://monitoring.googleapis.com/v1/projects/${PROJECT_ID}/location/${LOCATION}/prometheus"
 
-echo "Analizzando namespace: ${NAMESPACE}"
+echo "Analyzing namespace: ${NAMESPACE}"
 echo "Cluster: ${CLUSTER_NAME}"
+if [ -n "$CONTEXT" ]; then
+    echo "Context: ${CONTEXT}"
+fi
 echo ""
 
-# Esegui KRR con parametri ottimizzati
+# Build context flag if provided
+CONTEXT_FLAG=""
+if [ -n "$CONTEXT" ]; then
+    CONTEXT_FLAG="--context=${CONTEXT}"
+fi
+
+# Run KRR with optimized parameters
 $PYTHON_CMD krr.py simple \
+  $CONTEXT_FLAG \
   --prometheus-url="${PROMETHEUS_URL}" \
   --prometheus-auth-header="Bearer ${TOKEN}" \
   --prometheus-cluster-label="${CLUSTER_NAME}" \
@@ -58,14 +70,13 @@ $PYTHON_CMD krr.py simple \
   --memory-buffer-percentage=15 \
   --gcp-anthos
 
-
 EXIT_CODE=$?
 
 echo ""
 if [ $EXIT_CODE -eq 0 ]; then
-    echo -e "${GREEN}✓ Test completato${NC}"
+    echo -e "${GREEN}✓ Test completed${NC}"
 else
-    echo -e "${RED}✗ Test fallito (exit code: ${EXIT_CODE})${NC}"
+    echo -e "${RED}✗ Test failed (exit code: ${EXIT_CODE})${NC}"
 fi
 
 exit $EXIT_CODE
