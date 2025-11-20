@@ -55,7 +55,7 @@ class Config(pd.BaseSettings):
     
     # Discovery settings
     discovery_job_batch_size: int = pd.Field(1000, ge=1, description="Batch size for Kubernetes job API calls")
-    discovery_job_max_batches: int = pd.Field(50, ge=1, description="Maximum number of job batches to process to prevent infinite loops")
+    discovery_job_max_batches: int = pd.Field(100, ge=1, description="Maximum number of job batches to process to prevent infinite loops")
     
     # Job grouping settings
     job_grouping_labels: Union[list[str], str, None] = pd.Field(None, description="Label name(s) to use for grouping jobs into GroupedJob workload type")
