@@ -6,17 +6,14 @@ instead of standard kubernetes.io/container/* metrics used by GKE.
 """
 
 import logging
-from datetime import timedelta
 from typing import Optional, Dict, Any, List
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 
 from kubernetes.client import ApiClient
-from prometrix import MetricsNotFound
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.objects import K8sObjectData, PodData
-from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
-
 from ..metrics import PrometheusMetric
 from ..metrics.gcp.anthos import (
     AnthosCPULoader,
@@ -26,37 +23,12 @@ from ..metrics.gcp.anthos import (
     AnthosMaxMemoryLoader,
     AnthosMemoryAmountLoader,
 )
-from .prometheus_metrics_service import PrometheusMetricsService
-
-logger = logging.getLogger("krr")
-
-import logging
-from datetime import timedelta
-from typing import Optional, Dict, Any
-from concurrent.futures import ThreadPoolExecutor
-
-from kubernetes.client import ApiClient
-from prometrix import MetricsNotFound
-
-from robusta_krr.core.abstract.strategies import PodsTimeData
-from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
-
-from ..metrics import PrometheusMetric
-from ..metrics.gcp.anthos import (
-    AnthosCPULoader,
-    AnthosPercentileCPULoader,
-    AnthosCPUAmountLoader,
-    AnthosMemoryLoader,
-    AnthosMaxMemoryLoader,
-    AnthosMemoryAmountLoader,
-)
-from .prometheus_metrics_service import PrometheusMetricsService
+from .gcp_metrics_service import GcpManagedPrometheusMetricsService
 
 logger = logging.getLogger("krr")
 
 
-class AnthosMetricsService(PrometheusMetricsService):
+class AnthosMetricsService(GcpManagedPrometheusMetricsService):
     """
     Metrics service for GCP Anthos Managed Prometheus.
     
@@ -83,10 +55,11 @@ class AnthosMetricsService(PrometheusMetricsService):
 
     def __init__(
         self,
-        cluster: str,
+        *,
+        cluster: Optional[str] = None,
         api_client: Optional[ApiClient] = None,
         executor: Optional[ThreadPoolExecutor] = None,
-    ):
+    ) -> None:
         """
         Initialize Anthos metrics service.
         
@@ -97,21 +70,6 @@ class AnthosMetricsService(PrometheusMetricsService):
         """
         logger.info("Initializing Anthos Metrics Service for on-prem Kubernetes managed by GCP")
         super().__init__(cluster=cluster, api_client=api_client, executor=executor)
-
-    @staticmethod
-    def get_service_discovery() -> MetricsServiceDiscovery:
-        """
-        Get service discovery configuration for Anthos.
-        
-        Returns:
-            MetricsServiceDiscovery configured for Anthos detection
-        """
-        return MetricsServiceDiscovery(
-            prometheus_url_regex=".*prometheus.*",  # Generic Prometheus URL
-            metrics_path="/api/v1/query",
-            requires_token=True,
-            token_path="~/.config/gcloud/application_default_credentials.json",
-        )
 
     async def get_cluster_summary(self) -> Dict[str, Any]:
         """
@@ -124,6 +82,7 @@ class AnthosMetricsService(PrometheusMetricsService):
         return {}
 
     async def load_pods(self, object: K8sObjectData, period: timedelta) -> List[PodData]:
+
         """
         Load pods for Anthos.
         

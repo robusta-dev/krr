@@ -9,20 +9,25 @@
 
 set -e
 
+HISTORY_DURATION="12"
+TIMEFRAME_DURATION="1.25"
+
 # Configuration
 # Anthos cluster (use with: ./test_gcp_quick.sh namespace "" anthos)
 PROJECT_ID="potent-bloom-361714"
 CLUSTER_NAME="prd-user-cluster-01"
 USE_ANTHOS="anthos"
+CONTEXT=""
 
 # GKE Cloud cluster (default)
 # PROJECT_ID="sicraweb-evo-dev"
 # CLUSTER_NAME="autopilot-cluster-sicra-dev"
 # USE_ANTHOS=""
+# CONTEXT=""
 
-LOCATION="global"
-NAMESPACE="${1:-gmp-test}"  # Default: gmp-test
-CONTEXT="${2:-}"  # Optional: Kubernetes context
+LOCATION="global" # GCP Managed Prometheus location
+NAMESPACE="${1:-default}"  # Default: default
+# CONTEXT="${2:-}"  # Optional: Kubernetes context
 # USE_ANTHOS="${3:-}"  # Optional: "anthos" to enable Anthos mode
 
 # Colors
@@ -85,8 +90,8 @@ $PYTHON_CMD krr.py simple \
   --prometheus-cluster-label="${CLUSTER_NAME}" \
   --prometheus-label="cluster_name" \
   --namespace="${NAMESPACE}" \
-  --history-duration=12 \
-  --timeframe-duration=5 \
+  --history-duration="${HISTORY_DURATION}" \
+  --timeframe-duration="${TIMEFRAME_DURATION}" \
   --cpu-percentile=95 \
   --memory-buffer-percentage=15 \
   $ANTHOS_FLAG
