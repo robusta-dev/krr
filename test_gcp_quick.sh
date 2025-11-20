@@ -11,7 +11,7 @@ set -e
 # Configuration
 PROJECT_ID="potent-bloom-361714"
 CLUSTER_NAME="prd-user-cluster-01"
-LOCATION="global"
+LOCATION="global" # GCP Managed Prometheus location (default: usually global)
 NAMESPACE="${1:-gmp-test}"  # Default: gmp-test
 CONTEXT="${2:-}"  # Optional: Kubernetes context
 
