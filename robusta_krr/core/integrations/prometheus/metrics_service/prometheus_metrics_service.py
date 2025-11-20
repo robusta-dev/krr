@@ -76,14 +76,14 @@ class PrometheusMetricsService(MetricsService):
         self.ssl_enabled = settings.prometheus_ssl_enabled
 
         if settings.openshift:
-            logging.info("Openshift flag is set, trying to load token from service account.")
+            logger.info("Openshift flag is set, trying to load token from service account.")
             openshift_token = openshift.load_token()
 
             if openshift_token:
-                logging.info("Openshift token is loaded successfully.")
+                logger.info("Openshift token is loaded successfully.")
                 self.auth_header = self.auth_header or f"Bearer {openshift_token}"
             else:
-                logging.warning("Openshift token is not found, trying to connect without it.")
+                logger.warning("Openshift token is not found, trying to connect without it.")
 
         self.prometheus_discovery = self.service_discovery(api_client=self.api_client)
 
