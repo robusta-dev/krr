@@ -49,6 +49,7 @@ class Config(pd.BaseSettings):
     eks_assume_role: Optional[str] = pd.Field(None)
     coralogix_token: Optional[pd.SecretStr] = pd.Field(None)
     openshift: bool = pd.Field(False)
+    gcp_anthos: bool = pd.Field(False, description="Use Anthos metrics (kubernetes.io/anthos/*) instead of GKE metrics")
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)

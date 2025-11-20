@@ -1,0 +1,183 @@
+"""
+Anthos Managed Prometheus metrics service.
+
+Anthos (on-prem Kubernetes managed by Google) uses kubernetes.io/anthos/container/* metrics
+instead of standard kubernetes.io/container/* metrics used by GKE.
+"""
+
+import logging
+from datetime import timedelta
+from typing import Optional, Dict, Any, List
+from concurrent.futures import ThreadPoolExecutor
+
+from kubernetes.client import ApiClient
+from prometrix import MetricsNotFound
+
+from robusta_krr.core.abstract.strategies import PodsTimeData
+from robusta_krr.core.models.objects import K8sObjectData, PodData
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
+
+from ..metrics import PrometheusMetric
+from ..metrics.gcp.anthos import (
+    AnthosCPULoader,
+    AnthosPercentileCPULoader,
+    AnthosCPUAmountLoader,
+    AnthosMemoryLoader,
+    AnthosMaxMemoryLoader,
+    AnthosMemoryAmountLoader,
+)
+from .prometheus_metrics_service import PrometheusMetricsService
+
+logger = logging.getLogger("krr")
+
+import logging
+from datetime import timedelta
+from typing import Optional, Dict, Any
+from concurrent.futures import ThreadPoolExecutor
+
+from kubernetes.client import ApiClient
+from prometrix import MetricsNotFound
+
+from robusta_krr.core.abstract.strategies import PodsTimeData
+from robusta_krr.core.models.objects import K8sObjectData
+from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
+
+from ..metrics import PrometheusMetric
+from ..metrics.gcp.anthos import (
+    AnthosCPULoader,
+    AnthosPercentileCPULoader,
+    AnthosCPUAmountLoader,
+    AnthosMemoryLoader,
+    AnthosMaxMemoryLoader,
+    AnthosMemoryAmountLoader,
+)
+from .prometheus_metrics_service import PrometheusMetricsService
+
+logger = logging.getLogger("krr")
+
+
+class AnthosMetricsService(PrometheusMetricsService):
+    """
+    Metrics service for GCP Anthos Managed Prometheus.
+    
+    Anthos uses kubernetes.io/anthos/container/* metrics with the
+    monitored_resource="k8s_container" label.
+    
+    Key differences from GKE:
+    - Metric prefix: kubernetes.io/anthos/container/*
+    - Additional label: monitored_resource="k8s_container"
+    - Memory aggregation: avg_over_time instead of max_over_time
+    """
+
+    # Loader mapping for Anthos metrics
+    LOADER_MAPPING: Dict[str, Optional[type[PrometheusMetric]]] = {
+        "CPULoader": AnthosCPULoader,
+        "MemoryLoader": AnthosMemoryLoader,
+        "MaxMemoryLoader": AnthosMaxMemoryLoader,
+        "PercentileCPULoader": AnthosPercentileCPULoader,
+        "CPUAmountLoader": AnthosCPUAmountLoader,
+        "MemoryAmountLoader": AnthosMemoryAmountLoader,
+        # OOM killer metrics not available in Anthos
+        "MaxOOMKilledMemoryLoader": None,
+    }
+
+    def __init__(
+        self,
+        cluster: str,
+        api_client: Optional[ApiClient] = None,
+        executor: Optional[ThreadPoolExecutor] = None,
+    ):
+        """
+        Initialize Anthos metrics service.
+        
+        Args:
+            cluster: Cluster name or object
+            api_client: Kubernetes API client
+            executor: Thread pool executor for parallel operations
+        """
+        logger.info("Initializing Anthos Metrics Service for on-prem Kubernetes managed by GCP")
+        super().__init__(cluster=cluster, api_client=api_client, executor=executor)
+
+    @staticmethod
+    def get_service_discovery() -> MetricsServiceDiscovery:
+        """
+        Get service discovery configuration for Anthos.
+        
+        Returns:
+            MetricsServiceDiscovery configured for Anthos detection
+        """
+        return MetricsServiceDiscovery(
+            prometheus_url_regex=".*prometheus.*",  # Generic Prometheus URL
+            metrics_path="/api/v1/query",
+            requires_token=True,
+            token_path="~/.config/gcloud/application_default_credentials.json",
+        )
+
+    async def get_cluster_summary(self) -> Dict[str, Any]:
+        """
+        Get cluster summary for Anthos.
+        
+        Anthos does not have machine_* or kube_pod_container_resource_requests metrics
+        by default, so we return an empty dict. This is not critical for recommendations.
+        """
+        logger.info("Anthos: Cluster summary metrics not available. Using Kubernetes API for cluster information instead.")
+        return {}
+
+    async def load_pods(self, object: K8sObjectData, period: timedelta) -> List[PodData]:
+        """
+        Load pods for Anthos.
+        
+        Anthos Managed Prometheus does not have kube-state-metrics (kube_replicaset_owner, etc.),
+        so we always return an empty list. This forces KRR to use Kubernetes API for pod discovery,
+        which is the correct approach for Anthos.
+        
+        The parent class's load_pods() tries to query kube_* metrics which don't exist in Anthos.
+        """
+        logger.debug(f"Anthos: Using Kubernetes API for pod discovery (kube-state-metrics not available)")
+        return []
+
+    async def gather_data(
+        self,
+        object: K8sObjectData,
+        LoaderClass: type[PrometheusMetric],
+        period: timedelta,
+        step: timedelta = timedelta(minutes=30),
+    ) -> PodsTimeData:
+        """
+        Gathers data using Anthos-specific metric loaders.
+        
+        This method intercepts the loader class and replaces it with the Anthos equivalent
+        if a mapping exists. This allows strategies to continue using standard loader names
+        while automatically querying Anthos metrics.
+        """
+        loader_name = LoaderClass.__name__
+        
+        # Handle PercentileCPULoader factory pattern specially
+        if loader_name == "PercentileCPULoader":
+            # Extract percentile from the loader class attribute (set by factory)
+            percentile = getattr(LoaderClass, '_percentile', 95)
+            logger.debug(f"Detected PercentileCPULoader with percentile={percentile}, creating Anthos equivalent")
+            AnthosLoaderClass = AnthosPercentileCPULoader(percentile)
+        elif loader_name in self.LOADER_MAPPING:
+            AnthosLoaderClass = self.LOADER_MAPPING[loader_name]
+            
+            # Handle unsupported loaders (e.g., MaxOOMKilledMemoryLoader)
+            if AnthosLoaderClass is None:
+                logger.warning(
+                    f"{loader_name} is not supported on Anthos Managed Prometheus. "
+                    f"This metric requires kube-state-metrics which may not be available. "
+                    f"Returning empty data."
+                )
+                return {}
+                
+            logger.debug(f"Mapping {loader_name} to Anthos equivalent")
+        else:
+            # No mapping found, use the original loader (may fail with Anthos metrics)
+            logger.warning(
+                f"No Anthos mapping found for {loader_name}. "
+                f"This loader may not work with Anthos Managed Prometheus."
+            )
+            AnthosLoaderClass = LoaderClass
+        
+        # Call the parent method with the Anthos loader
+        return await super().gather_data(object, AnthosLoaderClass, period, step)
