@@ -232,6 +232,18 @@ def load_commands() -> None:
                     help="Maximum number of jobs/pods to query per GroupedJob group (default: 500).",
                     rich_help_panel="Job Grouping Settings",
                 ),
+                discovery_job_batch_size: int = typer.Option(
+                    5000,
+                    "--discovery-job-batch-size",
+                    help="Batch size for Kubernetes job API calls (default: 5000).",
+                    rich_help_panel="Job Discovery Settings",
+                ),
+                discovery_job_max_batches: int = typer.Option(
+                    100,
+                    "--discovery-job-max-batches",
+                    help="Maximum number of job batches to process to prevent infinite loops (default: 100).",
+                    rich_help_panel="Job Discovery Settings",
+                ),
                 format: str = typer.Option(
                     "table",
                     "--formatter",
@@ -371,6 +383,8 @@ def load_commands() -> None:
                         max_workers=max_workers,
                         job_grouping_labels=job_grouping_labels,
                         job_grouping_limit=job_grouping_limit,
+                        discovery_job_batch_size=discovery_job_batch_size,
+                        discovery_job_max_batches=discovery_job_max_batches,
                         format=format,
                         show_cluster_name=show_cluster_name,
                         verbose=verbose,

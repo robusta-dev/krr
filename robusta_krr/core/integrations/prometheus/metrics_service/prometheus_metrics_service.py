@@ -351,7 +351,7 @@ class PrometheusMetricsService(MetricsService):
             del jobs
         elif object.kind == "GroupedJob":
             if hasattr(object._api_resource, '_grouped_jobs'):
-                pod_owners = [job.metadata.name for job in object._api_resource._grouped_jobs]
+                pod_owners = [job.name for job in object._api_resource._grouped_jobs]
                 pod_owner_kind = "Job"
             else:
                 pod_owners = [object.name]
