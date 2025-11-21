@@ -1,7 +1,7 @@
 """
 Memory metric loaders for GCP Anthos (on-prem Kubernetes managed by Google).
 
-Anthos uses kubernetes.io/anthos/container/* metrics with avg_over_time
+Anthos uses kubernetes.io/anthos/container/* metrics with max_over_time
 aggregation for memory (different from GKE's max_over_time).
 """
 
@@ -13,7 +13,7 @@ class AnthosMemoryLoader(PrometheusMetric):
     """
     Loads memory usage metrics from GCP Anthos Managed Prometheus.
     
-    Uses avg_over_time aggregation as per Anthos convention.
+    Uses max_over_time aggregation as per Anthos convention.
     """
     
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
@@ -41,7 +41,7 @@ class AnthosMaxMemoryLoader(PrometheusMetric):
     """
     Loads maximum memory usage from GCP Anthos Managed Prometheus.
     
-    Uses avg_over_time for aggregation (Anthos convention).
+    Uses max_over_time for aggregation (Anthos convention).
     """
     
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
@@ -50,7 +50,7 @@ class AnthosMaxMemoryLoader(PrometheusMetric):
         return f"""
             label_replace(
                 label_replace(
-                    avg_over_time(
+                    max_over_time(
                         max(
                             {{"__name__"="kubernetes.io/anthos/container/memory/used_bytes",
                                 "monitored_resource"="k8s_container",

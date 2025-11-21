@@ -24,7 +24,7 @@ The GCP Managed Prometheus and Anthos integration for KRR has been **analyzed, i
 | File | Type | Purpose |
 |------|------|---------|
 | `robusta_krr/core/integrations/prometheus/metrics/gcp/anthos/cpu.py` | New | • CPU loaders for Anthos metrics<br>• Uses `kubernetes.io/anthos/container/*` |
-| `robusta_krr/core/integrations/prometheus/metrics/gcp/anthos/memory.py` | New | • Memory loaders for Anthos<br>• Uses `avg_over_time()` aggregation |
+| `robusta_krr/core/integrations/prometheus/metrics/gcp/anthos/memory.py` | New | • Memory loaders for Anthos<br>• Uses `max_over_time()` aggregation |
 | `robusta_krr/core/integrations/prometheus/metrics_service/anthos_metrics_service.py` | New | • Service orchestrator for Anthos<br>• Kubernetes API pod discovery |
 | `robusta_krr/core/models/config.py` | Modified | • Added `gcp_anthos: bool` field |
 | `robusta_krr/main.py` | Modified | • Added `--gcp-anthos` CLI flag |
@@ -112,7 +112,7 @@ Implemented 6 dedicated loaders for Anthos metrics:
 - ✅ `AnthosPercentileCPULoader` - CPU percentiles (factory pattern)
 - ✅ `AnthosCPUAmountLoader` - CPU data point counting
 - ✅ `AnthosMemoryLoader` - Memory usage with `kubernetes.io/anthos/container/memory/used_bytes`
-- ✅ `AnthosMaxMemoryLoader` - Maximum memory usage (uses `avg_over_time()`)
+- ✅ `AnthosMaxMemoryLoader` - Maximum memory usage (uses `max_over_time()`)
 - ✅ `AnthosMemoryAmountLoader` - Memory data point counting
 
 ### 4. Query Syntax
@@ -209,7 +209,7 @@ logger.warning(f"{loader_name} is not supported on GCP...")
 - Complete Anthos metrics service with dedicated loaders
 - `--gcp-anthos` CLI flag for Anthos detection
 - Kubernetes API pod discovery (no kube-state-metrics in Anthos)
-- Uses `avg_over_time()` for memory metrics (Anthos convention)
+- Uses `max_over_time()` for memory metrics (Anthos convention)
 - Changed pod discovery fallback logging to DEBUG level
 
 ---
@@ -228,7 +228,7 @@ logger.warning(f"{loader_name} is not supported on GCP...")
 ### Anthos (kubernetes.io/anthos/container/*)
 - ✅ Enabled via `--gcp-anthos` flag
 - ✅ Dedicated loaders for Anthos-specific metrics
-- ✅ Uses `avg_over_time()` for memory (Anthos convention)
+- ✅ Uses `max_over_time()` for memory (Anthos convention)
 - ✅ Kubernetes API pod discovery (no kube-state-metrics)
 - ✅ Label renaming same as GCP Cloud
 - ✅ All metric types supported
@@ -274,7 +274,7 @@ krr simple \
 |---------|-----------|--------|----------------|
 | **Metrics** | `kubernetes.io/container/*` | `kubernetes.io/anthos/container/*` | Separate loader classes |
 | **Pod Discovery** | Prometheus (kube-state-metrics) | Kubernetes API only | `load_pods()` override |
-| **Memory Aggregation** | `max_over_time()` | `avg_over_time()` | Different query templates |
+| **Memory Aggregation** | `max_over_time()` | `max_over_time()` | Different query templates |
 | **Label Format** | `pod_name`, `container_name` | `pod_name`, `container_name` | Same `label_replace()` logic |
 | **Auto-detection** | URL-based | Requires `--gcp-anthos` flag | Loader selection in service |
 | **Cluster Summary** | Attempts query (may fail) | Returns empty dict | `get_cluster_summary()` override |
@@ -540,7 +540,7 @@ If you encounter issues:
 | File | Type | Purpose |
 |------|------|---------|
 | `robusta_krr/core/integrations/prometheus/metrics/gcp/anthos/cpu.py` | New | • CPU loaders for Anthos metrics<br>• Uses `kubernetes.io/anthos/container/*` |
-| `robusta_krr/core/integrations/prometheus/metrics/gcp/anthos/memory.py` | New | • Memory loaders for Anthos<br>• Uses `avg_over_time()` aggregation |
+| `robusta_krr/core/integrations/prometheus/metrics/gcp/anthos/memory.py` | New | • Memory loaders for Anthos<br>• Uses `max_over_time()` aggregation |
 | `robusta_krr/core/integrations/prometheus/metrics_service/anthos_metrics_service.py` | New | • Service orchestrator for Anthos<br>• Kubernetes API pod discovery |
 | `robusta_krr/core/models/config.py` | Modified | • Added `gcp_anthos: bool` field |
 | `robusta_krr/main.py` | Modified | • Added `--gcp-anthos` CLI flag |
@@ -602,7 +602,7 @@ poetry run pytest tests/test_anthos_loaders.py -v
 ### Anthos (kubernetes.io/anthos/container/*)
 - ✅ Enabled via `--gcp-anthos` flag
 - ✅ Dedicated loaders for Anthos-specific metrics
-- ✅ Uses `avg_over_time()` for memory (Anthos convention)
+- ✅ Uses `max_over_time()` for memory (Anthos convention)
 - ✅ Kubernetes API pod discovery (no kube-state-metrics)
 - ✅ Label renaming same as GCP Cloud
 - ⚠️  No cluster summary metrics (expected for Anthos)
@@ -632,7 +632,7 @@ krr simple \
 |---------|-----------|--------|----------------|
 | **Metrics** | `kubernetes.io/container/*` | `kubernetes.io/anthos/container/*` | Separate loader classes |
 | **Pod Discovery** | Prometheus (kube-state-metrics) | Kubernetes API only | `load_pods()` override |
-| **Memory Aggregation** | `max_over_time()` | `avg_over_time()` | Different query templates |
+| **Memory Aggregation** | `max_over_time()` | `max_over_time()` | Different query templates |
 | **Label Format** | `pod_name`, `container_name` | `pod_name`, `container_name` | Same `label_replace()` logic |
 | **Auto-detection** | URL-based | Requires `--gcp-anthos` flag | Loader selection in service |
 

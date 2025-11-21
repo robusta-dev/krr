@@ -4,7 +4,7 @@ Anthos-specific metric loaders for GCP Managed Prometheus.
 Anthos uses slightly different metric naming compared to GKE:
 - kubernetes.io/anthos/container/* instead of kubernetes.io/container/*
 - Same monitored_resource="k8s_container" label
-- Memory uses avg_over_time instead of max_over_time
+- Memory uses max_over_time instead of max_over_time
 """
 
 from .cpu import (

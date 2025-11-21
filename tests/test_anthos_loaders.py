@@ -143,7 +143,7 @@ class TestAnthosMemoryLoader:
         assert "monitored_resource" in query and "k8s_container" in query
         
         # Note: AnthosMemoryLoader base query uses max() aggregation
-        # avg_over_time is only used in AnthosMaxMemoryLoader
+        # max_over_time is only used in AnthosMaxMemoryLoader
         assert 'max(' in query
     
     def test_max_memory_loader_query(self, mock_prometheus, sample_object):
@@ -155,8 +155,8 @@ class TestAnthosMemoryLoader:
         assert 'kubernetes.io/anthos/container/memory/used_bytes' in query
         assert "monitored_resource" in query and "k8s_container" in query
         
-        # Verify avg_over_time is used (Anthos convention)
-        assert 'avg_over_time' in query
+        # Verify max_over_time is used (Anthos convention)
+        assert 'max_over_time' in query
     
     def test_memory_amount_loader_query(self, mock_prometheus, sample_object):
         """Test AnthosMemoryAmountLoader generates correct query."""

@@ -38,7 +38,7 @@ class AnthosMetricsService(GcpManagedPrometheusMetricsService):
     Key differences from GKE:
     - Metric prefix: kubernetes.io/anthos/container/*
     - Additional label: monitored_resource="k8s_container"
-    - Memory aggregation: avg_over_time instead of max_over_time
+    - Memory aggregation: max_over_time instead of max_over_time
     """
 
     # Loader mapping for Anthos metrics

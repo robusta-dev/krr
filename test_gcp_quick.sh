@@ -17,13 +17,13 @@ TIMEFRAME_DURATION="1.25"
 PROJECT_ID="potent-bloom-361714"
 CLUSTER_NAME="prd-user-cluster-01"
 USE_ANTHOS="anthos"
-CONTEXT=""
+CONTEXT="connectgateway_potent-bloom-361714_global_prd-user-cluster-01"
 
 # GKE Cloud cluster (default)
 # PROJECT_ID="sicraweb-evo-dev"
 # CLUSTER_NAME="autopilot-cluster-sicra-dev"
 # USE_ANTHOS=""
-# CONTEXT=""
+#CONTEXT=""
 
 LOCATION="global" # GCP Managed Prometheus location
 NAMESPACE="${1:-default}"  # Default: default
@@ -94,7 +94,8 @@ $PYTHON_CMD krr.py simple \
   --timeframe-duration="${TIMEFRAME_DURATION}" \
   --cpu-percentile=95 \
   --memory-buffer-percentage=15 \
-  $ANTHOS_FLAG
+  $ANTHOS_FLAG \
+  --show-cluster-name --fileoutput-dynamic
 
 EXIT_CODE=$?
 
