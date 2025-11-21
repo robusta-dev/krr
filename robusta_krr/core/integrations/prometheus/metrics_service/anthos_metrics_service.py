@@ -138,5 +138,8 @@ class AnthosMetricsService(GcpManagedPrometheusMetricsService):
             )
             AnthosLoaderClass = LoaderClass
         
-        # Call the parent method with the Anthos loader
-        return await super().gather_data(object, AnthosLoaderClass, period, step)
+        # Call PrometheusMetricsService.gather_data() directly to bypass GCP's gather_data()
+        # This prevents double-mapping: Anthos already mapped to Anthos loaders,
+        # we don't want GCP to try mapping them again
+        from .prometheus_metrics_service import PrometheusMetricsService
+        return await PrometheusMetricsService.gather_data(self, object, AnthosLoaderClass, period, step)
