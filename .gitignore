@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 /examples/algorithm_demos/**
+**/*.table
 
 # C extensions
 *.so
