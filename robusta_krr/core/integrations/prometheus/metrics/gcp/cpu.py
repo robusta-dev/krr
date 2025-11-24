@@ -58,7 +58,7 @@ def GcpPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
         _percentile = percentile
         
         def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-            pods_selector = "|".join(pod.name for pod in object.pods)
+            pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
             cluster_label = self.get_prometheus_cluster_label()
             return f"""
                 label_replace(
@@ -82,7 +82,10 @@ def GcpPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
                     "container", "$1", "container_name", "(.+)"
                 )
             """
-
+    
+    # Set user-friendly names for logging
+    _GcpPercentileCPULoader.__name__ = "PercentileCPULoader"
+    _GcpPercentileCPULoader.__qualname__ = "PercentileCPULoader"
     return _GcpPercentileCPULoader
 
 
@@ -92,7 +95,7 @@ class GcpCPUAmountLoader(PrometheusMetric):
     """
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             label_replace(
