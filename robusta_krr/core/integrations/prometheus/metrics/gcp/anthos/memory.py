@@ -45,7 +45,7 @@ class AnthosMaxMemoryLoader(PrometheusMetric):
     """
     
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             label_replace(
@@ -74,7 +74,7 @@ class AnthosMemoryAmountLoader(PrometheusMetric):
     """
     
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             label_replace(

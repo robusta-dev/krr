@@ -56,7 +56,7 @@ def AnthosPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
         _percentile = percentile
         
         def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-            pods_selector = "|".join(pod.name for pod in object.pods)
+            pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
             cluster_label = self.get_prometheus_cluster_label()
             return f"""
                 label_replace(
@@ -90,7 +90,7 @@ class AnthosCPUAmountLoader(PrometheusMetric):
     """
     
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+        pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
             label_replace(

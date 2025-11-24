@@ -14,15 +14,15 @@ TIMEFRAME_DURATION="1.25"
 
 # Configuration
 # Anthos cluster (use with: ./test_gcp_quick.sh namespace "" anthos)
-PROJECT_ID="potent-bloom-361714"
-CLUSTER_NAME="prd-user-cluster-01"
-USE_ANTHOS="anthos"
-CONTEXT="connectgateway_potent-bloom-361714_global_prd-user-cluster-01"
+# PROJECT_ID="potent-bloom-361714"
+# CLUSTER_NAME="prd-user-cluster-01"
+# USE_ANTHOS="anthos"
+# CONTEXT="connectgateway_potent-bloom-361714_global_prd-user-cluster-01"
 
 # GKE Cloud cluster (default)
-# PROJECT_ID="sicraweb-evo-dev"
-# CLUSTER_NAME="autopilot-cluster-sicra-dev"
-# USE_ANTHOS=""
+PROJECT_ID="sicraweb-evo-dev"
+CLUSTER_NAME="autopilot-cluster-sicra-dev"
+USE_ANTHOS=""
 #CONTEXT=""
 
 LOCATION="global" # GCP Managed Prometheus location
