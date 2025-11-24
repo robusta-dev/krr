@@ -1,29 +1,16 @@
 #!/bin/bash
-# Quick test script for KRR with GCP Managed Prometheus (single namespace)
-#
-# This script runs KRR on a single namespace to avoid rate limiting.
-# Usage: ./test_gcp_quick.sh <namespace> [context] [use-anthos]
-# Example: ./test_gcp_quick.sh gmp-test
-# Example with context: ./test_gcp_quick.sh elyca-prd connectgateway_potent-bloom-361714_global_prd-user-cluster-01
-# Example with Anthos: ./test_gcp_quick.sh elyca-prd "" anthos
 
 set -e
+source .env
 
-HISTORY_DURATION="12"
+HISTORY_DURATION="300"
 TIMEFRAME_DURATION="1.25"
 
 # Configuration
-# Anthos cluster (use with: ./test_gcp_quick.sh namespace "" anthos)
-# PROJECT_ID="potent-bloom-361714"
-# CLUSTER_NAME="prd-user-cluster-01"
-# USE_ANTHOS="anthos"
-# CONTEXT="connectgateway_potent-bloom-361714_global_prd-user-cluster-01"
-
-# GKE Cloud cluster (default)
-PROJECT_ID="sicraweb-evo-dev"
-CLUSTER_NAME="autopilot-cluster-sicra-dev"
-USE_ANTHOS=""
-#CONTEXT=""
+PROJECT_ID="${PROJECT_ID}"
+CLUSTER_NAME="${CLUSTER_NAME}"
+USE_ANTHOS="${USE_ANTHOS}"
+CONTEXT="${CONTEXT}"
 
 LOCATION="global" # GCP Managed Prometheus location
 NAMESPACE="${1:-default}"  # Default: default
