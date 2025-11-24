@@ -68,8 +68,8 @@ You can also use a script like `local.sh` to automate the process:
 ```bash
 #!/bin/bash
 
-export PROJECT_ID="sicraweb-evo-dev"
-export CLUSTER_NAME="autopilot-cluster-sicra-dev"
+export PROJECT_ID="your-gcp-project-id"
+export CLUSTER_NAME="your-cluster-name"
 export TOKEN=$(gcloud auth print-access-token)
 
 python krr.py simple \
