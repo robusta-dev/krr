@@ -1,21 +1,36 @@
 #!/bin/bash
-
 set -e
+
+if [ ! -f .env ]; then
+    echo "Missing .env file with PROJECT_ID/CLUSTER_NAME defaults."
+    exit 1
+fi
+
+# shellcheck source=/dev/null
+set -a
 source .env
+set +a
 
 HISTORY_DURATION="300"
 TIMEFRAME_DURATION="1.25"
 
-# Configuration
-PROJECT_ID="${PROJECT_ID}"
-CLUSTER_NAME="${CLUSTER_NAME}"
-USE_ANTHOS="${USE_ANTHOS}"
-CONTEXT="${CONTEXT}"
-
 LOCATION="global" # GCP Managed Prometheus location
-NAMESPACE="${1:-default}"  # Default: default
-# CONTEXT="${2:-}"  # Optional: Kubernetes context
-# USE_ANTHOS="${3:-}"  # Optional: "anthos" to enable Anthos mode
+NAMESPACE="${1:-${NAMESPACE:-default}}"  # 1st arg overrides .env/default
+if [ -n "${2:-}" ]; then
+    CONTEXT="${2}"
+fi
+if [ -n "${3:-}" ]; then
+    USE_ANTHOS="${3}"
+fi
+# CPU_PERCENTILE="${CPU_PERCENTILE:-95}"
+# if [ -n "${4:-}" ]; then
+#     CPU_PERCENTILE="${4}"
+# fi
+
+if [ -z "${PROJECT_ID:-}" ] || [ -z "${CLUSTER_NAME:-}" ]; then
+    echo -e "${RED}Error: PROJECT_ID and CLUSTER_NAME must be defined in .env or via environment variables.${NC}"
+    exit 1
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -55,12 +70,21 @@ if [ "$USE_ANTHOS" = "anthos" ]; then
 else
     echo "Mode: GKE Cloud"
 fi
+echo "CPU Percentile: ${CPU_PERCENTILE}"
 echo ""
 
 # Build context flag if provided
 CONTEXT_FLAG=""
 if [ -n "$CONTEXT" ]; then
     CONTEXT_FLAG="--context=${CONTEXT}"
+    if command -v kubectl >/dev/null 2>&1; then
+        if ! kubectl --context="$CONTEXT" get namespace "$NAMESPACE" >/dev/null 2>&1; then
+            echo -e "${YELLOW}Warning: Unable to verify namespace ${NAMESPACE} via kubectl for context ${CONTEXT}.${NC}"
+            echo -e "${YELLOW}         Ensure 'gcloud container fleet memberships get-credentials' was executed and that the context has list permissions.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}kubectl not found in PATH; skipping namespace reachability check.${NC}"
+    fi
 fi
 
 # Build Anthos flag if requested
@@ -79,10 +103,10 @@ $PYTHON_CMD krr.py simple \
   --namespace="${NAMESPACE}" \
   --history-duration="${HISTORY_DURATION}" \
   --timeframe-duration="${TIMEFRAME_DURATION}" \
-  --cpu-percentile=95 \
+    --cpu-percentile="${CPU_PERCENTILE}" \
   --memory-buffer-percentage=15 \
   $ANTHOS_FLAG \
-  --show-cluster-name --fileoutput-dynamic
+    --show-cluster-name --fileoutput-dynamic $GCP_MANAGED_FLAG
 
 EXIT_CODE=$?
 
