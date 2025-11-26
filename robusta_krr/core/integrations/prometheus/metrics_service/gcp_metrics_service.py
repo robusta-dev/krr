@@ -7,7 +7,7 @@ that work with GCP's kubernetes.io/* metric naming conventions.
 
 import logging
 from datetime import timedelta
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, ClassVar
 from concurrent.futures import ThreadPoolExecutor
 
 from kubernetes.client import ApiClient
@@ -39,7 +39,7 @@ class GcpManagedPrometheusDiscovery(MetricsServiceDiscovery):
     Kubernetes service discovery, but this class is provided for consistency.
     """
     
-    def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+    def find_metrics_url(self, *, _api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         GCP Managed Prometheus is typically accessed via a known URL pattern:
         https://monitoring.googleapis.com/v1/projects/{project_id}/location/global/prometheus
@@ -65,7 +65,7 @@ class GcpManagedPrometheusMetricsService(PrometheusMetricsService):
     service_discovery = GcpManagedPrometheusDiscovery
 
     # Mapping from standard Prometheus loaders to GCP equivalents
-    LOADER_MAPPING = {
+    LOADER_MAPPING: ClassVar[Dict[str, Optional[type[PrometheusMetric]]]] = {
         "CPULoader": GcpCPULoader,
         "PercentileCPULoader": GcpPercentileCPULoader,
         "CPUAmountLoader": GcpCPUAmountLoader,
@@ -86,7 +86,10 @@ class GcpManagedPrometheusMetricsService(PrometheusMetricsService):
         self._percentile_log_cache: set[float] = set()
         super().__init__(cluster=cluster, api_client=api_client, executor=executor)
         logger.info(f"GCP Managed Prometheus service initialized for cluster {cluster or 'default'}")
-        logger.info(f"Using GCP metric naming: kubernetes.io/container/cpu/core_usage_time and kubernetes.io/container/memory/used_bytes")
+        logger.info(
+            "Using GCP metric naming: kubernetes.io/container/cpu/core_usage_time "
+            "and kubernetes.io/container/memory/used_bytes"
+        )
 
     def check_connection(self):
         """
@@ -99,13 +102,16 @@ class GcpManagedPrometheusMetricsService(PrometheusMetricsService):
             super().check_connection()
             logger.info("Successfully connected to GCP Managed Prometheus")
         except MetricsNotFound as e:
+            logger.error(
+                "Failed to connect to GCP Managed Prometheus at %s. Verify the URL, "
+                "authentication token, and that Managed Service for Prometheus is enabled."
+                " Cause: %s: %s",
+                self.url,
+                e.__class__.__name__,
+                e,
+            )
             raise MetricsNotFound(
-                f"Couldn't connect to GCP Managed Prometheus at {self.url}\n"
-                f"Make sure you have:\n"
-                f"  1. The correct project ID and cluster name in the URL\n"
-                f"  2. Valid authentication credentials (gcloud auth print-access-token)\n"
-                f"  3. The Managed Service for Prometheus enabled in your GCP project\n"
-                f"Caused by {e.__class__.__name__}: {e}"
+                f"Couldn't connect to GCP Managed Prometheus at {self.url}. See logs for details."
             ) from e
 
     async def gather_data(

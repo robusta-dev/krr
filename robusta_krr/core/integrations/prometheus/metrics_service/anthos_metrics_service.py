@@ -6,7 +6,7 @@ instead of standard kubernetes.io/container/* metrics used by GKE.
 """
 
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, ClassVar
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
@@ -38,11 +38,11 @@ class AnthosMetricsService(GcpManagedPrometheusMetricsService):
     Key differences from GKE:
     - Metric prefix: kubernetes.io/anthos/container/*
     - Additional label: monitored_resource="k8s_container"
-    - Memory aggregation: max_over_time instead of max_over_time
+    - kube-state-metrics not available in Managed Prometheus (pod discovery via Kubernetes API)
     """
 
     # Loader mapping for Anthos metrics
-    LOADER_MAPPING: Dict[str, Optional[type[PrometheusMetric]]] = {
+    LOADER_MAPPING: ClassVar[Dict[str, Optional[type[PrometheusMetric]]]] = {
         "CPULoader": AnthosCPULoader,
         "MemoryLoader": AnthosMemoryLoader,
         "MaxMemoryLoader": AnthosMaxMemoryLoader,
@@ -81,7 +81,7 @@ class AnthosMetricsService(GcpManagedPrometheusMetricsService):
         logger.info("Anthos: Cluster summary metrics not available. Using Kubernetes API for cluster information instead.")
         return {}
 
-    async def load_pods(self, object: K8sObjectData, period: timedelta) -> List[PodData]:
+    async def load_pods(self, _object: K8sObjectData, _period: timedelta) -> List[PodData]:
 
         """
         Load pods for Anthos.
@@ -92,7 +92,7 @@ class AnthosMetricsService(GcpManagedPrometheusMetricsService):
         
         The parent class's load_pods() tries to query kube_* metrics which don't exist in Anthos.
         """
-        logger.debug(f"Anthos: Using Kubernetes API for pod discovery (kube-state-metrics not available)")
+        logger.debug("Anthos: Using Kubernetes API for pod discovery (kube-state-metrics not available)")
         return []
 
     async def gather_data(

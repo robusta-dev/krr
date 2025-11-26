@@ -26,8 +26,8 @@ class GcpMemoryLoader(PrometheusMetric):
 
     query_type: QueryType = QueryType.QueryRange
 
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+    def get_query(self, object: K8sObjectData, _duration: str, _step: str) -> str:
+        pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
         
         # GCP requires UTF-8 syntax with quoted metric names and labels

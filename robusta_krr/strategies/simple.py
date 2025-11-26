@@ -125,7 +125,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             History: {self.settings.history_duration} hours
             Step: {self.settings.timeframe_duration} minutes
 
-            All parameters can be customized. For example: `krr simple --cpu_percentile=90 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
+            All parameters can be customized. For example: `krr simple --cpu-percentile=90 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
             """)
         
         if not self.settings.allow_hpa:

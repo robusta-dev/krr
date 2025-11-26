@@ -1,8 +1,8 @@
 """
 Memory metric loaders for GCP Anthos (on-prem Kubernetes managed by Google).
 
-Anthos uses kubernetes.io/anthos/container/* metrics with max_over_time
-aggregation for memory (different from GKE's max_over_time).
+Anthos uses kubernetes.io/anthos/container/* metrics for memory, matching
+the GKE aggregation patterns but with a different metric namespace.
 """
 
 import logging
@@ -15,14 +15,10 @@ logger = logging.getLogger("krr")
 
 
 class AnthosMemoryLoader(PrometheusMetric):
-    """
-    Loads memory usage metrics from GCP Anthos Managed Prometheus.
+    """Loads memory usage metrics from Anthos' kubernetes.io/anthos namespace."""
     
-    Uses max_over_time aggregation as per Anthos convention.
-    """
-    
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+    def get_query(self, object: K8sObjectData, _duration: str, _step: str) -> str:
+        pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
         query = f"""
             label_replace(
@@ -51,11 +47,7 @@ class AnthosMemoryLoader(PrometheusMetric):
 
 
 class AnthosMaxMemoryLoader(PrometheusMetric):
-    """
-    Loads maximum memory usage from GCP Anthos Managed Prometheus.
-    
-    Uses max_over_time for aggregation (Anthos convention).
-    """
+    """Loads max memory usage using Anthos' kubernetes.io/anthos metrics."""
     
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"

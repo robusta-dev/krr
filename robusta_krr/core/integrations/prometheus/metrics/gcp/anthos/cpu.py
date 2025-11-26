@@ -6,7 +6,6 @@ but with 'anthos' in the metric path.
 """
 
 import logging
-from typing import Optional
 
 from robusta_krr.core.models.objects import K8sObjectData
 from ...base import PrometheusMetric
@@ -23,8 +22,8 @@ class AnthosCPULoader(PrometheusMetric):
     instead of kubernetes.io/container/cpu/core_usage_time
     """
     
-    def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
-        pods_selector = "|".join(pod.name for pod in object.pods)
+    def get_query(self, object: K8sObjectData, _duration: str, step: str) -> str:
+        pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
         query = f"""
             label_replace(
