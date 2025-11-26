@@ -5,9 +5,14 @@ These loaders use GCP's kubernetes.io/container/cpu/core_usage_time metric
 with UTF-8 PromQL syntax required by GCP Managed Prometheus.
 """
 
+import logging
+
 from robusta_krr.core.models.objects import K8sObjectData
 
 from ..base import PrometheusMetric, QueryType
+
+
+logger = logging.getLogger("krr")
 
 
 class GcpCPULoader(PrometheusMetric):
@@ -25,7 +30,7 @@ class GcpCPULoader(PrometheusMetric):
         # GCP requires UTF-8 syntax with quoted metric names and labels
         # Note: GCP uses "monitored_resource"="k8s_container" label
         # We also rename GCP labels (pod_name -> pod, container_name -> container) for compatibility
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     max(
@@ -43,6 +48,14 @@ class GcpCPULoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "GCP CPU usage query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query
 
 
 def GcpPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
@@ -60,7 +73,7 @@ def GcpPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
         def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
             pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
             cluster_label = self.get_prometheus_cluster_label()
-            return f"""
+            query = f"""
                 label_replace(
                     label_replace(
                         quantile_over_time(
@@ -82,6 +95,15 @@ def GcpPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
                     "container", "$1", "container_name", "(.+)"
                 )
             """
+            logger.debug(
+                "GCP percentile query %.2f%% for %s/%s/%s:\n%s",
+                percentile,
+                object.namespace,
+                object.name,
+                object.container,
+                query.strip(),
+            )
+            return query
     
     # Set user-friendly names for logging
     _GcpPercentileCPULoader.__name__ = "PercentileCPULoader"
@@ -97,7 +119,7 @@ class GcpCPUAmountLoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     count_over_time(
@@ -116,3 +138,11 @@ class GcpCPUAmountLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "GCP CPU amount query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query

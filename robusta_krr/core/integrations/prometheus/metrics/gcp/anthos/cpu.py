@@ -5,9 +5,14 @@ Anthos uses kubernetes.io/anthos/container/* metrics - same structure as GKE
 but with 'anthos' in the metric path.
 """
 
+import logging
 from typing import Optional
+
 from robusta_krr.core.models.objects import K8sObjectData
 from ...base import PrometheusMetric
+
+
+logger = logging.getLogger("krr")
 
 
 class AnthosCPULoader(PrometheusMetric):
@@ -21,7 +26,7 @@ class AnthosCPULoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     max(
@@ -39,6 +44,14 @@ class AnthosCPULoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "Anthos CPU usage query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query
 
 
 def AnthosPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
@@ -58,7 +71,7 @@ def AnthosPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
         def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
             pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
             cluster_label = self.get_prometheus_cluster_label()
-            return f"""
+            query = f"""
                 label_replace(
                     label_replace(
                         quantile_over_time(
@@ -80,6 +93,15 @@ def AnthosPercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
                     "container", "$1", "container_name", "(.+)"
                 )
             """
+            logger.debug(
+                "Anthos percentile query %.2f%% for %s/%s/%s:\n%s",
+                percentile,
+                object.namespace,
+                object.name,
+                object.container,
+                query.strip(),
+            )
+            return query
 
     return _AnthosPercentileCPULoader
 
@@ -92,7 +114,7 @@ class AnthosCPUAmountLoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     count_over_time(
@@ -111,3 +133,11 @@ class AnthosCPUAmountLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "Anthos CPU amount query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query

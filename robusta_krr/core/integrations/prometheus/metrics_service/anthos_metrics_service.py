@@ -115,7 +115,12 @@ class AnthosMetricsService(GcpManagedPrometheusMetricsService):
         if loader_name == "PercentileCPULoader":
             # Extract percentile from the loader class attribute (set by factory)
             percentile = getattr(LoaderClass, '_percentile', 95)
-            logger.debug(f"Detected PercentileCPULoader with percentile={percentile}, creating Anthos equivalent")
+            if percentile not in self._percentile_log_cache:
+                logger.info(
+                    "Anthos Managed Prometheus: using CPU percentile %s%% from --cpu-percentile for quantile_over_time queries",
+                    percentile,
+                )
+                self._percentile_log_cache.add(percentile)
             AnthosLoaderClass = AnthosPercentileCPULoader(percentile)
         elif loader_name in self.LOADER_MAPPING:
             AnthosLoaderClass = self.LOADER_MAPPING[loader_name]

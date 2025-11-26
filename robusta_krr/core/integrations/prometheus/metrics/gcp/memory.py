@@ -8,9 +8,14 @@ Note: MaxOOMKilledMemoryLoader is not implemented as it relies on kube-state-met
 which may not be available in GCP Managed Prometheus.
 """
 
+import logging
+
 from robusta_krr.core.models.objects import K8sObjectData
 
 from ..base import PrometheusMetric, QueryType
+
+
+logger = logging.getLogger("krr")
 
 
 class GcpMemoryLoader(PrometheusMetric):
@@ -27,7 +32,7 @@ class GcpMemoryLoader(PrometheusMetric):
         
         # GCP requires UTF-8 syntax with quoted metric names and labels
         # We also rename GCP labels for compatibility with existing code
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     max(
@@ -43,6 +48,14 @@ class GcpMemoryLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "GCP memory usage query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query
 
 
 class GcpMaxMemoryLoader(PrometheusMetric):
@@ -53,7 +66,7 @@ class GcpMaxMemoryLoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     max_over_time(
@@ -72,6 +85,14 @@ class GcpMaxMemoryLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "GCP max memory query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query
 
 
 class GcpMemoryAmountLoader(PrometheusMetric):
@@ -82,7 +103,7 @@ class GcpMemoryAmountLoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     count_over_time(
@@ -101,3 +122,11 @@ class GcpMemoryAmountLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "GCP memory amount query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query

@@ -5,8 +5,13 @@ Anthos uses kubernetes.io/anthos/container/* metrics with max_over_time
 aggregation for memory (different from GKE's max_over_time).
 """
 
+import logging
+
 from robusta_krr.core.models.objects import K8sObjectData
 from ...base import PrometheusMetric
+
+
+logger = logging.getLogger("krr")
 
 
 class AnthosMemoryLoader(PrometheusMetric):
@@ -19,7 +24,7 @@ class AnthosMemoryLoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     max(
@@ -35,6 +40,14 @@ class AnthosMemoryLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "Anthos memory usage query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query
 
 
 class AnthosMaxMemoryLoader(PrometheusMetric):
@@ -47,7 +60,7 @@ class AnthosMaxMemoryLoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     max_over_time(
@@ -66,6 +79,14 @@ class AnthosMaxMemoryLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "Anthos max memory query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query
 
 
 class AnthosMemoryAmountLoader(PrometheusMetric):
@@ -76,7 +97,7 @@ class AnthosMemoryAmountLoader(PrometheusMetric):
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"
         cluster_label = self.get_prometheus_cluster_label()
-        return f"""
+        query = f"""
             label_replace(
                 label_replace(
                     count_over_time(
@@ -95,3 +116,11 @@ class AnthosMemoryAmountLoader(PrometheusMetric):
                 "container", "$1", "container_name", "(.+)"
             )
         """
+        logger.debug(
+            "Anthos memory amount query for %s/%s/%s:\n%s",
+            object.namespace,
+            object.name,
+            object.container,
+            query.strip(),
+        )
+        return query

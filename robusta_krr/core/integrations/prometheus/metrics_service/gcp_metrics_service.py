@@ -83,6 +83,7 @@ class GcpManagedPrometheusMetricsService(PrometheusMetricsService):
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
         logger.info("Initializing GCP Managed Prometheus metrics service")
+        self._percentile_log_cache: set[float] = set()
         super().__init__(cluster=cluster, api_client=api_client, executor=executor)
         logger.info(f"GCP Managed Prometheus service initialized for cluster {cluster or 'default'}")
         logger.info(f"Using GCP metric naming: kubernetes.io/container/cpu/core_usage_time and kubernetes.io/container/memory/used_bytes")
@@ -127,7 +128,12 @@ class GcpManagedPrometheusMetricsService(PrometheusMetricsService):
         if loader_name == "PercentileCPULoader":
             # Extract percentile from the loader class attribute (set by factory)
             percentile = getattr(LoaderClass, '_percentile', 95)
-            logger.debug(f"Detected PercentileCPULoader with percentile={percentile}, creating GCP equivalent")
+            if percentile not in self._percentile_log_cache:
+                logger.info(
+                    "GCP Managed Prometheus: using CPU percentile %s%% from --cpu-percentile for quantile_over_time queries",
+                    percentile,
+                )
+                self._percentile_log_cache.add(percentile)
             GcpLoaderClass = GcpPercentileCPULoader(percentile)
         elif loader_name in self.LOADER_MAPPING:
             GcpLoaderClass = self.LOADER_MAPPING[loader_name]

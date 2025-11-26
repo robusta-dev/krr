@@ -1,3 +1,4 @@
+import logging
 import textwrap
 from datetime import timedelta
 
@@ -22,6 +23,10 @@ from robusta_krr.core.integrations.prometheus.metrics import (
     PrometheusMetric,
     MaxOOMKilledMemoryLoader,
 )
+from robusta_krr.core.models.config import settings
+
+
+logger = logging.getLogger("krr")
 
 
 class SimpleStrategySettings(StrategySettings):
@@ -75,8 +80,31 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     display_name = "simple"
     rich_console = True
 
+    def __init__(self, settings: SimpleStrategySettings):
+        super().__init__(settings)
+        self._cpu_percentile_logged = False
+
+    def _log_cpu_percentile_usage(self) -> None:
+        if self._cpu_percentile_logged:
+            return
+
+        mode = "standard Prometheus"
+        prom_url = getattr(settings, "prometheus_url", None) or ""
+        if "monitoring.googleapis.com" in prom_url:
+            mode = "GCP Managed Prometheus"
+        if getattr(settings, "gcp_anthos", False):
+            mode = "GCP Anthos"
+
+        logger.info(
+            "CPU percentile configured at %s%% (flag --cpu-percentile, backend mode: %s)",
+            self.settings.cpu_percentile,
+            mode,
+        )
+        self._cpu_percentile_logged = True
+
     @property
     def metrics(self) -> list[type[PrometheusMetric]]:
+        self._log_cpu_percentile_usage()
         metrics = [
             PercentileCPULoader(self.settings.cpu_percentile),
             MaxMemoryLoader,

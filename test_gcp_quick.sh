@@ -103,10 +103,10 @@ $PYTHON_CMD krr.py simple \
   --namespace="${NAMESPACE}" \
   --history-duration="${HISTORY_DURATION}" \
   --timeframe-duration="${TIMEFRAME_DURATION}" \
-    --cpu-percentile="${CPU_PERCENTILE}" \
+  --cpu-percentile="${CPU_PERCENTILE}" \
   --memory-buffer-percentage=15 \
   $ANTHOS_FLAG \
-    --show-cluster-name --fileoutput-dynamic $GCP_MANAGED_FLAG
+  --show-cluster-name --fileoutput-dynamic $GCP_MANAGED_FLAG
 
 EXIT_CODE=$?
 
