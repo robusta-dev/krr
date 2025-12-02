@@ -11,7 +11,7 @@ certJob:
 image:
   repository: us-central1-docker.pkg.dev/genuine-flight-317411/devel
   name: krr-enforcer
-  tag: 0.3.4
+  tag: 0.3.5
 imagePullPolicy: IfNotPresent
 resources:
   requests:
