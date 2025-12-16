@@ -62,7 +62,7 @@ def create_mock_container(name: str):
     return container
 
 
-def create_mock_deployment(name: str, namespace: str, containers: list, init_containers: list = None):
+def create_mock_deployment(name: str, namespace: str, containers: list, init_containers: list | None = None):
     """Create a mock Deployment with containers and optional init_containers"""
     deployment = MagicMock()
     deployment.metadata.name = name
@@ -77,7 +77,7 @@ def create_mock_deployment(name: str, namespace: str, containers: list, init_con
     return deployment
 
 
-def create_mock_job(name: str, namespace: str, containers: list, init_containers: list = None):
+def create_mock_job(name: str, namespace: str, containers: list, init_containers: list | None = None):
     """Create a mock Job with containers and optional init_containers"""
     job = MagicMock()
     job.metadata.name = name
@@ -90,7 +90,7 @@ def create_mock_job(name: str, namespace: str, containers: list, init_containers
     return job
 
 
-def create_mock_cronjob(name: str, namespace: str, containers: list, init_containers: list = None):
+def create_mock_cronjob(name: str, namespace: str, containers: list, init_containers: list | None = None):
     """Create a mock CronJob with containers and optional init_containers"""
     cronjob = MagicMock()
     cronjob.metadata.name = name
