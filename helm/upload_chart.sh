@@ -10,3 +10,6 @@ gsutil rsync -r krr-enforcer gs://robusta-charts
 gsutil setmeta -h "Cache-Control:max-age=0" gs://robusta-charts/index.yaml
 cd ../
 rm -rf ./tmp
+
+
+hi
