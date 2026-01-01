@@ -36,6 +36,8 @@ def PercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
         raise ValueError("percentile must be between 0 and 100")
 
     class PercentileCPULoader(PrometheusMetric):
+        _percentile = percentile
+
         def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
             pods_selector = "|".join(pod.name for pod in object.pods)
             cluster_label = self.get_prometheus_cluster_label()
