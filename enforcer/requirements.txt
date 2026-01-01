@@ -6,3 +6,4 @@ PyYAML==6.0.1
 cachetools==5.3.3
 prometheus-client==0.20.0
 kubernetes==26.1.0
+urllib3==2.6.2
