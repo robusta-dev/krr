@@ -21,6 +21,10 @@ from robusta_krr.core.integrations.prometheus.metrics import (
     PercentileCPULoader,
     PrometheusMetric,
     MaxOOMKilledMemoryLoader,
+    JVMMemoryLoader,
+    MaxJVMMemoryLoader,
+    JVMMemoryAmountLoader,
+    JVMDetector,
 )
 
 
@@ -28,6 +32,9 @@ class SimpleStrategySettings(StrategySettings):
     cpu_percentile: float = pd.Field(95, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
     memory_buffer_percentage: float = pd.Field(
         15, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
+    )
+    jvm_memory_buffer_percentage: float = pd.Field(
+        30, gt=0, description="The percentage of added buffer to the peak JVM heap memory usage for memory recommendation."
     )
     points_required: int = pd.Field(
         100, ge=1, description="The number of data points required to make a recommendation for a resource."
@@ -44,13 +51,14 @@ class SimpleStrategySettings(StrategySettings):
         25, ge=0, description="What percentage to increase the memory when there are OOMKill events."
     )
 
-    def calculate_memory_proposal(self, data: PodsTimeData, max_oomkill: float = 0) -> float:
+    def calculate_memory_proposal(self, data: PodsTimeData, max_oomkill: float = 0, is_jvm: bool = False) -> float:
         data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
             return float("NaN")
 
+        buffer_percentage = self.jvm_memory_buffer_percentage if is_jvm else self.memory_buffer_percentage
         return max(
-            np.max(data_) * (1 + self.memory_buffer_percentage / 100),
+            np.max(data_) * (1 + buffer_percentage / 100),
             max_oomkill * (1 + self.oom_memory_buffer_percentage / 100),
         )
 
@@ -82,6 +90,9 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             MaxMemoryLoader,
             CPUAmountLoader,
             MemoryAmountLoader,
+            JVMDetector,
+            MaxJVMMemoryLoader,
+            JVMMemoryAmountLoader,
         ]
 
         if self.settings.use_oomkill_data:
@@ -140,15 +151,18 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     def __calculate_memory_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
-        data = history_data["MaxMemoryLoader"]
+        # Check if this is a JVM application
+        jvm_data = history_data["JVMDetector"]
+        is_jvm = len(jvm_data) > 0
+
+        # Use appropriate memory loader based on whether it's a JVM application
+        data = history_data["MaxJVMMemoryLoader"] if is_jvm else history_data["MaxMemoryLoader"]
+        data_count = history_data["JVMMemoryAmountLoader"] if is_jvm else history_data["MemoryAmountLoader"]
 
         oomkill_detected = False
 
         if self.settings.use_oomkill_data:
             max_oomkill_data = history_data["MaxOOMKilledMemoryLoader"]
-            # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
-            # As MaxOOMKilledMemoryLoader returns only the last value (1 point), [0, 1] is used to get the value
-            # So each value is numpy array of shape (N, 2)
             max_oomkill_value = (
                 np.max([values[0, 1] for values in max_oomkill_data.values()]) if len(max_oomkill_data) > 0 else 0
             )
@@ -160,10 +174,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         if len(data) == 0:
             return ResourceRecommendation.undefined(info="No data")
 
-        # NOTE: metrics for each pod are returned as list[values] where values is [timestamp, value]
-        # As MemoryAmountLoader returns only the last value (1 point), [0, 1] is used to get the value
-        # So each pod is string with pod name, and values is numpy array of shape (N, 2)
-        data_count = {pod: values[0, 1] for pod, values in history_data["MemoryAmountLoader"].items()}
+        data_count = {pod: values[0, 1] for pod, values in data_count.items()}
         total_points_count = sum(data_count.values())
 
         if total_points_count < self.settings.points_required:
@@ -176,9 +187,17 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         ):
             return ResourceRecommendation.undefined(info="HPA detected")
 
-        memory_usage = self.settings.calculate_memory_proposal(data, max_oomkill_value)
+        memory_usage = self.settings.calculate_memory_proposal(data, max_oomkill_value, is_jvm)
+        info = []
+        if oomkill_detected:
+            info.append("OOMKill detected")
+        if is_jvm:
+            info.append("JVM application detected")
+        
         return ResourceRecommendation(
-            request=memory_usage, limit=memory_usage, info="OOMKill detected" if oomkill_detected else None
+            request=memory_usage,
+            limit=memory_usage,
+            info=", ".join(info) if info else None
         )
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
