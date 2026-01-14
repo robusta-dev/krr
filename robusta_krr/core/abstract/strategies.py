@@ -2,162 +2,146 @@ from __future__ import annotations
 
 import abc
 import datetime
-from textwrap import dedent
-from typing import TYPE_CHECKING, Annotated, Generic, Literal, Optional, Sequence, TypeVar, get_args
+import enum
+from typing import TYPE_CHECKING, Optional
 
-import numpy as np
-import pydantic as pd
-from numpy.typing import NDArray
+import pydantic
 
-from robusta_krr.core.models.result import K8sObjectData, ResourceType
+from robusta_krr.core.models.allocations import NONE_LITERAL, RecommendationValue, ResourceAllocations
+from robusta_krr.core.models.result import ResourceType
 
 if TYPE_CHECKING:
-    from robusta_krr.core.abstract.metrics import BaseMetric  # noqa: F401
-    from robusta_krr.core.integrations.prometheus.metrics import PrometheusMetric
-
-SelfRR = TypeVar("SelfRR", bound="ResourceRecommendation")
+    from robusta_krr.core.models.config import Settings
 
 
-class ResourceRecommendation(pd.BaseModel):
-    """A class to represent resource recommendation with optional request and limit values.
+class HistoryData(pydantic.BaseModel):
+    data: list[list]
 
-    The NaN values are used to represent undefined values: the strategy did not provide a recommendation for the resource.
-    None values are used to represent the strategy says that value should not be set.
+
+class MetricsPodData(pydantic.BaseModel):
+    name: str
+    deleted: bool
+    metrics: dict[ResourceType, HistoryData]
+
+
+class RunResult(pydantic.BaseModel):
+    scan: dict[str, RecommendationValue]
+    object_: "K8sObjectData"
+
+
+class PodsTimeData(pydantic.BaseModel):
+    pod_count: int
+    first_sample_time: Optional[datetime.datetime]
+
+
+class StrategySettings(pydantic.BaseModel):
+    pass
+
+
+class ResourceHistoryData(pydantic.BaseModel):
+    """Historical data for a single resource type."""
+
+    data: list[list]
+
+
+class HistoryRange(enum.Enum):
+    SHORT = "short"
+    MEDIUM = "medium"
+    LONG = "long"
+
+
+class BaseStrategy(abc.ABC):
+    """
+    A Strategy is a class that defines the logic for calculating the recommendations.
+
+    It should be inherited and implement the abstract methods.
+    It can then be registered with the `@strategy` decorator.
     """
 
-    request: Optional[float]
-    limit: Optional[float]
-    info: Optional[str] = pd.Field(
-        None, description="Additional information about the recommendation."
-    )
-
-    @classmethod
-    def undefined(cls: type[SelfRR], info: Optional[str] = None) -> SelfRR:
-        return cls(request=float("NaN"), limit=float("NaN"), info=info)
-
-
-class StrategySettings(pd.BaseModel):
-    """A class to represent strategy settings with configurable history and timeframe duration.
-
-    It is used in CLI to generate the help, parameters and validate values.
-    Description is used to generate the help.
-    Other pydantic features can be used to validate the values.
-
-    Nested classes are not supported here.
-    """
-
-    history_duration: float = pd.Field(
-        24 * 7 * 2, ge=1, description="The duration of the history data to use (in hours)."
-    )
-    timeframe_duration: float = pd.Field(1.25, gt=0, description="The step for the history data (in minutes).")
-
-    @property
-    def history_timedelta(self) -> datetime.timedelta:
-        return datetime.timedelta(hours=self.history_duration)
-
-    @property
-    def timeframe_timedelta(self) -> datetime.timedelta:
-        return datetime.timedelta(minutes=self.timeframe_duration)
-
-    def history_range_enough(self, history_range: tuple[datetime.timedelta, datetime.timedelta]) -> bool:
-        """Override this function to check if the history range is enough for the strategy."""
-
-        return True
-
-
-# A type alias for a numpy array of shape (N, 2).
-ArrayNx2 = Annotated[NDArray[np.float64], Literal["N", 2]]
-
-
-PodsTimeData = dict[str, ArrayNx2]  # Mapping: pod -> [(time, value)]
-MetricsPodData = dict[str, PodsTimeData]
-
-RunResult = dict[ResourceType, ResourceRecommendation]
-
-SelfBS = TypeVar("SelfBS", bound="BaseStrategy")
-_StrategySettings = TypeVar("_StrategySettings", bound=StrategySettings)
-
-
-# An abstract base class for strategy implementation.
-# This class requires implementation of a 'run' method for calculating recommendation.
-# Make a subclass if you want to create a concrete strategy.
-class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
-    """An abstract base class for strategy implementation.
-
-    This class is generic, and requires a type for the settings.
-    This settings type will be used for the settings property of the strategy.
-    It will be used to generate CLI parameters for this strategy, validated by pydantic.
-
-    This class requires implementation of a 'run' method for calculating recommendation.
-    Additionally, it provides a 'description' property for generating a description for the strategy.
-    Description property uses the docstring of the strategy class and the settings of the strategy.
-
-    The name of the strategy is the name of the class in lowercase, without the 'Strategy' suffix, if exists.
-    If you want to change the name of the strategy, you can change the display_name class attribute.
-
-    The strategy will automatically be registered in the strategy registry using __subclasses__ mechanism.
-    """
-
-    display_name: str
+    display_name: str = "Base Strategy"
     rich_console: bool = False
+    metrics: list
+    settings: StrategySettings
 
-    # TODO: this should be BaseMetric, but currently we only support Prometheus
-    @property
+    @classmethod
     @abc.abstractmethod
-    def metrics(self) -> Sequence[type[PrometheusMetric]]:
-        pass
-
-    def __init__(self, settings: _StrategySettings):
-        self.settings = settings
-
-    def __str__(self) -> str:
-        return self.display_name.title()
-
-    @property
-    def description(self) -> Optional[str]:
+    def find_runs(
+        cls, history_data: dict[str, MetricsPodData], object_: "K8sObjectData"
+    ) -> list[RunResult]:
         """
-        Generate a description for the strategy.
-        You can use Rich's markdown syntax to format the description.
+        Find the runs of the pods in the history data.
         """
-        raise NotImplementedError()
+        ...
 
-    # Abstract method that needs to be implemented by subclass.
-    # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
+    @classmethod
     @abc.abstractmethod
-    def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
-        pass
+    def run(
+        cls, history_data: dict[str, MetricsPodData], object_data: "K8sObjectData"
+    ) -> ResourceAllocations:
+        """
+        Run the strategy on the history data and return the result.
+        """
+        ...
 
-    # This method is intended to return a strategy by its name.
     @classmethod
-    def find(cls: type[SelfBS], name: str) -> type[SelfBS]:
-        strategies = cls.get_all()
-        if name.lower() in strategies:
-            return strategies[name.lower()]
+    def get_query_time_range(
+        cls, settings: "Settings", range: HistoryRange = HistoryRange.MEDIUM
+    ) -> tuple[datetime.datetime, datetime.datetime]:
+        """
+        Get the time range for the metrics query.
 
-        raise ValueError(f"Unknown strategy name: {name}. Available strategies: {', '.join(strategies)}")
+        If settings.start_time and settings.end_time are both provided,
+        use them directly (absolute timeframe mode).
 
-    # This method is intended to return all the available strategies.
-    @classmethod
-    def get_all(cls: type[SelfBS]) -> dict[str, type[SelfBS]]:
-        from robusta_krr import strategies as _  # noqa: F401
+        Otherwise, calculate from history_duration relative to current time
+        (relative timeframe mode).
+        """
+        # Check for absolute timeframe mode
+        if settings.start_time is not None and settings.end_time is not None:
+            return settings.start_time, settings.end_time
 
-        return {sub_cls.display_name.lower(): sub_cls for sub_cls in cls.__subclasses__()}
+        # Relative timeframe mode (original behavior)
+        now = datetime.datetime.now()
+        match range:
+            case HistoryRange.SHORT:
+                duration = datetime.timedelta(hours=settings.timeframe_duration)
+            case HistoryRange.MEDIUM:
+                duration = datetime.timedelta(hours=settings.history_duration)
+            case HistoryRange.LONG:
+                duration = datetime.timedelta(
+                    hours=min(settings.history_duration * 2, 30 * 24)
+                )
 
-    # This method is intended to return the type of settings used in strategy.
-    @classmethod
-    def get_settings_type(cls) -> type[StrategySettings]:
-        return get_args(cls.__orig_bases__[0])[0]  # type: ignore
+        return now - duration, now
 
 
-AnyStrategy = BaseStrategy[StrategySettings]
+class K8sObjectData(pydantic.BaseModel):
+    """
+    A Kubernetes object data.
+    """
+
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
+
+    cluster: Optional[str]
+    name: str
+    container: str
+    pods: list[str]
+    hpa: Optional["HPAData"]
+    namespace: str
+    kind: str
+    allocations: ResourceAllocations
+    labels: dict[str, str] = pydantic.Field(default_factory=dict)
+    current_pods_count: int = 0
 
 
-__all__ = [
-    "AnyStrategy",
-    "BaseStrategy",
-    "StrategySettings",
-    "PodsTimeData",
-    "MetricsPodData",
-    "K8sObjectData",
-    "ResourceType",
-]
+class HPAData(pydantic.BaseModel):
+    """
+    HPA data.
+    """
+
+    min_replicas: Optional[int]
+    max_replicas: int
+    current_replicas: Optional[int]
+    desired_replicas: Optional[int]
+    target_cpu_utilization_percentage: Optional[float]
+    target_memory_utilization_percentage: Optional[float]
