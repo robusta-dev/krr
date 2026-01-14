@@ -1,228 +1,261 @@
 from __future__ import annotations
 
 import logging
-import sys
-from typing import Any, Literal, Optional, Union
+import os
+from datetime import datetime
+from typing import Literal, Optional, Union
 
-import pydantic as pd
-from kubernetes import config
+from kubernetes import config as k8s_config
 from kubernetes.config.config_exception import ConfigException
-from rich.console import Console
-from rich.logging import RichHandler
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from robusta_krr.core.abstract import formatters
-from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
-from robusta_krr.core.models.objects import KindLiteral
+from robusta_krr.core.abstract.strategies import StrategySettings
 
-logger = logging.getLogger("krr")
+CUSTOM_CERTIFICATE_ENV_VAR = "CERTIFICATE"
 
 
-class Config(pd.BaseSettings):
-    quiet: bool = pd.Field(False)
-    verbose: bool = pd.Field(False)
+class PercentileSelectorSettings(BaseModel):
+    percentile: float = Field(None, ge=0, le=100, description="Percentile to use for the selector.")
 
-    clusters: Union[list[str], Literal["*"], None] = None
-    kubeconfig: Optional[str] = None
-    impersonate_user: Optional[str] = None
-    impersonate_group: Optional[str] = None
-    namespaces: Union[list[str], Literal["*"]] = pd.Field("*")
-    resources: Union[list[KindLiteral], Literal["*"]] = pd.Field("*")
-    selector: Optional[str] = None
 
-    # Value settings
-    cpu_min_value: int = pd.Field(10, ge=0)  # in millicores
-    memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
+class PrometheusSettings(BaseModel):
+    url: Optional[str] = Field(None, description="Prometheus URL")
+    headers: dict[str, str] = Field(
+        default_factory=dict, description="Headers for Prometheus"
+    )
+    auth: Optional[tuple[str, str]] = Field(
+        None, description="Prometheus auth, need to be in a tuple (user, password)"
+    )
+    ssl_enabled: bool = Field(True, description="Prometheus SSL enabled")
+    other_headers: dict[str, str] = Field(
+        default_factory=dict, description="Other headers for Prometheus"
+    )
 
-    # Prometheus Settings
-    prometheus_url: Optional[str] = pd.Field(None)
-    prometheus_auth_header: Optional[pd.SecretStr] = pd.Field(None)
-    prometheus_other_headers: dict[str, pd.SecretStr] = pd.Field(default_factory=dict)
-    prometheus_ssl_enabled: bool = pd.Field(False)
-    prometheus_cluster_label: Optional[str] = pd.Field(None)
-    prometheus_label: Optional[str] = pd.Field(None)
-    eks_managed_prom: bool = pd.Field(False)
-    eks_managed_prom_profile_name: Optional[str] = pd.Field(None)
-    eks_access_key: Optional[str] = pd.Field(None)
-    eks_secret_key: Optional[pd.SecretStr] = pd.Field(None)
-    eks_service_name: Optional[str] = pd.Field(None)
-    eks_managed_prom_region: Optional[str] = pd.Field(None)
-    eks_assume_role: Optional[str] = pd.Field(None)
-    coralogix_token: Optional[pd.SecretStr] = pd.Field(None)
-    openshift: bool = pd.Field(False)
 
-    # Threading settings
-    max_workers: int = pd.Field(6, ge=1)
-    
-    # Discovery settings
-    discovery_job_batch_size: int = pd.Field(5000, ge=1, description="Batch size for Kubernetes job API calls")
-    discovery_job_max_batches: int = pd.Field(100, ge=1, description="Maximum number of job batches to process to prevent infinite loops")
-    
-    # Job grouping settings
-    job_grouping_labels: Union[list[str], str, None] = pd.Field(None, description="Label name(s) to use for grouping jobs into GroupedJob workload type")
-    job_grouping_limit: int = pd.Field(500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group")
+class ThanoSettings(BaseModel):
+    enabled: bool = Field(False, description="Enable Thanos")
+    url: Optional[str] = Field(None, description="Thanos URL")
+    headers: dict[str, str] = Field(
+        default_factory=dict, description="Headers for Thanos"
+    )
+    auth: Optional[tuple[str, str]] = Field(
+        None, description="Thanos auth, need to be in a tuple (user, password)"
+    )
+    ssl_enabled: bool = Field(True, description="Thanos SSL enabled")
 
-    # Logging Settings
-    format: str
-    show_cluster_name: bool
-    strategy: str
-    log_to_stderr: bool
-    width: Optional[int] = pd.Field(None, ge=1)
-    show_severity: bool = True
 
-    # Publishing to url settings
-    publish_scan_url: Optional[str] = pd.Field(None)
-    start_time: Optional[str] = pd.Field(None)
-    scan_id: Optional[str] = pd.Field(None)
-    named_sinks: Optional[list[str]] = pd.Field(None) 
+class VictoriaMetricsSettings(BaseModel):
+    enabled: bool = Field(False, description="Enable Victoria Metrics")
+    url: Optional[str] = Field(None, description="Victoria Metrics URL")
+    headers: dict[str, str] = Field(
+        default_factory=dict, description="Headers for Victoria Metrics"
+    )
+    auth: Optional[tuple[str, str]] = Field(
+        None,
+        description="Victoria Metrics auth, need to be in a tuple (user, password)",
+    )
+    ssl_enabled: bool = Field(True, description="Victoria Metrics SSL enabled")
 
-    # Output Settings
-    file_output: Optional[str] = pd.Field(None)
-    file_output_dynamic: bool = pd.Field(False)
-    slack_output: Optional[str] = pd.Field(None)
-    slack_title: Optional[str] = pd.Field(None)
-    azureblob_output: Optional[str] = pd.Field(None)
-    teams_webhook: Optional[str] = pd.Field(None)
-    azure_subscription_id: Optional[str] = pd.Field(None)
-    azure_resource_group: Optional[str] = pd.Field(None)
 
-    other_args: dict[str, Any]
+class CostSettings(BaseModel):
+    cpu_cost: float = Field(0.00004, description="CPU cost per millicores hour")
+    memory_cost: float = Field(0.000000001, description="Memory cost per megabyte hour")
 
-    # Internal
-    inside_cluster: bool = False
-    _logging_console: Optional[Console] = pd.PrivateAttr(None)
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+class Settings(BaseModel):
+    model_config = ConfigDict(validate_assignment=True)
 
-    @property
-    def Formatter(self) -> formatters.FormatterFunc:
-        return formatters.find(self.format)
+    # a mapping from cluster name to its prometheus config
+    prometheus_configs: dict[str, PrometheusSettings] = Field(
+        default_factory=dict, description="A mapping from cluster name to its prometheus config"
+    )
 
-    @pd.validator("prometheus_url")
-    def validate_prometheus_url(cls, v: Optional[str]):
-        if v is None:
-            return None
+    # The name of the prometheus cluster to match for global prometheus config
+    # The global prometheus config is prometheus settings for a single prometheus server that has data for the entire cluster
+    # This is the prometheus config that will be used when connecting to a specific cluster
+    prometheus_cluster_match_name: str = Field(None, description="The name of the prometheus cluster to match")
 
-        if not v.startswith("https://") and not v.startswith("http://"):
-            raise Exception("--prometheus-url must start with https:// or http://")
+    prometheus: PrometheusSettings = Field(
+        default_factory=PrometheusSettings, description="Global Prometheus settings"
+    )
+    thanos: ThanoSettings = Field(
+        default_factory=ThanoSettings, description="Thanos settings"
+    )
+    victoria_metrics: VictoriaMetricsSettings = Field(
+        default_factory=VictoriaMetricsSettings, description="Victoria Metrics settings"
+    )
+    cost: CostSettings = Field(default_factory=CostSettings, description="Cost settings")
 
-        v = v.removesuffix("/")
+    max_workers: int = Field(10, description="Max workers")
+    namespaces: Union[list[str], Literal["*"]] = Field(
+        "*", description="Namespaces to scan"
+    )
+    resources: Union[list[str], Literal["*"]] = Field(
+        "*", description="Resources to scan"
+    )
+    selector: Optional[str] = Field(None, description="Selector for objects")
+    cpu_min_value: int = Field(10, description="CPU min value in millicores")
+    memory_min_value: int = Field(100, description="Memory min value in MB")
+    history_duration: float = Field(
+        336, ge=1, description="How much time back to look (in hours)"
+    )
+    # New fields for specific timeframe support
+    start_time: Optional[datetime] = Field(
+        None,
+        description="Start time for the metrics query (ISO 8601 format). "
+        "When provided with end_time, takes precedence over history_duration.",
+    )
+    end_time: Optional[datetime] = Field(
+        None,
+        description="End time for the metrics query (ISO 8601 format). "
+        "When provided with start_time, takes precedence over history_duration.",
+    )
+    timeframe_duration: float = Field(
+        1.25, description="Timeframe duration in hours"
+    )
+    step: str = Field("30s", description="Prometheus step")
+    quiet: bool = Field(False, description="Quiet mode")
+    log_to_stderr: bool = Field(False, description="Log to stderr")
+    width: Optional[int] = Field(None, description="Width of the output")
+    strategy: str = Field("simple", description="Strategy to use")
+    strategy_settings: StrategySettings = Field(
+        default_factory=StrategySettings, description="Strategy settings"
+    )
+    other_args: dict = Field(default_factory=dict, description="Other args")
+    file_output: Optional[str] = Field(
+        None, description="File output, if None, will print to stdout"
+    )
+    file_output_dynamic: bool = Field(False, description="Dynamic file output")
+    slack_output: Optional[str] = Field(None, description="Slack webhook output url")
+    format: str = Field("table", description="Format of the output")
+    show_cluster_name: bool = Field(False, description="Show cluster name")
+    verbose: bool = Field(False, description="Verbose mode")
+    inside_cluster: bool = Field(False, description="Running inside cluster")
+    eks_managed_prom: bool = Field(
+        False, description="EKS MSP endpoint"
+    )
+    eks_managed_prom_region: Optional[str] = Field(
+        None, description="EKS MSP endpoint region"
+    )
+    eks_profile_name: Optional[str] = Field(
+        None, description="EKS profile name"
+    )
+    eks_access_key: Optional[str] = Field(
+        None, description="EKS access key"
+    )
+    eks_secret_key: Optional[str] = Field(
+        None, description="EKS secret key"
+    )
+    eks_service_name: Optional[str] = Field(
+        None, description="EKS managed prometheus type"
+    )
+    coralogix_prom: bool = Field(
+        False, description="Coralogix prometheus endpoint"
+    )
+    gcp_managed_prom: bool = Field(
+        False, description="GCP managed prometheus"
+    )
+    azure_managed_prom: bool = Field(
+        False, description="Azure Monitor managed prometheus"
+    )
+    openshift: bool = Field(
+        False, description="OpenShift flag, if set will look for openshift prometheus"
+    )
+    max_retries: int = Field(
+        3, description="Max retries for prometheus queries"
+    )
+    version: Optional[str] = Field(
+        None, description="Version of the tool"
+    )
+    custom_schedulers: list[str] = Field(
+        default_factory=lambda: ["default-scheduler"],
+        description="Custom schedulers. Default pods missing a scheduler (or having a scheduler set to '')  will be treated as having `default-scheduler`",
+    )
+    pods_running_only: bool = Field(
+        True, description="If True, will only consider running pods"
+    )
+    request_body_max_size: int = Field(
+        512 * 1024, description="Max body size of prometheus response in kilobytes"
+    )
+    # If both are set, both will be used for discovering prometheus servers
+    prometheus_label: Optional[str] = Field(
+        None, description="Label to find prometheus pod"
+    )
+    prometheus_service_discovery: bool = Field(
+        True, description="If true, will try to use k8s service discovery"
+    )
+    filter_namespaces_prefix: list[str] = Field(
+        default_factory=lambda: ["openshift-", "kube-", "olm"],
+        description="Namespaces to filter out by prefix",
+    )
+    run_per_clusters: list[str] = Field(
+        default_factory=list, description="Run on specific clusters"
+    )
+    percentile_selector_settings: PercentileSelectorSettings = Field(
+        default_factory=PercentileSelectorSettings, description="Percentile selector settings for prometheus"
+    )
+    use_oomkill_data: bool = Field(
+        True, description="Use oomkill data"
+    )
+    oom_memory_buffer_percentage: int = Field(
+        25, description="OOM memory buffer percentage"
+    )
 
-        return v
+    @field_validator("start_time", "end_time", mode="before")
+    @classmethod
+    def parse_datetime(cls, value):
+        if value is None or isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            # Support ISO 8601 format with various timezone notations
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                raise ValueError(
+                    f"Invalid datetime format: {value}. "
+                    "Please use ISO 8601 format (e.g., '2025-09-05T10:00:00Z' or '2025-09-05T10:00:00+00:00')"
+                )
+        return value
 
-    @pd.validator("prometheus_other_headers", pre=True)
-    def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
-        if isinstance(headers, dict):
-            return headers
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._init_kube_config()
 
-        return {k.strip().lower(): v.strip() for k, v in [header.split(":") for header in headers]}
-
-    @pd.validator("namespaces")
-    def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
-        if v == []:
-            return "*"
-
-        if isinstance(v, list):
-            for val in v:
-                if val.startswith("*"):
-                    raise ValueError("Namespace's values cannot start with an asterisk (*)")
-
-        return [val.lower() for val in v]
-
-    @pd.validator("resources", pre=True)
-    def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
-        if v == []:
-            return "*"
-
-        # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
-        # So this will preserve the big and small letters of the resource
-        return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
-
-    @pd.validator("job_grouping_labels", pre=True)
-    def validate_job_grouping_labels(cls, v: Union[list[str], str, None]) -> Union[list[str], None]:
-        if v is None:
-            return None
-        if isinstance(v, str):
-            # Split comma-separated string into list
-            return [label.strip() for label in v.split(',')]
-        return v
-
-    def create_strategy(self) -> AnyStrategy:
-        StrategyType = AnyStrategy.find(self.strategy)
-        StrategySettingsType = StrategyType.get_settings_type()
-        return StrategyType(StrategySettingsType(**self.other_args))  # type: ignore
-
-    @pd.validator("strategy")
-    def validate_strategy(cls, v: str) -> str:
-        BaseStrategy.find(v)  # NOTE: raises if strategy is not found
-        return v
-
-    @pd.validator("format")
-    def validate_format(cls, v: str) -> str:
-        formatters.find(v)  # NOTE: raises if strategy is not found
-        return v
-
-    @property
-    def context(self) -> Optional[str]:
-        return self.clusters[0] if self.clusters != "*" and self.clusters else None
-
-    @property
-    def logging_console(self) -> Console:
-        if getattr(self, "_logging_console") is None:
-            self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
-        return self._logging_console
-
-    def load_kubeconfig(self) -> None:
+    def _init_kube_config(self):
         try:
-            config.load_kube_config(config_file=self.kubeconfig, context=self.context)
-            self.inside_cluster = False
-        except ConfigException:
-            config.load_incluster_config()
+            k8s_config.load_incluster_config()
             self.inside_cluster = True
-
-    def get_kube_client(self, context: Optional[str] = None):
-        if context is None:
-            return None
-
-        api_client = config.new_client_from_config(context=context, config_file=self.kubeconfig)
-        if self.impersonate_user is not None:
-            # trick copied from https://github.com/kubernetes-client/python/issues/362
-            api_client.set_default_header("Impersonate-User", self.impersonate_user)
-        if self.impersonate_group is not None:
-            api_client.set_default_header("Impersonate-Group", self.impersonate_group)
-        return api_client
+            logging.info("Loaded in-cluster config")
+        except ConfigException:
+            try:
+                k8s_config.load_kube_config()
+            except ConfigException as e:
+                logging.warning(f"Could not load kube config: {e}")
 
     @staticmethod
-    def set_config(config: Config) -> None:
-        global _config
+    def init_custom_certificate():
+        """
+        Load a custom certificate from an environment variable into the SSL_CERT_FILE location.
+        The certificate can be a raw cert, or base64 encoded.
+        """
+        import base64
+        import certifi
 
-        _config = config
-        logging.basicConfig(
-            level="NOTSET",
-            format="%(message)s",
-            datefmt="[%X]",
-            handlers=[RichHandler(console=config.logging_console)],
-        )
-        logging.getLogger("").setLevel(logging.CRITICAL)
-        logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
+        custom_certificate = os.environ.get(CUSTOM_CERTIFICATE_ENV_VAR, "")
+        if custom_certificate == "":
+            logging.debug("No custom certificate provided")
+            return
 
-    @staticmethod
-    def get_config() -> Optional[Config]:
-        return _config
+        # make sure it has the cert begin
+        if "-----BEGIN CERTIFICATE-----" not in custom_certificate:
+            # try to base64 decode
+            try:
+                custom_certificate = base64.b64decode(custom_certificate).decode("utf-8")
+            except Exception as e:
+                logging.error(f"Could not decode custom certificate: {e}")
 
+        certifi_certs_file = certifi.where()
+        logging.info(f"Adding custom certificate to {certifi_certs_file}")
 
-# NOTE: This class is just a proxy for _config.
-# Import settings from this module and use it like it is just a config object.
-class _Settings(Config):  # Config here is used for type checking
-    def __init__(self) -> None:
-        pass
-
-    def __getattr__(self, name: str):
-        if _config is None:
-            raise AttributeError("Config is not set")
-
-        return getattr(_config, name)
-
-
-_config: Optional[Config] = None
-settings = _Settings()
+        with open(certifi_certs_file, "a") as f:
+            f.write(custom_certificate)
