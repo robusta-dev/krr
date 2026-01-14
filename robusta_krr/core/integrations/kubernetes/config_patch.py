@@ -16,23 +16,30 @@ class KubeConfigLoader(kube_config.KubeConfigLoader):
         if "proxy-url" in self._cluster:
             self.proxy = self._cluster["proxy-url"]
 
-    def _set_config(self, client_configuration: Configuration):
+        # Add tls-server-name support for Teleport and similar proxies
+        # This allows the TLS SNI to differ from the server hostname
+        if "tls-server-name" in self._cluster:
+            self.tls_server_name = self._cluster["tls-server-name"]
+
+    def _set_config(self, client_configuration):
         super()._set_config(client_configuration)
 
-        key = "proxy"
-        if key in self.__dict__:
-            setattr(client_configuration, key, getattr(self, key))
+        for key in ["proxy", "tls_server_name"]:
+            if key in self.__dict__:
+                setattr(client_configuration, key, getattr(self, key))
 
 
 class Configuration(configuration.Configuration):
     def __init__(
         self,
         proxy: Optional[str] = None,
+        tls_server_name: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
         self.proxy = proxy
+        self.tls_server_name = tls_server_name
 
 
 configuration.Configuration = Configuration
