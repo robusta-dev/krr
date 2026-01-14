@@ -49,7 +49,11 @@ def _patched_rest_client_init(self, configuration, pools_size=4, maxsize=None):
     _original_rest_client_init(self, configuration, pools_size, maxsize)
 
     # If tls_server_name is configured, we need to recreate the pool manager with server_hostname
+    # We cannot simply modify connection_pool_kw after creation because connection pools
+    # may already be instantiated. We must recreate the pool manager to ensure server_hostname
+    # is passed to all new HTTPS connections for proper SNI (Server Name Indication) handling.
     if hasattr(configuration, "tls_server_name") and configuration.tls_server_name:
+        # Import here to avoid overhead when tls_server_name is not used (common case)
         import ssl
 
         import certifi
