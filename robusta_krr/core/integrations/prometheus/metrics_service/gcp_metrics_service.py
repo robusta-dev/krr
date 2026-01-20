@@ -25,6 +25,7 @@ from ..metrics.gcp import (
     GcpMemoryLoader,
     GcpMaxMemoryLoader,
     GcpMemoryAmountLoader,
+    GcpMaxOOMKilledMemoryLoader,
 )
 from .prometheus_metrics_service import PrometheusMetricsService
 
@@ -72,7 +73,7 @@ class GcpManagedPrometheusMetricsService(PrometheusMetricsService):
         "MemoryLoader": GcpMemoryLoader,
         "MaxMemoryLoader": GcpMaxMemoryLoader,
         "MemoryAmountLoader": GcpMemoryAmountLoader,
-        "MaxOOMKilledMemoryLoader": None,  # Not supported on GCP (requires kube-state-metrics)
+        "MaxOOMKilledMemoryLoader": GcpMaxOOMKilledMemoryLoader,  # Inference-based OOM detection
     }
 
     def __init__(

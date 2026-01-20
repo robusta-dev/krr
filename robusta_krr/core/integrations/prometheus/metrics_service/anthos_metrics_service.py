@@ -22,6 +22,7 @@ from ..metrics.gcp.anthos import (
     AnthosMemoryLoader,
     AnthosMaxMemoryLoader,
     AnthosMemoryAmountLoader,
+    AnthosMaxOOMKilledMemoryLoader,
 )
 from .gcp_metrics_service import GcpManagedPrometheusMetricsService
 
@@ -49,8 +50,7 @@ class AnthosMetricsService(GcpManagedPrometheusMetricsService):
         "PercentileCPULoader": AnthosPercentileCPULoader,
         "CPUAmountLoader": AnthosCPUAmountLoader,
         "MemoryAmountLoader": AnthosMemoryAmountLoader,
-        # OOM killer metrics not available in Anthos
-        "MaxOOMKilledMemoryLoader": None,
+        "MaxOOMKilledMemoryLoader": AnthosMaxOOMKilledMemoryLoader,  # Inference-based OOM detection
     }
 
     def __init__(

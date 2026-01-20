@@ -106,7 +106,7 @@ $PYTHON_CMD krr.py simple \
   --cpu-percentile="${CPU_PERCENTILE}" \
   --memory-buffer-percentage=15 \
   $ANTHOS_FLAG \
-  --show-cluster-name --fileoutput-dynamic $GCP_MANAGED_FLAG
+  --show-cluster-name --fileoutput-dynamic $GCP_MANAGED_FLAG --use-oomkill-data 
 
 EXIT_CODE=$?
 

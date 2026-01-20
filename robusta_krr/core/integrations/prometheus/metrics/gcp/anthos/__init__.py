@@ -16,6 +16,7 @@ from .memory import (
     AnthosMemoryLoader,
     AnthosMaxMemoryLoader,
     AnthosMemoryAmountLoader,
+    AnthosMaxOOMKilledMemoryLoader,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "AnthosMemoryLoader",
     "AnthosMaxMemoryLoader",
     "AnthosMemoryAmountLoader",
+    "AnthosMaxOOMKilledMemoryLoader",
 ]
