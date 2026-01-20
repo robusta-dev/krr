@@ -174,7 +174,7 @@ class AnthosMaxOOMKilledMemoryLoader(PrometheusMetric):
             )
         """
         logger.info(
-            "Anthos OOM detection query (inference-based using restart_count + memory limit) for %s/%s/%s:",
+            "Anthos OOM detection query (inference-based using restart_count + memory limit) for %s/%s/%s",
             object.namespace,
             object.name,
             object.container,

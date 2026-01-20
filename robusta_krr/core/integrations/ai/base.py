@@ -127,7 +127,18 @@ class AIProvider(abc.ABC):
             
             response.raise_for_status()
             
-            text = self._parse_response(response.json())
+            # Parse JSON response with error handling
+            try:
+                response_json = response.json()
+            except requests.exceptions.JSONDecodeError as e:
+                logger.error(
+                    f"Non-JSON response from {self.__class__.__name__}: "
+                    f"status={response.status_code}, "
+                    f"content={response.text[:500]}"
+                )
+                raise ValueError(f"Non-JSON response from upstream: {e}")
+            
+            text = self._parse_response(response_json)
             result = self._extract_json(text)
             
             # Validate required fields are present and complete
