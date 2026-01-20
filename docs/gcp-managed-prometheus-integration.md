@@ -107,6 +107,7 @@ See [CHANGES_GCP.md](../CHANGES_GCP.md) for detailed GCP and Anthos documentatio
    - `GcpMemoryLoader`: Loads memory metrics from GCP
    - `GcpMaxMemoryLoader`: Maximum memory usage
    - `GcpMemoryAmountLoader`: Counts memory data points
+   - `GcpMaxOOMKilledMemoryLoader`: Inference-based OOM detection using restart_count + memory limits
 
 2. **Anthos Metric Loaders** (`robusta_krr/core/integrations/prometheus/metrics/gcp/anthos/`)
    - `AnthosCPULoader`: Loads CPU metrics from Anthos
@@ -115,12 +116,13 @@ See [CHANGES_GCP.md](../CHANGES_GCP.md) for detailed GCP and Anthos documentatio
    - `AnthosMemoryLoader`: Loads memory metrics from Anthos
    - `AnthosMaxMemoryLoader`: Maximum Anthos memory usage
    - `AnthosMemoryAmountLoader`: Counts Anthos memory data points
+   - `AnthosMaxOOMKilledMemoryLoader`: Inference-based OOM detection using restart_count + memory limits
 
 3. **GCP Metrics Service** (`robusta_krr/core/integrations/prometheus/metrics_service/gcp_metrics_service.py`)
    - Extends `PrometheusMetricsService`
    - Automatically maps standard loaders to GCP loaders
    - Handles `PercentileCPULoader` factory pattern using `_percentile` attribute
-   - Handles unsupported loaders (e.g., `MaxOOMKilledMemoryLoader`) by returning empty data
+   - Implements inference-based OOM detection via `GcpMaxOOMKilledMemoryLoader`
 
 4. **Anthos Metrics Service** (`robusta_krr/core/integrations/prometheus/metrics_service/anthos_metrics_service.py`)
    - Extends `PrometheusMetricsService`
@@ -147,9 +149,12 @@ The GCP service automatically maps:
 - `CPUAmountLoader` → `GcpCPUAmountLoader`
 - `MemoryLoader` → `GcpMemoryLoader`
 - `MaxMemoryLoader` → `GcpMaxMemoryLoader`
+- `MemoryLoader` → `GcpMemoryLoader`
+- `MaxMemoryLoader` → `GcpMaxMemoryLoader`
 - `MemoryAmountLoader` → `GcpMemoryAmountLoader`
+- `MaxOOMKilledMemoryLoader` → `GcpMaxOOMKilledMemoryLoader` (inference-based)
 
-The Anthos service automatically maps to Anthos-specific loaders using `kubernetes.io/anthos/container/*` metrics.
+The Anthos service automatically maps to Anthos-specific loaders using `kubernetes.io/anthos/container/*` metrics, including `AnthosMaxOOMKilledMemoryLoader` for OOM detection.
 
 ### Label Renaming
 
@@ -161,7 +166,43 @@ This ensures compatibility with existing KRR code that expects standard Promethe
 
 ## Limitations
 
-1. **MaxOOMKilledMemoryLoader**: Not supported on GCP/Anthos because it requires `kube-state-metrics` which may not be available in GCP Managed Prometheus. If you use `--use-oomkill-data`, this metric will be ignored and return empty data with a warning in the log.
+1. **MaxOOMKilledMemoryLoader (OOM Detection)**: GCP/Anthos Managed Prometheus does not provide `kube_pod_container_status_last_terminated_reason` metric that explicitly reports OOMKilled events. Instead, KRR uses an **inference-based approach** that combines two metrics:
+
+   - `kubernetes.io/container/memory/limit_bytes` (or `kubernetes.io/anthos/container/memory/limit_bytes` for Anthos)
+   - `kubernetes.io/container/restart_count` (or `kubernetes.io/anthos/container/restart_count` for Anthos)
+
+   **Query Structure (GCP):**
+   ```promql
+   max_over_time(
+       max(
+           max(
+               {"__name__"="kubernetes.io/container/memory/limit_bytes",
+                   "monitored_resource"="k8s_container",
+                   "namespace_name"="<namespace>",
+                   "pod_name"=~"<pods>",
+                   "container_name"="<container>"}
+           ) by (pod_name, container_name, job)
+           
+           * on(pod_name, container_name, job) group_left()
+           
+           max(
+               {"__name__"="kubernetes.io/container/restart_count",
+                   "monitored_resource"="k8s_container",
+                   "namespace_name"="<namespace>",
+                   "pod_name"=~"<pods>",
+                   "container_name"="<container>"}
+           ) by (pod_name, container_name, job)
+       ) by (container_name, pod_name, job)
+       [<duration>:<step>]
+   )
+   ```
+
+   **Important Limitations:**
+   - **False Positives**: This approach may report false positives when containers restart for reasons other than OOM (e.g., application crashes, health check failures) while memory usage is high.
+   - **Inference-Based**: Unlike standard Prometheus with kube-state-metrics, this does not use explicit Kubernetes OOMKilled events but infers OOM conditions from restart patterns and memory limits.
+   - **Best Effort**: Results should be interpreted as potential OOM events rather than confirmed OOMKilled terminations.
+
+   When the flag `--use-oomkill-data` is used, you'll see debug logs indicating "GCP OOM detection query (inference-based)" or "Anthos OOM detection query (inference-based)" to remind you of this limitation.
 
 2. **Token Expiration**: GCP authentication tokens expire. Make sure to regenerate the token if execution takes a long time or if you receive authentication errors.
 
@@ -170,6 +211,13 @@ This ensures compatibility with existing KRR code that expects standard Promethe
 4. **Anthos Pod Discovery**: Anthos does not provide kube-state-metrics, so pod discovery always uses Kubernetes API instead of Prometheus. This is expected behavior and logged at DEBUG level.
 
 ## Recent Changes
+
+**2026-01-20**: Implemented OOM detection for GCP and Anthos:
+- ✅ Added `GcpMaxOOMKilledMemoryLoader` with inference-based OOM detection
+- ✅ Added `AnthosMaxOOMKilledMemoryLoader` with inference-based OOM detection
+- ✅ OOM detection uses `memory/limit_bytes` + `restart_count` metrics combination
+- ✅ Added debug logging to indicate inference-based approach
+- ✅ Updated documentation with query examples and limitations
 
 **2025-11-20**: Implemented the following improvements:
 - ✅ Saved `percentile` as class attribute in `GcpPercentileCPULoader` to avoid regex parsing

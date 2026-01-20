@@ -8,7 +8,7 @@ container_cpu_usage_seconds_total).
 """
 
 from .cpu import GcpCPUAmountLoader, GcpCPULoader, GcpPercentileCPULoader
-from .memory import GcpMaxMemoryLoader, GcpMemoryAmountLoader, GcpMemoryLoader
+from .memory import GcpMaxMemoryLoader, GcpMemoryAmountLoader, GcpMemoryLoader, GcpMaxOOMKilledMemoryLoader
 
 __all__ = [
     "GcpCPULoader",
@@ -17,4 +17,5 @@ __all__ = [
     "GcpMemoryLoader",
     "GcpMaxMemoryLoader",
     "GcpMemoryAmountLoader",
+    "GcpMaxOOMKilledMemoryLoader",
 ]
