@@ -52,10 +52,10 @@ class AiAssistedStrategySettings(StrategySettings):
         description="AI temperature for response randomness (0=deterministic, 2=creative)."
     )
     ai_max_tokens: int = pd.Field(
-        2000,
+        3000,  # Increased from 2000 to prevent JSON truncation
         ge=100,
         le=8000,
-        description="Maximum tokens in AI response."
+        description="Maximum tokens in AI response. Higher default ensures complete JSON responses."
     )
     ai_compact_mode: bool = pd.Field(
         False,
@@ -94,8 +94,8 @@ class AiAssistedStrategySettings(StrategySettings):
         description="Whether to calculate recommendations even when there is an HPA scaler defined."
     )
     use_oomkill_data: bool = pd.Field(
-        True,
-        description="Whether to include OOMKill data in analysis."
+        False,
+        description="Whether to include OOMKill data in analysis (experimental)."
     )
 
 
@@ -136,8 +136,10 @@ class AiAssistedStrategy(BaseStrategy[AiAssistedStrategySettings]):
             )
             logger.info(
                 f"AI-Assisted strategy initialized with {self.provider_name} "
-                f"(model: {self.model_name})"
+                f"(model: {self.model_name}, max_tokens: {self.settings.ai_max_tokens})"
             )
+            if self.settings.allow_hpa:
+                logger.info("HPA override enabled: will provide recommendations even for workloads with HPA configured")
         except Exception as e:
             logger.error(f"Failed to initialize AI provider: {e}")
             raise
@@ -225,8 +227,13 @@ class AiAssistedStrategy(BaseStrategy[AiAssistedStrategySettings]):
             MemoryAmountLoader,
         ]
         
+        logger.debug(f"AI-Assisted: use_oomkill_data setting = {self.settings.use_oomkill_data}")
+        
         if self.settings.use_oomkill_data:
+            logger.debug("AI-Assisted: Adding MaxOOMKilledMemoryLoader to metrics")
             metrics.append(MaxOOMKilledMemoryLoader)
+        else:
+            logger.debug("AI-Assisted: use_oomkill_data is False, NOT adding MaxOOMKilledMemoryLoader")
         
         return metrics
     
@@ -294,6 +301,10 @@ class AiAssistedStrategy(BaseStrategy[AiAssistedStrategySettings]):
             
             # Check HPA if not allowed
             if object_data.hpa is not None and not self.settings.allow_hpa:
+                logger.info(
+                    f"{object_data.kind} {object_data.namespace}/{object_data.name}: "
+                    f"HPA detected, skipping AI recommendations (use --allow-hpa to override)"
+                )
                 if object_data.hpa.target_cpu_utilization_percentage is not None:
                     cpu_rec = ResourceRecommendation.undefined(info="HPA detected")
                 else:

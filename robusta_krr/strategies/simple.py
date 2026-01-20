@@ -83,6 +83,10 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     def __init__(self, settings: SimpleStrategySettings):
         super().__init__(settings)
         self._cpu_percentile_logged = False
+        
+        # Log HPA override setting
+        if self.settings.allow_hpa:
+            logger.info("HPA override enabled: will provide recommendations even for workloads with HPA configured")
 
     def _log_cpu_percentile_usage(self) -> None:
         if self._cpu_percentile_logged:
@@ -160,6 +164,10 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             and object_data.hpa.target_cpu_utilization_percentage is not None
             and not self.settings.allow_hpa
         ):
+            logger.info(
+                f"{object_data.kind} {object_data.namespace}/{object_data.name}: "
+                f"HPA detected on CPU, skipping recommendation (use --allow-hpa to override)"
+            )
             return ResourceRecommendation.undefined(info="HPA detected")
 
         cpu_usage = self.settings.calculate_cpu_proposal(data)
@@ -202,6 +210,10 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             and object_data.hpa.target_memory_utilization_percentage is not None
             and not self.settings.allow_hpa
         ):
+            logger.info(
+                f"{object_data.kind} {object_data.namespace}/{object_data.name}: "
+                f"HPA detected on Memory, skipping recommendation (use --allow-hpa to override)"
+            )
             return ResourceRecommendation.undefined(info="HPA detected")
 
         memory_usage = self.settings.calculate_memory_proposal(data, max_oomkill_value)

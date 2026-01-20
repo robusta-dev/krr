@@ -8,7 +8,7 @@ but with 'anthos' in the metric path.
 import logging
 
 from robusta_krr.core.models.objects import K8sObjectData
-from ...base import PrometheusMetric
+from ...base import PrometheusMetric, QueryType
 
 
 logger = logging.getLogger("krr")
@@ -21,6 +21,8 @@ class AnthosCPULoader(PrometheusMetric):
     Anthos uses kubernetes.io/anthos/container/cpu/core_usage_time
     instead of kubernetes.io/container/cpu/core_usage_time
     """
+    
+    query_type: QueryType = QueryType.QueryRange
     
     def get_query(self, object: K8sObjectData, _duration: str, step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"

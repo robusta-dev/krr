@@ -8,7 +8,7 @@ the GKE aggregation patterns but with a different metric namespace.
 import logging
 
 from robusta_krr.core.models.objects import K8sObjectData
-from ...base import PrometheusMetric
+from ...base import PrometheusMetric, QueryType
 
 
 logger = logging.getLogger("krr")
@@ -16,6 +16,8 @@ logger = logging.getLogger("krr")
 
 class AnthosMemoryLoader(PrometheusMetric):
     """Loads memory usage metrics from Anthos' kubernetes.io/anthos namespace."""
+    
+    query_type: QueryType = QueryType.QueryRange
     
     def get_query(self, object: K8sObjectData, _duration: str, _step: str) -> str:
         pods_selector = "|".join(pod.name for pod in object.pods) or ".*"

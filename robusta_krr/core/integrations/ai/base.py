@@ -113,7 +113,7 @@ class AIProvider(abc.ABC):
         try:
             payload = self._format_request_body(messages, temperature, max_tokens)
             
-            logger.debug(
+            logger.info(
                 f"Sending request to {self.__class__.__name__} "
                 f"(model: {self.model}, temp: {temperature}, max_tokens: {max_tokens})"
             )
@@ -130,7 +130,28 @@ class AIProvider(abc.ABC):
             text = self._parse_response(response.json())
             result = self._extract_json(text)
             
-            logger.debug(f"Successfully received response from {self.__class__.__name__}")
+            # Validate required fields are present and complete
+            required_fields = ["cpu_request", "cpu_limit", "memory_request", "memory_limit", "reasoning", "confidence"]
+            missing_fields = [field for field in required_fields if field not in result]
+            if missing_fields:
+                logger.error(
+                    f"Response from {self.__class__.__name__} missing required fields: {missing_fields}. "
+                    f"Response: {text[:500]}"
+                )
+                raise ValueError(
+                    f"Incomplete JSON response from {self.__class__.__name__} - missing fields: {missing_fields}. "
+                    f"Try increasing --ai-max-tokens or using --ai-compact-mode."
+                )
+            
+            # Check for truncated reasoning field (common truncation indicator)
+            reasoning = result.get("reasoning", "")
+            if reasoning and reasoning.strip().endswith("..."):
+                logger.warning(
+                    f"Response from {self.__class__.__name__} appears truncated (reasoning ends with '...'). "
+                    f"Consider increasing --ai-max-tokens."
+                )
+            
+            logger.debug(f"Successfully received and validated response from {self.__class__.__name__}")
             
             return result
             
@@ -183,7 +204,11 @@ class AIProvider(abc.ABC):
                 except json.JSONDecodeError:
                     continue
         
+        # Check if response looks truncated
+        is_truncated = not text.strip().endswith('}')
+        truncation_hint = " (Response appears truncated - increase --ai-max-tokens)" if is_truncated else ""
+        
         raise ValueError(
-            f"Could not extract valid JSON from response. "
-            f"Response text: {text[:200]}..."
+            f"Could not extract valid JSON from response{truncation_hint}. "
+            f"Response text: {text[:300]}..."
         )

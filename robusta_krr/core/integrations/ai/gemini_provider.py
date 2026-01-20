@@ -51,8 +51,14 @@ class GeminiProvider(AIProvider):
         else:
             text = str(messages)
         
-        # Add instruction for JSON output
-        text += "\n\nIMPORTANT: Respond with valid JSON only, no additional text."
+        # Add explicit instructions for complete JSON output with validation
+        text += "\n\n⚠️ CRITICAL: You MUST respond with COMPLETE, VALID JSON only."
+        text += "\nBefore responding, verify:"
+        text += "\n1. JSON starts with {{ and ends with }}"
+        text += "\n2. All 6 required fields are present: cpu_request, cpu_limit, memory_request, memory_limit, reasoning, confidence"
+        text += "\n3. All braces and quotes are properly closed"
+        text += "\n4. Response is parseable JSON"
+        text += "\nDo NOT send incomplete or truncated JSON."
         
         return {
             "contents": [

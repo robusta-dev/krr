@@ -261,23 +261,54 @@ Consider these factors:
 
 ## Output Format
 
-You MUST respond with valid JSON only, no additional text or explanation outside the JSON.
+⚠️ CRITICAL INSTRUCTIONS FOR RESPONSE FORMAT:
 
-Required JSON structure:
+1. **MUST respond with ONLY valid, complete JSON** - no additional text before or after
+2. **VERIFY your JSON is complete** before responding - ensure all closing braces are present
+3. **ALL 6 fields are REQUIRED** - cpu_request, cpu_limit, memory_request, memory_limit, reasoning, confidence
+4. **Self-check before submitting**: Confirm your response:
+   - Starts with opening brace {{
+   - Ends with closing brace }}
+   - Contains all 6 required fields
+   - Is valid, parseable JSON
+5. **CRITICAL**: If your reasoning field exceeds 200 characters, STOP and shorten it. Complete JSON is mandatory.
+
+Required JSON structure (ALL fields mandatory):
 {{
   "cpu_request": <float in cores, e.g., 0.25 for 250m>,
   "cpu_limit": <float in cores or null>,
   "memory_request": <integer in bytes>,
   "memory_limit": <integer in bytes>,
-  "reasoning": "<brief explanation of your recommendations>",
+  "reasoning": "<brief explanation, MAX 200 chars to ensure complete response>",
   "confidence": <integer 0-100, your confidence in these recommendations>
 }}
 
+Example of COMPLETE valid response:
+{{
+  "cpu_request": 0.25,
+  "cpu_limit": null,
+  "memory_request": 536870912,
+  "memory_limit": 536870912,
+  "reasoning": "P95 CPU at 0.18 cores, setting 0.25 for headroom. Memory stable at 480Mi, no OOM events detected.",
+  "confidence": 85
+}}
+
+## Field Constraints
+
+- cpu_request: minimum 0.01 cores (10m), maximum 16 cores
+- cpu_limit: minimum 0.01 cores or null for unlimited
+- memory_request: minimum 104857600 bytes (100Mi), maximum 68719476736 bytes (64Gi)
+- memory_limit: minimum 104857600 bytes (100Mi), maximum 68719476736 bytes (64Gi)
+- reasoning: string, keep concise (max 250 characters to ensure complete JSON)
+- confidence: integer 0-100
+
 ## Constraints
 
-- CPU request: minimum 0.01 cores (10m), maximum 16 cores
-- Memory request: minimum 104857600 bytes (100Mi), maximum 68719476736 bytes (64Gi)
 - Recommendations should be practical and safe for production use
+- If data is insufficient, set confidence below 50
+- Keep reasoning brief to ensure complete JSON output
+
+⚠️ REMINDER: Double-check your response is complete valid JSON with all 6 fields before submitting
 - If data is insufficient or unreliable, set confidence below 50
 
 ## Example

@@ -11,8 +11,8 @@ set -a
 source .env
 set +a
 
-HISTORY_DURATION="300"
-TIMEFRAME_DURATION="1.25"
+HISTORY_DURATION="230"
+TIMEFRAME_DURATION="2.0"
 
 LOCATION="global" # GCP Managed Prometheus location
 NAMESPACE="${1:-${NAMESPACE:-default}}"  # 1st arg overrides .env/default
@@ -31,6 +31,7 @@ if [ -z "${PROJECT_ID:-}" ] || [ -z "${CLUSTER_NAME:-}" ]; then
     echo -e "${RED}Error: PROJECT_ID and CLUSTER_NAME must be defined in .env or via environment variables.${NC}"
     exit 1
 fi
+
 
 # Colors
 RED='\033[0;31m'
@@ -93,20 +94,48 @@ if [ "$USE_ANTHOS" = "anthos" ]; then
     ANTHOS_FLAG="--gcp-anthos"
 fi
 
-# Run KRR with optimized parameters
-$PYTHON_CMD krr.py simple \
-  $CONTEXT_FLAG \
-  --prometheus-url="${PROMETHEUS_URL}" \
-  --prometheus-auth-header="Bearer ${TOKEN}" \
-  --prometheus-cluster-label="${CLUSTER_NAME}" \
-  --prometheus-label="cluster_name" \
-  --namespace="${NAMESPACE}" \
-  --history-duration="${HISTORY_DURATION}" \
-  --timeframe-duration="${TIMEFRAME_DURATION}" \
-  --cpu-percentile="${CPU_PERCENTILE}" \
-  --memory-buffer-percentage=15 \
-  $ANTHOS_FLAG \
-  --show-cluster-name --fileoutput-dynamic $GCP_MANAGED_FLAG --use-oomkill-data 
+#HPA Mode flag
+if [ "${HPA_MODE:-false}" = "true" ]; then
+    HPA_FLAG="--allow-hpa"
+else
+    HPA_FLAG=""
+fi
+
+# If AI_MODE is true, enable ai-assisted strategy and --ai-model=gemini-3-flash-preview
+if [ "${AI_MODE:-false}" = "true" ]; then
+    echo -e "${YELLOW}AI Mode enabled: Using AI-assisted strategy with Gemini 3 Flash Preview model.${NC}"
+
+    $PYTHON_CMD krr.py ai-assisted \
+        $CONTEXT_FLAG \
+        --prometheus-url="${PROMETHEUS_URL}" \
+        --prometheus-auth-header="Bearer ${TOKEN}" \
+        --prometheus-cluster-label="${CLUSTER_NAME}" \
+        --prometheus-label="cluster_name" \
+        --namespace="${NAMESPACE}" \
+        --history-duration="${HISTORY_DURATION}" \
+        --timeframe-duration="${TIMEFRAME_DURATION}" \
+        --cpu-percentile="${CPU_PERCENTILE}" \
+        --memory-buffer-percentage=15 \
+        $ANTHOS_FLAG --ai-max-tokens=5000 $HPA_FLAG \
+        --show-cluster-name --fileoutput-dynamic --use-oomkill-data --ai-model=gemini-3-flash-preview
+
+else
+    echo -e "${YELLOW}AI Mode disabled: Using standard KRR strategies.${NC}"
+    $PYTHON_CMD krr.py simple \
+        $CONTEXT_FLAG \
+        --prometheus-url="${PROMETHEUS_URL}" \
+        --prometheus-auth-header="Bearer ${TOKEN}" \
+        --prometheus-cluster-label="${CLUSTER_NAME}" \
+        --prometheus-label="cluster_name" \
+        --namespace="${NAMESPACE}" \
+        --history-duration="${HISTORY_DURATION}" \
+        --timeframe-duration="${TIMEFRAME_DURATION}" \
+        --cpu-percentile="${CPU_PERCENTILE}" \
+        --memory-buffer-percentage=15 \
+        $ANTHOS_FLAG $HPA_FLAG \
+        --show-cluster-name --fileoutput-dynamic --use-oomkill-data # --ai-model=gemini-3-flash-preview
+
+fi
 
 EXIT_CODE=$?
 
