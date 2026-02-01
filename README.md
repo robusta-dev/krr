@@ -81,7 +81,7 @@ _View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-aut
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#integrations)
 
-_View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin)_
+_View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin), [Azure Blob Storage Export with Teams Notification](#azure-blob-teams-integration)_
 
 ### Features
 
@@ -350,6 +350,43 @@ Use a <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects
 ```sh
 python krr.py simple --selector 'app.kubernetes.io/instance in (robusta, ingress-nginx)'
 ```
+</details>
+
+<details>
+  <summary>Group jobs by specific labels</summary>
+
+Group jobs that have specific labels into GroupedJob objects for consolidated resource recommendations. This is useful for batch jobs, data processing pipelines, or any workload where you want to analyze resource usage across multiple related jobs.
+
+```sh
+krr simple --job-grouping-labels app,team
+```
+
+This will:
+- Group jobs that have either `app` or `team` labels (or both)
+- Create GroupedJob objects with names like `app=frontend`, `team=backend`, etc.
+- Provide resource recommendations for the entire group instead of individual jobs
+- Jobs with the specified labels will be excluded from regular Job listing
+
+You can specify multiple labels separated by commas:
+
+```sh
+krr simple --job-grouping-labels app,team,environment
+```
+
+Each job will be grouped by each label it has, so a job with `app=api,team=backend` will appear in both `app=api` and `team=backend` groups.
+
+### Limiting how many jobs are included per group
+
+Use `--job-grouping-limit <N>` to cap how many jobs are included **per group** (useful when there are many historical jobs).
+
+```sh
+krr simple --job-grouping-labels app,team --job-grouping-limit 3
+```
+
+* Each label group will include at most **N** jobs (e.g., the first 3 returned by the API).
+* Other matching jobs beyond the limit are ignored for that group.
+* If not specified, the default limit is **500** jobs per group.
+
 </details>
 
 <details>
@@ -682,6 +719,84 @@ customPlaybooks:
   Installation instructions: [k9s docs](https://k9scli.io/topics/plugins/)
 </details>
 
+<details id="azure-blob-teams-integration">
+<summary>Azure Blob Storage Export with Microsoft Teams Notifications</summary>
+
+Export KRR reports directly to Azure Blob Storage and get notified in Microsoft Teams when reports are generated.
+
+![Teams Notification Screenshot][teams-screenshot]
+
+### Prerequisites
+
+- An Azure Storage Account with a container for storing reports
+- A Microsoft Teams channel with an incoming webhook configured
+- Azure SAS URL with write permissions to your storage container
+
+### Setup
+
+1. **Create Azure Storage Container**: Set up a container in your Azure Storage Account (e.g., `fileuploads`)
+
+2. **Generate SAS URL**: Create a SAS URL for your container with write permissions:
+   ```bash
+   # Example SAS URL format (replace with your actual values)
+   https://yourstorageaccount.blob.core.windows.net/fileuploads?sv=2024-11-04&ss=bf&srt=o&sp=wactfx&se=2026-07-21T21:12:48Z&st=2025-07-21T12:57:48Z&spr=https&sig=...
+   ```
+
+3. **Configure Teams Webhook**: Set up an incoming webhook in your Microsoft Teams channel (located in the Workflows tab)
+
+4. **Run KRR with Azure Integration**:
+   ```bash
+   krr simple -f html \
+     --azurebloboutput "https://yourstorageaccount.blob.core.windows.net/fileuploads?sv=..." \
+     --teams-webhook "https://your-teams-webhook-url" \
+     --azure-subscription-id "your-subscription-id" \
+     --azure-resource-group "your-resource-group"
+   ```
+
+### Features
+
+- **Automatic File Upload**: Reports are automatically uploaded to Azure Blob Storage with timestamped filenames
+- **Teams Notifications**: Rich adaptive cards are sent to Teams when reports are generated
+- **Direct Links**: Teams notifications include direct links to view files in Azure Portal
+- **Multiple Formats**: Supports all KRR output formats (JSON, CSV, HTML, YAML, etc.)
+- **Secure**: Uses SAS URLs for secure, time-limited access to your storage
+
+### Command Options
+
+| Flag | Description |
+|------|-------------|
+| `--azurebloboutput` | Azure Blob Storage SAS URL base path (make sure you include the container name; filename will be auto-appended) |
+| `--teams-webhook` | Microsoft Teams webhook URL for notifications |
+| `--azure-subscription-id` | Azure Subscription ID (for Azure Portal links in Teams) |
+| `--azure-resource-group` | Azure Resource Group name (for Azure Portal links in Teams) |
+
+### Example Usage
+
+```bash
+# Basic Azure Blob export
+krr simple -f json --azurebloboutput "https://mystorageaccount.blob.core.windows.net/reports?sv=..."
+
+# With Teams notifications
+krr simple -f html \
+  --azurebloboutput "https://mystorageaccount.blob.core.windows.net/reports?sv=..." \
+  --teams-webhook "https://outlook.office.com/webhook/..." \
+  --azure-subscription-id "12345678-1234-1234-1234-123456789012" \
+  --azure-resource-group "my-resource-group"
+```
+
+### Teams Notification Features
+
+The Teams adaptive card includes:
+- 📊 Report generation announcement
+- Namespace and format details  
+- Generation timestamp
+- Storage account and container information
+- Direct "View in Azure Storage" button linking to Azure Portal
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+</details>
+
 ## Creating a Custom Strategy/Formatter
 
 Look into the [examples](https://github.com/robusta-dev/krr/tree/main/examples) directory for examples on how to create a custom strategy/formatter.
@@ -768,3 +883,4 @@ If you have any questions, feel free to contact **support@robusta.dev** or messa
 [product-screenshot]: images/screenshot.jpeg
 [slack-screenshot]: images/krr_slack_example.png
 [ui-screenshot]: images/ui_video.gif
+[teams-screenshot]: images/krr_teams_example.png

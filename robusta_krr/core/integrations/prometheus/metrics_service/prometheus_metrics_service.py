@@ -21,6 +21,8 @@ from ..metrics import PrometheusMetric
 from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
 from .base_metric_service import MetricsService
 
+PROM_REFRESH_CREDS_SEC = int(os.environ.get("PROM_REFRESH_CREDS_SEC", "600")) # 10 minutes
+
 logger = logging.getLogger("krr")
 
 
@@ -74,14 +76,14 @@ class PrometheusMetricsService(MetricsService):
         self.ssl_enabled = settings.prometheus_ssl_enabled
 
         if settings.openshift:
-            logging.info("Openshift flag is set, trying to load token from service account.")
+            logger.info("Openshift flag is set, trying to load token from service account.")
             openshift_token = openshift.load_token()
 
             if openshift_token:
-                logging.info("Openshift token is loaded successfully.")
+                logger.info("Openshift token is loaded successfully.")
                 self.auth_header = self.auth_header or f"Bearer {openshift_token}"
             else:
-                logging.warning("Openshift token is not found, trying to connect without it.")
+                logger.warning("Openshift token is not found, trying to connect without it.")
 
         self.prometheus_discovery = self.service_discovery(api_client=self.api_client)
 
@@ -104,8 +106,21 @@ class PrometheusMetricsService(MetricsService):
             headers |= {"Authorization": self.auth_header}
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
-        self.prom_config = generate_prometheus_config(url=self.url, headers=headers, metrics_service=self)
-        self.prometheus = get_custom_prometheus_connect(self.prom_config)
+        self.headers = headers
+        self.prom_config = None
+        self.prometheus = None
+        self._last_init_at = None
+        self.get_prometheus()
+
+    def get_prometheus(self):
+        now = datetime.utcnow()
+        if (not self.prometheus
+            or not self._last_init_at
+            or now - self._last_init_at >= timedelta(seconds=PROM_REFRESH_CREDS_SEC)):
+            self.prom_config = generate_prometheus_config(url=self.url, headers=self.headers, metrics_service=self) # type: ignore
+            self.prometheus = get_custom_prometheus_connect(self.prom_config)
+            self._last_init_at = now
+        return self.prometheus
 
     def check_connection(self):
         """
@@ -113,14 +128,14 @@ class PrometheusMetricsService(MetricsService):
         Raises:
             PrometheusNotFound: If the connection to Prometheus cannot be established.
         """
-        self.prometheus.check_prometheus_connection()
+        self.get_prometheus().check_prometheus_connection()
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query(self, query: str) -> dict:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
-            lambda: self.prometheus.safe_custom_query(query=query)["result"],
+            lambda: self.get_prometheus().safe_custom_query(query=query)["result"],
         )
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
@@ -128,7 +143,7 @@ class PrometheusMetricsService(MetricsService):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
-            lambda: self.prometheus.safe_custom_query_range(
+            lambda: self.get_prometheus().safe_custom_query_range(
                 query=query, start_time=start, end_time=end, step=f"{step.seconds}s"
             )["result"],
         )
@@ -155,7 +170,7 @@ class PrometheusMetricsService(MetricsService):
 
     def get_cluster_names(self) -> Optional[List[str]]:
         try:
-            return self.prometheus.get_label_values(label_name=settings.prometheus_label)
+            return self.get_prometheus().get_label_values(label_name=settings.prometheus_label)
         except PrometheusApiClientException:
             logger.error("Labels api not present on prometheus client")
             return []
@@ -194,7 +209,7 @@ class PrometheusMetricsService(MetricsService):
         """
         logger.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
         try:
-            metric_loader = LoaderClass(self.prometheus, self.name(), self.executor)
+            metric_loader = LoaderClass(self.get_prometheus(), self.name(), self.executor)
             data = await metric_loader.load_data(object, period, step)
         except Exception:
             logger.exception("Failed to gather resource history data for %s", object)
@@ -216,7 +231,7 @@ class PrometheusMetricsService(MetricsService):
     async def query_and_validate(self, prom_query) -> Any:
             result = await self.query(prom_query)
             if len(result) != 1:
-                logger.warning(f"Error: Expected exactly one result from Prometheus query. {prom_query}")
+                logger.warning(f"Error: Expected exactly one result from Prometheus query but instead got {len(result)}. {prom_query}")
                 return None
 
             result_value = result[0].get("value")
@@ -275,8 +290,13 @@ class PrometheusMetricsService(MetricsService):
 
         logger.debug(f"Adding historic pods for {object}")
 
-        days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
-        period_literal = f"{days_literal}d"
+        period_seconds = period.total_seconds()
+        if period_seconds <= 86400:  # one day
+            hours_literal = min(int(period.total_seconds()) // 3600, 32)
+            period_literal = f"{hours_literal}h"
+        else:
+            days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
+            period_literal = f"{days_literal}d"
         pod_owners: Iterable[str]
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
@@ -329,6 +349,13 @@ class PrometheusMetricsService(MetricsService):
             pod_owner_kind = "Job"
 
             del jobs
+        elif object.kind == "GroupedJob":
+            if hasattr(object._api_resource, '_grouped_jobs'):
+                pod_owners = [job.name for job in object._api_resource._grouped_jobs]
+                pod_owner_kind = "Job"
+            else:
+                pod_owners = [object.name]
+                pod_owner_kind = object.kind
         else:
             pod_owners = [object.name]
             pod_owner_kind = object.kind
@@ -353,7 +380,9 @@ class PrometheusMetricsService(MetricsService):
         if related_pods_result == []:
             return []
 
-        related_pods = [pod["metric"]["pod"] for pod in related_pods_result]
+        related_pod_label = os.environ.get("KRR_RELATED_POD_LABEL", "pod")
+        related_pods = [pod["metric"][related_pod_label] for pod in related_pods_result]
+
         current_pods_set = set()
         del related_pods_result
 
@@ -363,13 +392,13 @@ class PrometheusMetricsService(MetricsService):
                 f"""
                     kube_pod_status_phase{{
                         phase="Running",
-                        pod=~"{group_regex}",
+                        {related_pod_label}=~"{group_regex}",
                         namespace="{object.namespace}"
                         {cluster_label}
                     }} == 1
                 """
             )
-            current_pods_set |= {pod["metric"]["pod"] for pod in pods_status_result}
+            current_pods_set |= {pod["metric"][related_pod_label] for pod in pods_status_result}
             del pods_status_result
 
         return list({PodData(name=pod, deleted=pod not in current_pods_set) for pod in related_pods})

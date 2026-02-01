@@ -4,6 +4,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
 
+# Patching CVE-2025-6965 (requires sqlite >= 3.50.2)
+# Alpine's current version (3.51.1-r0) already includes the fix
+RUN apk update && apk add --no-cache --upgrade \
+    sqlite-libs sqlite
+    
 # Set the working directory
 WORKDIR /app/enforcer
 

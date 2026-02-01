@@ -46,11 +46,20 @@ class Config(pd.BaseSettings):
     eks_secret_key: Optional[pd.SecretStr] = pd.Field(None)
     eks_service_name: Optional[str] = pd.Field(None)
     eks_managed_prom_region: Optional[str] = pd.Field(None)
+    eks_assume_role: Optional[str] = pd.Field(None)
     coralogix_token: Optional[pd.SecretStr] = pd.Field(None)
     openshift: bool = pd.Field(False)
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
+    
+    # Discovery settings
+    discovery_job_batch_size: int = pd.Field(5000, ge=1, description="Batch size for Kubernetes job API calls")
+    discovery_job_max_batches: int = pd.Field(100, ge=1, description="Maximum number of job batches to process to prevent infinite loops")
+    
+    # Job grouping settings
+    job_grouping_labels: Union[list[str], str, None] = pd.Field(None, description="Label name(s) to use for grouping jobs into GroupedJob workload type")
+    job_grouping_limit: int = pd.Field(500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group")
 
     # Logging Settings
     format: str
@@ -64,11 +73,17 @@ class Config(pd.BaseSettings):
     publish_scan_url: Optional[str] = pd.Field(None)
     start_time: Optional[str] = pd.Field(None)
     scan_id: Optional[str] = pd.Field(None)
+    named_sinks: Optional[list[str]] = pd.Field(None) 
 
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
     file_output_dynamic: bool = pd.Field(False)
     slack_output: Optional[str] = pd.Field(None)
+    slack_title: Optional[str] = pd.Field(None)
+    azureblob_output: Optional[str] = pd.Field(None)
+    teams_webhook: Optional[str] = pd.Field(None)
+    azure_subscription_id: Optional[str] = pd.Field(None)
+    azure_resource_group: Optional[str] = pd.Field(None)
 
     other_args: dict[str, Any]
 
@@ -122,6 +137,15 @@ class Config(pd.BaseSettings):
         # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
         # So this will preserve the big and small letters of the resource
         return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
+
+    @pd.validator("job_grouping_labels", pre=True)
+    def validate_job_grouping_labels(cls, v: Union[list[str], str, None]) -> Union[list[str], None]:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            # Split comma-separated string into list
+            return [label.strip() for label in v.split(',')]
+        return v
 
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)

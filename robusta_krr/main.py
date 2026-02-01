@@ -183,6 +183,12 @@ def load_commands() -> None:
                     help="Sets the region for eks prometheus connection.",
                     rich_help_panel="Prometheus EKS Settings",
                 ),
+                eks_assume_role: Optional[str] = typer.Option(
+                    None,
+                    "--eks-assume-role",
+                    help="Sets the assumed role for eks prometheus connection. (for cross-account role assumption)",
+                    rich_help_panel="Prometheus EKS Settings",
+                ),
                 coralogix_token: Optional[str] = typer.Option(
                     None,
                     "--coralogix-token",
@@ -213,6 +219,30 @@ def load_commands() -> None:
                     "-w",
                     help="Max workers to use for async requests.",
                     rich_help_panel="Threading Settings",
+                ),
+                job_grouping_labels: Optional[str] = typer.Option(
+                    None,
+                    "--job-grouping-labels",
+                    help="Label name(s) to use for grouping jobs into GroupedJob workload type. Can be a single label or comma-separated labels (e.g., 'app,team').",
+                    rich_help_panel="Job Grouping Settings",
+                ),
+                job_grouping_limit: int = typer.Option(
+                    500,
+                    "--job-grouping-limit",
+                    help="Maximum number of jobs/pods to query per GroupedJob group (default: 500).",
+                    rich_help_panel="Job Grouping Settings",
+                ),
+                discovery_job_batch_size: int = typer.Option(
+                    5000,
+                    "--discovery-job-batch-size",
+                    help="Batch size for Kubernetes job API calls (default: 5000).",
+                    rich_help_panel="Job Discovery Settings",
+                ),
+                discovery_job_max_batches: int = typer.Option(
+                    100,
+                    "--discovery-job-max-batches",
+                    help="Maximum number of job batches to process to prevent infinite loops (default: 100).",
+                    rich_help_panel="Job Discovery Settings",
                 ),
                 format: str = typer.Option(
                     "table",
@@ -263,7 +293,37 @@ def load_commands() -> None:
                 slack_output: Optional[str] = typer.Option(
                     None,
                     "--slackoutput",
-                    help="Send to output to a slack channel, must have SLACK_BOT_TOKEN with permissions: chat:write, files:write, chat:write.public. Bot must be added to the channel.",
+                    help="Send output to Slack. Values starting with # will be interpreted to be channel names but other values may refer to channel IDs. SLACK_BOT_TOKEN env variable must exist with permissions: chat:write, files:write, chat:write.public. Bot must be added to the channel.",
+                    rich_help_panel="Output Settings",
+                ),
+                slack_title: Optional[str] = typer.Option(
+                    None,
+                    "--slacktitle",
+                    help="Title of the slack message. If not provided, will use the default 'Kubernetes Resource Report for <environment>'.",
+                    rich_help_panel="Output Settings",
+                ),
+                azureblob_output: Optional[str] = typer.Option(
+                    None,
+                    "--azurebloboutput",
+                    help="Provide Azure Blob Storage SAS URL (with the container) to upload the output file to (e.g., https://mystorageaccount.blob.core.windows.net/container?sv=...). The filename will be automatically appended.",
+                    rich_help_panel="Output Settings",
+                ),
+                teams_webhook: Optional[str] = typer.Option(
+                    None,
+                    "--teams-webhook",
+                    help="Microsoft Teams webhook URL to send notifications when files are uploaded to Azure Blob Storage",
+                    rich_help_panel="Output Settings",
+                ),
+                azure_subscription_id: Optional[str] = typer.Option(
+                    None,
+                    "--azure-subscription-id",
+                    help="Azure Subscription ID for Teams notification Azure Portal links",
+                    rich_help_panel="Output Settings",
+                ),
+                azure_resource_group: Optional[str] = typer.Option(
+                    None,
+                    "--azure-resource-group",
+                    help="Azure Resource Group for Teams notification Azure Portal links",
                     rich_help_panel="Output Settings",
                 ),
                 publish_scan_url: Optional[str] = typer.Option(
@@ -282,6 +342,12 @@ def load_commands() -> None:
                     None,
                     "--scan_id",
                     help="A UUID scan identifier",
+                    rich_help_panel="Publish Scan Settings",
+                ),
+                named_sinks: Optional[List[str]] = typer.Option(
+                    None,
+                    "--named_sinks",
+                    help="A list of sinks to send the scan to",
                     rich_help_panel="Publish Scan Settings",
                 ),
                 **strategy_args,
@@ -307,6 +373,7 @@ def load_commands() -> None:
                         prometheus_label=prometheus_label,
                         eks_managed_prom=eks_managed_prom,
                         eks_managed_prom_region=eks_managed_prom_region,
+                        eks_assume_role=eks_assume_role,
                         eks_managed_prom_profile_name=eks_managed_prom_profile_name,
                         eks_access_key=eks_access_key,
                         eks_secret_key=eks_secret_key,
@@ -314,6 +381,10 @@ def load_commands() -> None:
                         coralogix_token=coralogix_token,
                         openshift=openshift,
                         max_workers=max_workers,
+                        job_grouping_labels=job_grouping_labels,
+                        job_grouping_limit=job_grouping_limit,
+                        discovery_job_batch_size=discovery_job_batch_size,
+                        discovery_job_max_batches=discovery_job_max_batches,
                         format=format,
                         show_cluster_name=show_cluster_name,
                         verbose=verbose,
@@ -325,17 +396,23 @@ def load_commands() -> None:
                         file_output=file_output,
                         file_output_dynamic=file_output_dynamic,
                         slack_output=slack_output,
+                        slack_title=slack_title,
+                        azureblob_output=azureblob_output,
+                        teams_webhook=teams_webhook,
+                        azure_subscription_id=azure_subscription_id,
+                        azure_resource_group=azure_resource_group,
                         show_severity=show_severity,
                         strategy=_strategy_name,
                         other_args=strategy_args,
                         publish_scan_url=publish_scan_url,
                         start_time=start_time,
                         scan_id=scan_id,
+                        named_sinks=named_sinks,
                         )
                     Config.set_config(config)
                 except ValidationError as e:
                     logger.exception("Error occured while parsing arguments")
-                    publish_input_error( publish_scan_url, start_time, scan_id, str(e))
+                    publish_input_error( publish_scan_url, scan_id, start_time, str(e), named_sinks)
                 else:
                     runner = Runner()
                     exit_code = asyncio.run(runner.run())

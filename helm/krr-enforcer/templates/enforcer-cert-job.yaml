@@ -25,7 +25,7 @@ spec:
           emptyDir: {}
       containers:
         - name: cert-job
-          image: "bitnami/kubectl:1.30"
+          image: {{ .Values.certJob.image | quote }}
           workingDir: /tmp/certs
           volumeMounts:
             - name: workdir
@@ -35,6 +35,12 @@ spec:
             - -c
             - |
               set -e
+
+              {{- if .Values.certJob.installOpenssl }}
+              # Install openssl if needed
+              echo "Installing openssl..."
+              apk add --no-cache openssl
+              {{- end }}
 
               # Generate a CA key and certificate
               echo "Generating CA certificate..."

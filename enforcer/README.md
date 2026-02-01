@@ -97,6 +97,20 @@ helm install krr-enforcer robusta/krr-enforcer -f enforcer-values.yaml
 | `resources.requests.cpu` | CPU request for the enforcer pod                                    | `100m` |
 | `resources.requests.memory` | Memory request for the enforcer pod                                                     | `256Mi` |
 
+### Additional settings
+
+On some scenarios, you might want to exclude a specific container from `enforcement`, across all Deployments/Pods.
+For example, if you have some init container, that you'd like to be excluded. 
+
+You can do that by adding an environment variable named `EXCLUDED_CONTAINERS`, with a list of comma separated container names that should be excluded.
+For example:
+
+```yaml
+additionalEnvVars:
+  ...
+  - name: EXCLUDED_CONTAINERS
+    value: my-spiky-container, java-init-container
+```
 
 ## Running Locally
 
