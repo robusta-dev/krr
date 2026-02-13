@@ -11,8 +11,12 @@ set -a
 source .env
 set +a
 
-HISTORY_DURATION="230"
-TIMEFRAME_DURATION="2.0"
+# Parametri ottimizzati per evitare rate limiting GCP (429 errors)
+HISTORY_DURATION="48"      # Ridotto da 230 a 48 ore (2 giorni)
+TIMEFRAME_DURATION="5.0"   # Aumentato da 2.0 a 5.0 minuti
+
+# Aumenta batch size per ridurre numero di query
+export KRR_OWNER_BATCH_SIZE=200
 
 LOCATION="global" # GCP Managed Prometheus location
 NAMESPACE="${1:-${NAMESPACE:-default}}"  # 1st arg overrides .env/default
@@ -106,6 +110,7 @@ if [ "${AI_MODE:-false}" = "true" ]; then
     echo -e "${YELLOW}AI Mode enabled: Using AI-assisted strategy with Gemini 3 Flash Preview model.${NC}"
 
     $PYTHON_CMD krr.py ai-assisted \
+        --max-workers=1 \
         $CONTEXT_FLAG \
         --prometheus-url="${PROMETHEUS_URL}" \
         --prometheus-auth-header="Bearer ${TOKEN}" \
@@ -117,11 +122,13 @@ if [ "${AI_MODE:-false}" = "true" ]; then
         --cpu-percentile="${CPU_PERCENTILE}" \
         --memory-buffer-percentage=15 \
         $ANTHOS_FLAG --ai-max-tokens=5000 $HPA_FLAG \
-        --show-cluster-name --fileoutput-dynamic --use-oomkill-data --ai-model=gemini-3-flash-preview
+        --formatter table \
+        --fileoutput-dynamic --use-oomkill-data --ai-model=gemini-3-flash-preview # --show-cluster-name
 
 else
     echo -e "${YELLOW}AI Mode disabled: Using standard KRR strategies.${NC}"
     $PYTHON_CMD krr.py simple \
+        --max-workers=1 \
         $CONTEXT_FLAG \
         --prometheus-url="${PROMETHEUS_URL}" \
         --prometheus-auth-header="Bearer ${TOKEN}" \
@@ -133,7 +140,8 @@ else
         --cpu-percentile="${CPU_PERCENTILE}" \
         --memory-buffer-percentage=15 \
         $ANTHOS_FLAG $HPA_FLAG \
-        --show-cluster-name --fileoutput-dynamic --use-oomkill-data # --ai-model=gemini-3-flash-preview
+        --formatter table \
+        --fileoutput-dynamic --use-oomkill-data # --ai-model=gemini-3-flash-preview --show-cluster-name 
 
 fi
 

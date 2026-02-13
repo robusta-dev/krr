@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  krr-simple:
+    build:
+      context: .
+      dockerfile: Dockerfile.configurable
+    image: krr:latest
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+      # Uncomment if you need kubeconfig
+      # - ~/.kube:/root/.kube:ro
+    environment:
+      - KRR_STRATEGY=simple
+    profiles:
+      - simple
+
+  krr-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.configurable
+    image: krr:latest
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+    environment:
+      - KRR_STRATEGY=ai-assisted
+      - KRR_AI_MODEL=gemini-3-flash-preview
+      - KRR_AI_MAX_TOKENS=5000
+    profiles:
+      - ai
+
+  krr-simple-limit:
+    build:
+      context: .
+      dockerfile: Dockerfile.configurable
+    image: krr:latest
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+    environment:
+      - KRR_STRATEGY=simple-limit
+    profiles:
+      - limit
+
+# Usage:
+# docker-compose --profile simple run --rm krr-simple
+# docker-compose --profile ai run --rm krr-ai
+# docker-compose --profile limit run --rm krr-simple-limit

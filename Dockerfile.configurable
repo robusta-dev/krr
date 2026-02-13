@@ -1,0 +1,54 @@
+# Use the official Python 3.12 slim image as the base image
+FROM python:3.12-slim AS builder
+
+ENV LANG=C.UTF-8
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/app/venv/bin:$PATH"
+
+# Install system dependencies and Google Cloud SDK
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    apt-transport-https \
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    google-cloud-cli \
+    google-cloud-cli-gke-gcloud-auth-plugin \
+    kubectl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify installations
+RUN gcloud version && kubectl version --client && gke-gcloud-auth-plugin --version
+
+# Set the working directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code
+COPY ./krr.py krr.py
+COPY ./robusta_krr/ robusta_krr/
+COPY ./intro.txt intro.txt
+
+# Create output directory
+RUN mkdir -p /output
+
+# Copy the entrypoint script
+COPY ./docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Set working directory for output
+WORKDIR /output
+
+# Set entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# Default command (can be overridden)
+CMD ["simple"]
