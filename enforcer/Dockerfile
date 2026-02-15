@@ -6,7 +6,7 @@ ENV PATH="/app/venv/bin:$PATH"
 
 # Patching CVE-2025-6965
 RUN apk update && apk add --no-cache --upgrade \
-    sqlite-libs=3.49.2-r1 sqlite=3.49.2-r1
+    sqlite-libs=3.51.2-r0 sqlite=3.51.2-r0
     
 # Set the working directory
 WORKDIR /app/enforcer
