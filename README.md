@@ -751,6 +751,7 @@ Export KRR reports directly to Azure Blob Storage and get notified in Microsoft 
      --teams-webhook "https://your-teams-webhook-url" \
      --azure-subscription-id "your-subscription-id" \
      --azure-resource-group "your-resource-group"
+     --width 250 (optional but HIGHLY RECOMMENDED)
    ```
 
 ### Features
@@ -783,6 +784,8 @@ krr simple -f html \
   --azure-subscription-id "12345678-1234-1234-1234-123456789012" \
   --azure-resource-group "my-resource-group"
 ```
+
+Note: Consider adjusting the `--width` CLI flag for a better HTML viewing experience in browser.
 
 ### Teams Notification Features
 
