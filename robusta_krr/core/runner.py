@@ -350,12 +350,13 @@ class Runner:
                 object.pods = await self._k8s_loader.load_pods(object)
 
                 # NOTE: Kubernetes API returned pods, but Prometheus did not
-                # This might happen with fast executing jobs
+                # This might happen with fast executing jobs, or with metrics services
+                # that don't provide kube-state-metrics (e.g., GCP Anthos)
                 if object.pods != []:
                     object.add_warning("NoPrometheusPods")
-                    logger.warning(
-                        f"Was not able to load any pods for {object} from Prometheus. "
-                        "Loaded pods from Kubernetes API instead."
+                    logger.debug(
+                        f"Using Kubernetes API for pod discovery for {object} "
+                        "(Prometheus pod discovery not available or returned no results)."
                     )
 
             metrics = await prometheus_loader.gather_data(
