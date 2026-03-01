@@ -24,8 +24,26 @@ from robusta_krr.core.models.result import ResourceAllocations
 from robusta_krr.utils.object_like_dict import ObjectLikeDict
 
 
+def _get_init_containers(spec: Any) -> list:
+    """Get init containers from a pod spec, handling both snake_case and camelCase.
+
+    Standard K8s Python client uses snake_case (init_containers), but CustomObjectsApi
+    returns raw JSON with camelCase (initContainers). This helper checks both.
+    """
+    # Try snake_case first (standard K8s Python client)
+    init_containers = getattr(spec, "init_containers", None)
+    if init_containers is not None:
+        return init_containers
+    # Fall back to camelCase (CustomObjectsApi / ObjectLikeDict)
+    init_containers = getattr(spec, "initContainers", None)
+    if init_containers is not None:
+        return init_containers
+    return []
+
+
 class LightweightJobInfo:
     """Lightweight job object containing only the fields needed for GroupedJob processing."""
+
     def __init__(self, name: str, namespace: str):
         self.name = name
         self.namespace = namespace
@@ -40,7 +58,7 @@ HPAKey = tuple[str, str, str]
 
 
 class ClusterLoader:
-    def __init__(self, cluster: Optional[str]=None):
+    def __init__(self, cluster: Optional[str] = None):
         self.cluster = cluster
         # This executor will be running requests to Kubernetes API
         self.executor = ThreadPoolExecutor(settings.max_workers)
@@ -86,7 +104,7 @@ class ClusterLoader:
 
         if expand_list:
             logger.info("found regex pattern in provided namespace argument, expanding namespace list")
-            all_ns = [ ns.metadata.name for ns in self.core.list_namespace().items ]
+            all_ns = [ns.metadata.name for ns in self.core.list_namespace().items]
             for expand_ns in expand_list:
                 for ns in all_ns:
                     if expand_ns.fullmatch(ns) and ns not in self.__namespaces:
@@ -156,9 +174,9 @@ class ClusterLoader:
             selector = f"batch.kubernetes.io/controller-uid in ({','.join(ownered_jobs_uids)})"
 
         elif object.kind == "GroupedJob":
-            if not hasattr(object._api_resource, '_label_filter') or not object._api_resource._label_filter:
+            if not hasattr(object._api_resource, "_label_filter") or not object._api_resource._label_filter:
                 return []
-            
+
             # Use the label+value filter to get pods
             ret: V1PodList = await loop.run_in_executor(
                 self.executor,
@@ -166,9 +184,9 @@ class ClusterLoader:
                     namespace=object.namespace, label_selector=object._api_resource._label_filter
                 ),
             )
-            
+
             # Apply the job grouping limit to pod results
-            limited_pods = ret.items[:settings.job_grouping_limit]
+            limited_pods = ret.items[: settings.job_grouping_limit]
             return [PodData(name=pod.metadata.name, deleted=False) for pod in limited_pods]
 
         else:
@@ -209,14 +227,15 @@ class ClusterLoader:
             label_filters += [
                 ClusterLoader._get_match_expression_filter(expression) for expression in selector.match_expressions
             ]
-        
+
         # normally the kubernetes API client renames matchLabels to match_labels in python
         # but for CRDs like ArgoRollouts that renaming doesn't happen and we have selector={'matchLabels': {'app': 'test-app'}}
         if getattr(selector, "matchLabels", None):
             label_filters += [f"{label[0]}={label[1]}" for label in getattr(selector, "matchLabels").items()]
         if getattr(selector, "matchExpressions", None):
             label_filters += [
-                ClusterLoader._get_match_expression_filter(expression) for expression in getattr(selector, "matchExpressions").items()
+                ClusterLoader._get_match_expression_filter(expression)
+                for expression in getattr(selector, "matchExpressions").items()
             ]
 
         if label_filters == []:
@@ -241,7 +260,7 @@ class ClusterLoader:
         if item.metadata.labels:
             if type(item.metadata.labels) is ObjectLikeDict:
                 labels = item.metadata.labels.__dict__
-            else:  
+            else:
                 labels = item.metadata.labels
 
         if item.metadata.annotations:
@@ -259,7 +278,7 @@ class ClusterLoader:
             allocations=ResourceAllocations.from_container(container),
             hpa=self.__hpa_list.get((namespace, kind, name)),
             labels=labels,
-            annotations= annotations
+            annotations=annotations,
         )
         obj._api_resource = item
         return obj
@@ -315,19 +334,16 @@ class ClusterLoader:
                             limit=limit,
                             _continue=continue_ref,
                         ),
-                    )                ]
+                    )
+                ]
 
             gathered_results = await asyncio.gather(*requests)
-            
-            result = [
-                item
-                for request_result in gathered_results
-                for item in request_result.items
-            ]
+
+            result = [item for request_result in gathered_results for item in request_result.items]
 
             next_continue_ref = None
             if gathered_results:
-                next_continue_ref = getattr(gathered_results[0].metadata, '_continue', None)
+                next_continue_ref = getattr(gathered_results[0].metadata, "_continue", None)
 
             return result, next_continue_ref
 
@@ -335,6 +351,7 @@ class ClusterLoader:
             if e.status == 410 and e.body:
                 # Continue token expired
                 import json
+
                 try:
                     error_body = json.loads(e.body)
                     new_continue_token = error_body.get("metadata", {}).get("continue")
@@ -346,10 +363,7 @@ class ClusterLoader:
             raise
 
     async def _list_namespaced_or_global_objects(
-        self,
-        kind: KindLiteral,
-        all_namespaces_request: Callable,
-        namespaced_request: Callable
+        self, kind: KindLiteral, all_namespaces_request: Callable, namespaced_request: Callable
     ) -> list[Any]:
         logger.debug(f"Listing {kind}s in {self.cluster}")
         loop = asyncio.get_running_loop()
@@ -377,11 +391,7 @@ class ClusterLoader:
                 for namespace in self.namespaces
             ]
 
-        result = [
-            item
-            for request_result in await asyncio.gather(*requests)
-            for item in request_result.items
-        ]
+        result = [item for request_result in await asyncio.gather(*requests) for item in request_result.items]
 
         logger.debug(f"Found {len(result)} {kind} in {self.cluster}")
         return result
@@ -400,7 +410,7 @@ class ClusterLoader:
 
         if not self.__kind_available[kind]:
             return []
-        
+
         result = []
         try:
             for item in await self._list_namespaced_or_global_objects(kind, all_namespaces_request, namespaced_request):
@@ -428,13 +438,15 @@ class ClusterLoader:
             kind="Deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_deployment,
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            extract_containers=lambda item: item.spec.template.spec.containers
+            + (item.spec.template.spec.init_containers or []),
         )
 
     def _list_rollouts(self) -> list[K8sObjectData]:
         async def _extract_containers(item: Any) -> list[V1Container]:
             if item.spec.template is not None:
-                return item.spec.template.spec.containers
+                # CustomObjectsApi returns camelCase, use helper for dual lookup
+                return item.spec.template.spec.containers + _get_init_containers(item.spec.template.spec)
 
             loop = asyncio.get_running_loop()
 
@@ -451,7 +463,7 @@ class ClusterLoader:
                         namespace=item.metadata.namespace, name=workloadRef.name
                     ),
                 )
-                return ret.spec.template.spec.containers
+                return ret.spec.template.spec.containers + (ret.spec.template.spec.init_containers or [])
 
             return []
 
@@ -499,7 +511,9 @@ class ClusterLoader:
                     **kwargs,
                 )
             ),
-            extract_containers=lambda item: item.spec.pods[0].spec.containers,
+            # CustomObjectsApi returns camelCase, use helper for dual lookup
+            extract_containers=lambda item: item.spec.pods[0].spec.containers
+            + _get_init_containers(item.spec.pods[0].spec),
         )
 
     def _list_deploymentconfig(self) -> list[K8sObjectData]:
@@ -523,7 +537,9 @@ class ClusterLoader:
                     **kwargs,
                 )
             ),
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            # CustomObjectsApi returns camelCase, use helper for dual lookup
+            extract_containers=lambda item: item.spec.template.spec.containers
+            + _get_init_containers(item.spec.template.spec),
         )
 
     def _list_all_statefulsets(self) -> list[K8sObjectData]:
@@ -531,7 +547,8 @@ class ClusterLoader:
             kind="StatefulSet",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_stateful_set,
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            extract_containers=lambda item: item.spec.template.spec.containers
+            + (item.spec.template.spec.init_containers or []),
         )
 
     def _list_all_daemon_set(self) -> list[K8sObjectData]:
@@ -539,15 +556,15 @@ class ClusterLoader:
             kind="DaemonSet",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_daemon_set,
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            extract_containers=lambda item: item.spec.template.spec.containers
+            + (item.spec.template.spec.init_containers or []),
         )
-
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
         """List all jobs using batched loading with 500 batch size."""
         if not self._should_list_resource("Job"):
             return []
-        
+
         namespaces = self.namespaces if self.namespaces != "*" else ["*"]
         all_jobs = []
         try:
@@ -572,7 +589,7 @@ class ClusterLoader:
                     if not jobs_batch:
                         # no more jobs to batch do not count empty batches
                         break
-                    
+
                     batch_count += 1
                     for job in jobs_batch:
                         if self._is_job_owned_by_cronjob(job):
@@ -581,12 +598,14 @@ class ClusterLoader:
                             continue
                         for container in job.spec.template.spec.containers:
                             all_jobs.append(self.__build_scannable_object(job, container, "Job"))
+                        for container in job.spec.template.spec.init_containers or []:
+                            all_jobs.append(self.__build_scannable_object(job, container, "Job"))
                     if not continue_ref:
                         break
-            
+
             logger.debug("Found %d regular jobs", len(all_jobs))
             return all_jobs
-            
+
         except Exception as e:
             logger.error(
                 "Failed to run jobs discovery",
@@ -599,7 +618,8 @@ class ClusterLoader:
             kind="CronJob",
             all_namespaces_request=self.batch.list_cron_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_cron_job,
-            extract_containers=lambda item: item.spec.job_template.spec.template.spec.containers,
+            extract_containers=lambda item: item.spec.job_template.spec.template.spec.containers
+            + (item.spec.job_template.spec.template.spec.init_containers or []),
         )
 
     async def _list_all_groupedjobs(self) -> list[K8sObjectData]:
@@ -607,13 +627,13 @@ class ClusterLoader:
         if not settings.job_grouping_labels:
             logger.debug("No job grouping labels configured, skipping GroupedJob listing")
             return []
-        
+
         if not self._should_list_resource("GroupedJob"):
             logger.debug("Skipping GroupedJob in cluster")
             return []
-        
+
         logger.debug("Listing GroupedJobs with grouping labels: %s", settings.job_grouping_labels)
-        
+
         grouped_jobs = defaultdict(list)
         grouped_jobs_template = {}  # Store only ONE full job as template per group - needed for class K8sObjectData
         continue_ref: Optional[str] = None
@@ -632,7 +652,7 @@ class ClusterLoader:
                         limit=settings.discovery_job_batch_size,
                         continue_ref=continue_ref,
                     )
- 
+
                     continue_ref = next_continue_ref
 
                     if not jobs_batch and continue_ref:
@@ -645,7 +665,11 @@ class ClusterLoader:
 
                     batch_count += 1
                     for job in jobs_batch:
-                        if not job.metadata.labels or self._is_job_owned_by_cronjob(job) or not self._is_job_grouped(job):
+                        if (
+                            not job.metadata.labels
+                            or self._is_job_owned_by_cronjob(job)
+                            or not self._is_job_grouped(job)
+                        ):
                             continue
                         for label_name in settings.job_grouping_labels:
                             if label_name not in job.metadata.labels:
@@ -654,8 +678,7 @@ class ClusterLoader:
                             label_value = job.metadata.labels[label_name]
                             group_key = f"{label_name}={label_value}"
                             lightweight_job = LightweightJobInfo(
-                                name=job.metadata.name,
-                                namespace=job.metadata.namespace
+                                name=job.metadata.name, namespace=job.metadata.namespace
                             )
                             # Store lightweight job info only for grouped jobs
                             grouped_jobs[group_key].append(lightweight_job)
@@ -664,50 +687,55 @@ class ClusterLoader:
                                 grouped_jobs_template[group_key] = job
                     if not continue_ref:
                         break
-        
+
         except Exception as e:
             logger.error(
                 "Failed to run grouped jobs discovery",
                 exc_info=True,
             )
             raise
-        
+
         result = []
         for group_name, jobs in grouped_jobs.items():
             template_job = grouped_jobs_template[group_name]
-            
+
             jobs_by_namespace = defaultdict(list)
             for job in jobs:
                 jobs_by_namespace[job.namespace].append(job)
-            
+
             for namespace, namespace_jobs in jobs_by_namespace.items():
-                limited_jobs = namespace_jobs[:settings.job_grouping_limit]
-                
+                limited_jobs = namespace_jobs[: settings.job_grouping_limit]
+
                 container_names = set()
                 for container in template_job.spec.template.spec.containers:
                     container_names.add(container.name)
-                
+                for container in template_job.spec.template.spec.init_containers or []:
+                    container_names.add(container.name)
+
                 for container_name in container_names:
                     template_container = None
                     for container in template_job.spec.template.spec.containers:
                         if container.name == container_name:
                             template_container = container
                             break
-                    
+                    if template_container is None:
+                        for container in template_job.spec.template.spec.init_containers or []:
+                            if container.name == container_name:
+                                template_container = container
+                                break
+
                     if template_container:
                         grouped_job = self.__build_scannable_object(
-                            item=template_job,
-                            container=template_container,
-                            kind="GroupedJob"
+                            item=template_job, container=template_container, kind="GroupedJob"
                         )
-                        
+
                         grouped_job.name = group_name
                         grouped_job.namespace = namespace
                         grouped_job._api_resource._grouped_jobs = limited_jobs
                         grouped_job._api_resource._label_filter = group_name
-                        
+
                         result.append(grouped_job)
-        
+
         logger.debug("Found %d GroupedJob groups", len(result))
         return result
 
@@ -743,6 +771,7 @@ class ClusterLoader:
             all_namespaces_request=self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces,
             namespaced_request=self.autoscaling_v2.list_namespaced_horizontal_pod_autoscaler,
         )
+
         def __get_metric(hpa: V2HorizontalPodAutoscaler, metric_name: str) -> Optional[float]:
             return next(
                 (
@@ -752,6 +781,7 @@ class ClusterLoader:
                 ),
                 None,
             )
+
         return {
             (
                 hpa.metadata.namespace,
@@ -865,7 +895,7 @@ class KubernetesLoader:
         if self.cluster_loaders == {}:
             logger.error("Could not load any cluster.")
             return
-        
+
         return [
             object
             for cluster_loader in self.cluster_loaders.values()
