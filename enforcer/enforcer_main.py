@@ -158,15 +158,18 @@ async def mutate(request: AdmissionReview):
 
         logger.debug("Pod patches %s", patches)
 
+        response = {
+            "uid": request.request.get("uid"),
+            "allowed": True,
+        }
+        if patches:
+            response["patchType"] = "JSONPatch"
+            response["patch"] = base64.b64encode(json.dumps(patches).encode()).decode()
+
         return {
             "apiVersion": "admission.k8s.io/v1",
             "kind": "AdmissionReview",
-            "response": {
-                "uid": request.request.get("uid"),
-                "allowed": True,
-                "patchType": "JSONPatch",
-                "patch": base64.b64encode(json.dumps(patches).encode()).decode() if patches else None
-            }
+            "response": response
         }
         
     except Exception as e:
