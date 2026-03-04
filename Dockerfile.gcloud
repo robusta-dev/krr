@@ -1,0 +1,61 @@
+# Use official Google Cloud CLI slim image (lighter, with essential packages)
+# Includes: gcloud, gsutil, bq, curl, python3-crcmod, openssh-client, git, gnupg
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+
+ENV LANG=C.UTF-8
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install necessary gcloud components and Python venv using apt-get
+# :slim image uses apt packages instead of gcloud component manager
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    google-cloud-cli-gke-gcloud-auth-plugin \
+    kubectl \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Create virtual environment for KRR
+RUN python3 -m venv /app/venv
+
+# Activate venv and install KRR dependencies
+ENV PATH="/app/venv/bin:$PATH"
+
+# Copy requirements and install Python dependencies in venv
+COPY ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code
+COPY ./krr.py krr.py
+COPY ./robusta_krr/ robusta_krr/
+COPY ./intro.txt intro.txt
+
+# Create output directory
+RUN mkdir -p /output
+
+# Copy the entrypoint script
+COPY ./docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Verify installations
+RUN gcloud version && \
+    kubectl version --client && \
+    gke-gcloud-auth-plugin --version && \
+    echo "--- gcloud Python ---" && \
+    which python3 && python3 --version && \
+    echo "--- KRR venv Python ---" && \
+    /app/venv/bin/python --version && \
+    /app/venv/bin/pip list | grep -E "(prometheus|kubernetes|google)"
+
+# Set working directory for output
+WORKDIR /output
+
+# Set entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# Default command (can be overridden)
+CMD ["simple"]

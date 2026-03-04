@@ -49,6 +49,7 @@ class Config(pd.BaseSettings):
     eks_assume_role: Optional[str] = pd.Field(None)
     coralogix_token: Optional[pd.SecretStr] = pd.Field(None)
     openshift: bool = pd.Field(False)
+    gcp_anthos: bool = pd.Field(False, description="Use Anthos metrics (kubernetes.io/anthos/*) instead of GKE metrics")
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
@@ -150,7 +151,10 @@ class Config(pd.BaseSettings):
     def create_strategy(self) -> AnyStrategy:
         StrategyType = AnyStrategy.find(self.strategy)
         StrategySettingsType = StrategyType.get_settings_type()
-        return StrategyType(StrategySettingsType(**self.other_args))  # type: ignore
+        logger.debug(f"Creating strategy '{self.strategy}' with other_args: {self.other_args}")
+        settings = StrategySettingsType(**self.other_args)
+        logger.debug(f"Strategy settings created with use_oomkill_data={getattr(settings, 'use_oomkill_data', 'NOT_FOUND')}")
+        return StrategyType(settings)  # type: ignore
 
     @pd.validator("strategy")
     def validate_strategy(cls, v: str) -> str:
