@@ -6,7 +6,9 @@ ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
 
 # Install system dependencies required for Poetry
+# Patching CVE-2025-68121 (Go crypto/tls improper certificate validation, requires Go >= 1.26.0)
 RUN apt-get update && \
+    apt-get upgrade -y && \
     dpkg --add-architecture arm64
 
 # Set the working directory
