@@ -97,6 +97,12 @@ else
     echo -e "${GREEN}Using ${STRATEGY} strategy${NC}"
 fi
 
+KRR_RESOURCE=""
+if [ -n "${RESOURCE}" ]; then
+    echo -e "${GREEN}Targeting resource: ${RESOURCE}${NC}"
+    KRR_RESOURCE="${RESOURCE}"
+fi
+
 # Run Docker container with all environment variables from .env
 docker run --rm \
   -v "${HOME}/.kube/config:/root/.kube/config:ro" \
@@ -117,6 +123,7 @@ docker run --rm \
   -e KRR_USE_OOMKILL_DATA="${USE_OOMKILL_DATA:-true}" \
   -e KRR_FORMATTER="${FORMATTER:-table}" \
   -e KRR_FILEOUTPUT_DYNAMIC="${FILEOUTPUT_DYNAMIC:-true}" \
+  -e KRR_RESOURCE="${KRR_RESOURCE:-}" \
   ${HPA_MODE:+-e KRR_ALLOW_HPA="${HPA_MODE}"} \
   ${GEMINI_API_KEY:+-e GEMINI_API_KEY="${GEMINI_API_KEY}"} \
   ${AI_MODEL:+-e KRR_AI_MODEL="${AI_MODEL}"} \
