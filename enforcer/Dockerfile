@@ -8,7 +8,7 @@ ENV PATH="/app/venv/bin:$PATH"
 # Alpine's current version (3.51.1-r0) already includes the fix
 RUN apk update && apk add --no-cache --upgrade \
     sqlite-libs sqlite
-
+    
 # Set the working directory
 WORKDIR /app/enforcer
 
