@@ -9,7 +9,6 @@ ENV PATH="/app/venv/bin:$PATH"
 RUN apk update && apk add --no-cache --upgrade \
    sqlite-libs sqlite
 
-
 # Set the working directory
 WORKDIR /app/enforcer
 
