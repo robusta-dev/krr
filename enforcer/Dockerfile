@@ -6,10 +6,9 @@ ENV PATH="/app/venv/bin:$PATH"
 
 # Patching CVE-2025-6965 (requires sqlite >= 3.50.2)
 # Alpine's current version (3.51.1-r0) already includes the fix
-# Patching CVE-2025-68121 (Go crypto/tls improper certificate validation, requires Go >= 1.26.0)
-RUN apk update && apk upgrade --no-cache && apk add --no-cache --upgrade \
-    sqlite-libs sqlite
-    
+RUN apk update && apk add --no-cache --upgrade \
+   sqlite-libs sqlite 
+   
 # Set the working directory
 WORKDIR /app/enforcer
 
