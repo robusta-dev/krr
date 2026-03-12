@@ -201,6 +201,12 @@ def load_commands() -> None:
                     help="Connect to Prometheus with a token read from /var/run/secrets/kubernetes.io/serviceaccount/token - recommended when running KRR inside an OpenShift cluster",
                     rich_help_panel="Prometheus Openshift Settings",
                 ),
+                gcp_anthos: bool = typer.Option(
+                    False,
+                    "--gcp-anthos",
+                    help="Use GCP Anthos metrics (kubernetes.io/anthos/*) for on-prem Kubernetes managed by Google",
+                    rich_help_panel="Prometheus GCP Settings",
+                ),
                 cpu_min_value: int = typer.Option(
                     10,
                     "--cpu-min",
@@ -380,6 +386,7 @@ def load_commands() -> None:
                         eks_service_name=eks_service_name,
                         coralogix_token=coralogix_token,
                         openshift=openshift,
+                        gcp_anthos=gcp_anthos,
                         max_workers=max_workers,
                         job_grouping_labels=job_grouping_labels,
                         job_grouping_limit=job_grouping_limit,
