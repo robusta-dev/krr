@@ -45,7 +45,7 @@ class K8sObjectData(pd.BaseModel):
     namespace: str
     kind: KindLiteral
     allocations: ResourceAllocations
-    warnings: set[PodWarning] = set()
+    warnings: set[PodWarning] = pd.Field(default_factory=set)
     labels: Optional[dict[str, str]]
     annotations: Optional[dict[str, str]]
 

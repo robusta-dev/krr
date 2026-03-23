@@ -6,4 +6,4 @@ from robusta_krr.core.models.result import Result
 
 @formatters.register()
 def pprint(result: Result) -> str:
-    return pformat(result.dict())
+    return pformat(result.model_dump())
