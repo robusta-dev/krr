@@ -10,9 +10,13 @@ def mock_config():
     config = MagicMock(spec=Config)
     config.job_grouping_labels = ["app", "team"]
     config.job_grouping_limit = 3  # Small limit for testing
+    config.discovery_job_batch_size = 1000
+    config.discovery_job_max_batches = 50
     config.max_workers = 4
     config.get_kube_client = MagicMock()
     config.resources = "*"
+    config.selector = None
+    config.namespaces = "*"  # Add namespaces setting
     return config
 
 
@@ -23,7 +27,14 @@ def mock_kubernetes_loader(mock_config):
         loader = ClusterLoader()
         loader.batch = MagicMock()
         loader.core = MagicMock()
+        
+        # Mock executor to return a proper Future
+        from concurrent.futures import Future
+        mock_future = Future()
+        mock_future.set_result(None)  # Set a dummy result
         loader.executor = MagicMock()
+        loader.executor.submit.return_value = mock_future
+        
         loader._ClusterLoader__hpa_list = {} # type: ignore # needed for mock
         return loader
 
@@ -60,16 +71,24 @@ async def test_list_all_groupedjobs_with_limit(mock_kubernetes_loader, mock_conf
         create_mock_job("job-9", "default", {"app": "backend"}),  # This should be excluded
     ]
     
-    # Mock the _list_namespaced_or_global_objects method
-    mock_kubernetes_loader._list_namespaced_or_global_objects = AsyncMock(return_value=mock_jobs)
+    # Mock the _list_namespaced_or_global_objects_batched method
+    async def mock_batched_method(*args, **kwargs):
+        # Create mock response objects that have the expected structure
+        mock_response = MagicMock()
+        mock_response.items = mock_jobs
+        mock_response.metadata = MagicMock()
+        mock_response.metadata._continue = None
+        return (mock_jobs, None)  # Return (jobs, continue_token)
+    mock_kubernetes_loader._list_namespaced_or_global_objects_batched = mock_batched_method
     
     # Mock the __build_scannable_object method
     def mock_build_scannable_object(item, container, kind):
         obj = MagicMock()
         obj._api_resource = MagicMock()
+        obj.container = container.name
         return obj
     
-    mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
+    mock_kubernetes_loader._ClusterLoader__build_scannable_object = mock_build_scannable_object
     
     # Patch the settings to use our mock config
     with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
@@ -88,23 +107,23 @@ async def test_list_all_groupedjobs_with_limit(mock_kubernetes_loader, mock_conf
     assert frontend_objects[0].namespace == "default"
     assert frontend_objects[0].container == "main-container"
     
-    # Verify we got 1 backend object (one per unique container name)  
+    # Verify we got 1 backend object  
     assert len(backend_objects) == 1
     assert backend_objects[0].namespace == "default"
     assert backend_objects[0].container == "main-container"
     
-    # Verify all objects in each group have the same grouped_jobs list
+    # Verify all objects in each group have lightweight job info
     frontend_grouped_jobs = frontend_objects[0]._api_resource._grouped_jobs
     assert len(frontend_grouped_jobs) == 3
-    assert frontend_grouped_jobs[0].metadata.name == "job-1"
-    assert frontend_grouped_jobs[1].metadata.name == "job-2"
-    assert frontend_grouped_jobs[2].metadata.name == "job-3"
+    assert frontend_grouped_jobs[0].name == "job-1"
+    assert frontend_grouped_jobs[1].name == "job-2"
+    assert frontend_grouped_jobs[2].name == "job-3"
     
     backend_grouped_jobs = backend_objects[0]._api_resource._grouped_jobs
     assert len(backend_grouped_jobs) == 3
-    assert backend_grouped_jobs[0].metadata.name == "job-6"
-    assert backend_grouped_jobs[1].metadata.name == "job-7"
-    assert backend_grouped_jobs[2].metadata.name == "job-8"
+    assert backend_grouped_jobs[0].name == "job-6"
+    assert backend_grouped_jobs[1].name == "job-7"
+    assert backend_grouped_jobs[2].name == "job-8"
 
 
 @pytest.mark.asyncio
@@ -119,14 +138,22 @@ async def test_list_all_groupedjobs_with_different_namespaces(mock_kubernetes_lo
         create_mock_job("job-4", "namespace-2", {"app": "frontend"}),
     ]
     
-    mock_kubernetes_loader._list_namespaced_or_global_objects = AsyncMock(return_value=mock_jobs)
+    async def mock_batched_method(*args, **kwargs):
+        # Create mock response objects that have the expected structure
+        mock_response = MagicMock()
+        mock_response.items = mock_jobs
+        mock_response.metadata = MagicMock()
+        mock_response.metadata._continue = None
+        return (mock_jobs, None)  # Return (jobs, continue_token)
+    mock_kubernetes_loader._list_namespaced_or_global_objects_batched = mock_batched_method
     
     def mock_build_scannable_object(item, container, kind):
         obj = MagicMock()
         obj._api_resource = MagicMock()
+        obj.container = container.name
         return obj
     
-    mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
+    mock_kubernetes_loader._ClusterLoader__build_scannable_object = mock_build_scannable_object
     
     # Patch the settings to use our mock config
     with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
@@ -166,14 +193,22 @@ async def test_list_all_groupedjobs_with_cronjob_owner_reference(mock_kubernetes
     # Add CronJob owner reference to the second job
     mock_jobs[1].metadata.owner_references = [MagicMock(kind="CronJob")]
     
-    mock_kubernetes_loader._list_namespaced_or_global_objects = AsyncMock(return_value=mock_jobs)
+    async def mock_batched_method(*args, **kwargs):
+        # Create mock response objects that have the expected structure
+        mock_response = MagicMock()
+        mock_response.items = mock_jobs
+        mock_response.metadata = MagicMock()
+        mock_response.metadata._continue = None
+        return (mock_jobs, None)  # Return (jobs, continue_token)
+    mock_kubernetes_loader._list_namespaced_or_global_objects_batched = mock_batched_method
     
     def mock_build_scannable_object(item, container, kind):
         obj = MagicMock()
         obj._api_resource = MagicMock()
+        obj.container = container.name  # Set the actual container name
         return obj
     
-    mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
+    mock_kubernetes_loader._ClusterLoader__build_scannable_object = mock_build_scannable_object
     
     # Patch the settings to use our mock config
     with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
@@ -185,7 +220,7 @@ async def test_list_all_groupedjobs_with_cronjob_owner_reference(mock_kubernetes
     obj = result[0]
     assert obj.name == "app=frontend"
     assert len(obj._api_resource._grouped_jobs) == 1
-    assert obj._api_resource._grouped_jobs[0].metadata.name == "job-1"
+    assert obj._api_resource._grouped_jobs[0].name == "job-1"
 
 
 @pytest.mark.asyncio
@@ -212,14 +247,22 @@ async def test_list_all_groupedjobs_multiple_labels(mock_kubernetes_loader, mock
         create_mock_job("job-3", "default", {"app": "api"}),
     ]
     
-    mock_kubernetes_loader._list_namespaced_or_global_objects = AsyncMock(return_value=mock_jobs)
+    async def mock_batched_method(*args, **kwargs):
+        # Create mock response objects that have the expected structure
+        mock_response = MagicMock()
+        mock_response.items = mock_jobs
+        mock_response.metadata = MagicMock()
+        mock_response.metadata._continue = None
+        return (mock_jobs, None)  # Return (jobs, continue_token)
+    mock_kubernetes_loader._list_namespaced_or_global_objects_batched = mock_batched_method
     
     def mock_build_scannable_object(item, container, kind):
         obj = MagicMock()
         obj._api_resource = MagicMock()
+        obj.container = container.name
         return obj
     
-    mock_kubernetes_loader._KubernetesLoader__build_scannable_object = mock_build_scannable_object
+    mock_kubernetes_loader._ClusterLoader__build_scannable_object = mock_build_scannable_object
     
     # Patch the settings to use our mock config
     with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
@@ -236,3 +279,121 @@ async def test_list_all_groupedjobs_multiple_labels(mock_kubernetes_loader, mock
     
     # Verify all objects have the same container name
     assert all(obj.container == "main-container" for obj in result)
+
+
+@pytest.mark.asyncio
+async def test_list_all_groupedjobs_job_in_multiple_groups(mock_kubernetes_loader, mock_config):
+    """Test that a job with multiple grouping labels is added to all matching groups"""
+    
+    # Create a job that matches multiple grouping labels
+    mock_jobs = [
+        create_mock_job("job-1", "default", {"app": "frontend", "team": "web"}),
+        create_mock_job("job-2", "default", {"app": "backend", "team": "api"}),
+    ]
+    
+    async def mock_batched_method(*args, **kwargs):
+        # Create mock response objects that have the expected structure
+        mock_response = MagicMock()
+        mock_response.items = mock_jobs
+        mock_response.metadata = MagicMock()
+        mock_response.metadata._continue = None
+        return (mock_jobs, None)  # Return (jobs, continue_token)
+    mock_kubernetes_loader._list_namespaced_or_global_objects_batched = mock_batched_method
+    
+    def mock_build_scannable_object(item, container, kind):
+        obj = MagicMock()
+        obj._api_resource = MagicMock()
+        obj.container = container.name
+        return obj
+    
+    mock_kubernetes_loader._ClusterLoader__build_scannable_object = mock_build_scannable_object
+    
+    # Patch the settings to use our mock config
+    with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
+        # Call the method
+        result = await mock_kubernetes_loader._list_all_groupedjobs()
+    
+    # Verify we got 4 objects (2 jobs × 2 labels each = 4 groups)
+    assert len(result) == 4
+    
+    group_names = {g.name for g in result}
+    assert "app=frontend" in group_names
+    assert "app=backend" in group_names
+    assert "team=web" in group_names
+    assert "team=api" in group_names
+    
+    # Find each group and verify it contains the correct job
+    frontend_group = next(g for g in result if g.name == "app=frontend")
+    backend_group = next(g for g in result if g.name == "app=backend")
+    web_group = next(g for g in result if g.name == "team=web")
+    api_group = next(g for g in result if g.name == "team=api")
+    
+    # Verify job-1 is in both app=frontend and team=web groups
+    assert len(frontend_group._api_resource._grouped_jobs) == 1
+    assert frontend_group._api_resource._grouped_jobs[0].name == "job-1"
+    
+    assert len(web_group._api_resource._grouped_jobs) == 1
+    assert web_group._api_resource._grouped_jobs[0].name == "job-1"
+    
+    # Verify job-2 is in both app=backend and team=api groups
+    assert len(backend_group._api_resource._grouped_jobs) == 1
+    assert backend_group._api_resource._grouped_jobs[0].name == "job-2"
+    
+    assert len(api_group._api_resource._grouped_jobs) == 1
+    assert api_group._api_resource._grouped_jobs[0].name == "job-2"
+
+
+@pytest.mark.asyncio
+async def test_groupedjobs_respects_global_batch_limit_across_namespaces(mock_kubernetes_loader, mock_config):
+    """Verify batch_count is global: when limit reached, subsequent namespaces are not processed."""
+    mock_config.namespaces = ["ns-1", "ns-2"]
+    mock_config.discovery_job_max_batches = 1
+
+    calls = []
+
+    async def mock_batched_method(*args, **kwargs):
+        calls.append(kwargs.get("namespace"))
+        # return empty batch and no continue token
+        return ([], None)
+
+    mock_kubernetes_loader._list_namespaced_or_global_objects_batched = mock_batched_method
+
+    with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
+        result = await mock_kubernetes_loader._list_all_groupedjobs()
+
+    # No results; with empty batches not counted, both namespaces are attempted
+    assert result == []
+    assert calls == ["ns-1", "ns-2"]
+
+
+@pytest.mark.asyncio
+async def test_groupedjobs_calls_each_explicit_namespace(mock_kubernetes_loader, mock_config):
+    """Ensure explicit namespaces list is iterated and passed to the batched call."""
+    mock_config.namespaces = ["namespace-a", "namespace-b"]
+    mock_config.discovery_job_max_batches = 10
+
+    seen_namespaces = []
+
+    # Return one simple job per call and terminate with no continue token
+    async def mock_batched_method(*args, **kwargs):
+        ns = kwargs.get("namespace")
+        seen_namespaces.append(ns)
+        job = create_mock_job("job-1", ns if ns != "*" else "default", {"app": "frontend"})
+        return ([job], None)
+
+    mock_kubernetes_loader._list_namespaced_or_global_objects_batched = mock_batched_method
+
+    def mock_build_scannable_object(item, container, kind):
+        obj = MagicMock()
+        obj._api_resource = MagicMock()
+        obj.container = container.name
+        return obj
+
+    mock_kubernetes_loader._ClusterLoader__build_scannable_object = mock_build_scannable_object
+
+    with patch("robusta_krr.core.integrations.kubernetes.settings", mock_config):
+        result = await mock_kubernetes_loader._list_all_groupedjobs()
+
+    # We expect one grouped object per namespace
+    assert len(result) == 2
+    assert set(seen_namespaces) == {"namespace-a", "namespace-b"}
