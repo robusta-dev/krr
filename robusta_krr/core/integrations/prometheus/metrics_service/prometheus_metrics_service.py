@@ -250,15 +250,12 @@ class PrometheusMetricsService(MetricsService):
     async def get_cluster_summary(self) -> Dict[str, Any]:
         cluster_label = self.get_prometheus_cluster_label()
 
-        # use this for queries with no labels. turn ', cluster="xxx"' to 'cluster="xxx"'
-        single_cluster_label = cluster_label.replace(",", "")
-
         memory_query = f"""
-            sum(kube_node_status_capacity{{ resource="memory" {single_cluster_label} }})
+            sum(kube_node_status_capacity{{ resource="memory" {cluster_label} }})
         """
 
         cpu_query = f"""
-            sum(kube_node_status_capacity{{ resource="cpu" {single_cluster_label} }})
+            sum(kube_node_status_capacity{{ resource="cpu" {cluster_label} }})
         """
         kube_system_requests_mem = f"""
             sum(max(kube_pod_container_resource_requests{{ namespace="kube-system", resource="memory" {cluster_label} }})  by (job, pod, container) )
