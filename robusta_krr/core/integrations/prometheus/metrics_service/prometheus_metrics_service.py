@@ -254,17 +254,17 @@ class PrometheusMetricsService(MetricsService):
         single_cluster_label = cluster_label.replace(",", "")
 
         memory_query = f"""
-            sum(kube_node_status_capacity{{ resource='memory' {single_cluster_label} }})
+            sum(kube_node_status_capacity{{ resource="memory" {single_cluster_label} }})
         """
 
         cpu_query = f"""
-            sum(kube_node_status_capacity{{ resource='cpu' {single_cluster_label} }})
+            sum(kube_node_status_capacity{{ resource="cpu" {single_cluster_label} }})
         """
         kube_system_requests_mem = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='memory' {cluster_label} }})  by (job, pod, container) )
+            sum(max(kube_pod_container_resource_requests{{ namespace="kube-system", resource="memory" {cluster_label} }})  by (job, pod, container) )
         """
         kube_system_requests_cpu = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='cpu' {cluster_label} }})  by (job, pod, container) )
+            sum(max(kube_pod_container_resource_requests{{ namespace="kube-system", resource="cpu" {cluster_label} }})  by (job, pod, container) )
         """
         try:
             cluster_memory_result = await self.query_and_validate(memory_query)
