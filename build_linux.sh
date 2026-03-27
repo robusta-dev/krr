@@ -12,7 +12,7 @@ apt-get install binutils
 # source .venv/bin/activate
 
 # Build
-pyinstaller krr.py
+pyinstaller --onefile krr.py
 cd dist
 # zip -r "krr-linux-v1.1.0.zip" krr
 
