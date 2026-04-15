@@ -271,11 +271,9 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
 - Give devs a YAML snippet to fix the problems KRR finds
-- Analyze impact using KRR scan history
+- Analyze impact using KRR scan history to create PR's
 
-  <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
-      <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
-  </a>
+  <img src="./images/krr-create-pr.png">
 
 <!-- USAGE EXAMPLES -->
 
@@ -662,11 +660,9 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
 - Give dev's a YAML snippet to fix the problems KRR finds
-- Analyze impact using KRR scan history
+- Analyze impact using KRR scan history to create PR's
 
-  <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
-      <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
-  </a>
+  <img src="./images/krr-create-pr.png">
 
 </details>
 
