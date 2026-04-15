@@ -271,7 +271,7 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
 - Give devs a YAML snippet to fix the problems KRR finds
-- Analyze impact using KRR scan history to create PR's
+- Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
   <img src="./images/krr-create-pr.png">
 
@@ -660,7 +660,7 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
 - Give dev's a YAML snippet to fix the problems KRR finds
-- Analyze impact using KRR scan history to create PR's
+- Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
   <img src="./images/krr-create-pr.png">
 
