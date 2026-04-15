@@ -273,7 +273,7 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Give devs a YAML snippet to fix the problems KRR finds
 - Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
-  <img src="./images/krr-create-pr.png">
+  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation">
 
 <!-- USAGE EXAMPLES -->
 
@@ -662,7 +662,7 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Give dev's a YAML snippet to fix the problems KRR finds
 - Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
-  <img src="./images/krr-create-pr.png">
+  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation">
 
 </details>
 
