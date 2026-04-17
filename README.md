@@ -103,6 +103,22 @@ By right-sizing your containers with KRR, you can save an average of 69% on clou
 
 Read more about [how KRR works](#how-krr-works)
 
+## Quick Start Guide
+
+Get started with KRR in under 5 minutes:
+
+```bash
+# Install with Homebrew
+brew tap robusta-dev/homebrew-krr
+brew install krr
+
+# Verify installation
+krr version
+
+# Run your first scan
+krr simple
+```
+
 ## Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
