@@ -60,11 +60,6 @@
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for **optimizing resource allocation** in Kubernetes clusters. It gathers pod usage data from Prometheus and **recommends requests and limits** for CPU and memory. This **reduces costs and improves performance**.
 
-### **New:** Use HolmesGPT to generate fixes for KRR recommendations
-<p align="center">
-  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation" width="450">
-</p>
-
 ### Auto-Apply Mode
 
 Put right-sizing on auto-pilot by applying recommendations automatically. See the [KRR Enforcer docs](https://github.com/robusta-dev/krr/tree/main/enforcer).
@@ -91,6 +86,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
 - **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-free-saas-platform).
+- **AI-Powered Fixes**: [Generate fixes for KRR recommendations using HolmesGPT](#free-krr-ui-on-robusta-saas) on the free Robusta SaaS platform
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### How Much Can I Expect to Save with KRR?
@@ -274,6 +270,9 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Give devs a YAML snippet to fix the problems KRR finds
 - Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
+<p align="center">
+  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation" width="450">
+</p>
 
 <!-- USAGE EXAMPLES -->
 
