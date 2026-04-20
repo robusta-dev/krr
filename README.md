@@ -12,8 +12,7 @@
 ![Product Name Screen Shot][product-screenshot]
 
 <div align="center">
-  <h1 align="center">Kubernetes Resource Recommendations Based on Historical Data</h1>
-  <h2 align="center">Get recommendations based on your existing data in Prometheus/Coralogix/Thanos/Mimir and more!</h2>
+  <h2 align="center">Get Kubernetes Resource Recommendations based on your existing data in Prometheus/Coralogix/Thanos/Mimir and more!</h2>
   <p align="center">    
     <a href="#installation"><strong>Installation</strong></a>
     .
@@ -28,9 +27,6 @@
     <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
     ·
     <a href="#support">Support</a>
-    <br />
-    <br />
-    <a href="https://trendshift.io/repositories/7087" target="_blank"><img src="https://trendshift.io/api/badge/repositories/7087" alt="robusta-dev%2Fkrr | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
@@ -66,7 +62,7 @@ Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for **optimizing res
 
 ### Auto-Apply Mode
 
-**New:** Put right-sizing on auto-pilot by applying recommendations automatically. [Request beta access](https://robusta-dev.typeform.com/krr-auto-apply).
+Put right-sizing on auto-pilot by applying recommendations automatically. See the [KRR Enforcer docs](https://github.com/robusta-dev/krr/tree/main/enforcer).
 
 ### Data Integrations
 
@@ -90,6 +86,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
 - **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-free-saas-platform).
+- **AI-Powered Fixes**: [Generate fixes for KRR recommendations using HolmesGPT](#free-krr-ui-on-robusta-saas) on the Robusta SaaS platform
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### How Much Can I Expect to Save with KRR?
@@ -271,11 +268,11 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
 - Give devs a YAML snippet to fix the problems KRR finds
-- Analyze impact using KRR scan history
+- Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
-  <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
-      <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
-  </a>
+<p align="center">
+  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation" width="450">
+</p>
 
 <!-- USAGE EXAMPLES -->
 
@@ -662,11 +659,8 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
 - Give dev's a YAML snippet to fix the problems KRR finds
-- Analyze impact using KRR scan history
+- Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
-  <a href="https://www.loom.com/share/49ea188f67c545f0ae98508b448d1a8b">
-      <img src="https://cdn.loom.com/sessions/thumbnails/49ea188f67c545f0ae98508b448d1a8b-with-play.gif">
-  </a>
 
 </details>
 
