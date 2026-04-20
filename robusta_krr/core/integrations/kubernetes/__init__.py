@@ -35,6 +35,8 @@ from . import config_patch as _
 
 logger = logging.getLogger("krr")
 
+COREKINDS = ["Deployment", "DaemonSet", "StatefulSet", "Job", "CronJob", "ReplicaSet"]
+
 AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, V1Job]
 HPAKey = tuple[str, str, str]
 
@@ -404,7 +406,9 @@ class ClusterLoader:
         result = []
         try:
             for item in await self._list_namespaced_or_global_objects(kind, all_namespaces_request, namespaced_request):
+                logger.debug(f"Processing {kind} {item.metadata.name}")
                 if filter_workflows is not None and not filter_workflows(item):
+                    logger.debug(f"filter_workflows {filter_workflows(item)} for {kind} {item.metadata.name}") 
                     continue
 
                 containers = extract_containers(item)

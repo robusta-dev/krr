@@ -3,11 +3,11 @@ rm -rf build
 rm -rf dist
 
 # Active venv
-source .venv/bin/activate
+source .env/bin/activate
 pip install -r requirements.txt
 pip install pyinstaller
 
 # Build
-pyinstaller krr.py
+pyinstaller --onefile --target-architecture arm64 krr.py
 cd dist
-zip -r "krr-macos-v1.1.0.zip" krr
+# zip -r "krr-macos-v1.1.0.zip" krr
