@@ -12,8 +12,7 @@
 ![Product Name Screen Shot][product-screenshot]
 
 <div align="center">
-  <h1 align="center">Kubernetes Resource Recommendations Based on Historical Data</h1>
-  <h2 align="center">Get recommendations based on your existing data in Prometheus/Coralogix/Thanos/Mimir and more!</h2>
+  <h2 align="center">Get Kubernetes Resource Recommendations based on your existing data in Prometheus/Coralogix/Thanos/Mimir and more!</h2>
   <p align="center">    
     <a href="#installation"><strong>Installation</strong></a>
     .
@@ -28,9 +27,6 @@
     <a href="https://github.com/robusta-dev/krr/issues">Request Feature</a>
     ·
     <a href="#support">Support</a>
-    <br />
-    <br />
-    <a href="https://trendshift.io/repositories/7087" target="_blank"><img src="https://trendshift.io/api/badge/repositories/7087" alt="robusta-dev%2Fkrr | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
   </p>
 </div>
 <!-- TABLE OF CONTENTS -->
@@ -63,6 +59,11 @@
 ## About The Project
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for **optimizing resource allocation** in Kubernetes clusters. It gathers pod usage data from Prometheus and **recommends requests and limits** for CPU and memory. This **reduces costs and improves performance**.
+
+### **New:** Use HolmesGPT to generate fixes for KRR recommendations
+<p align="center">
+  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation" width="450">
+</p>
 
 ### Auto-Apply Mode
 
@@ -273,7 +274,6 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Give devs a YAML snippet to fix the problems KRR finds
 - Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
-  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation">
 
 <!-- USAGE EXAMPLES -->
 
@@ -662,7 +662,6 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Give dev's a YAML snippet to fix the problems KRR finds
 - Automatically generate fixes for KRR recommendations using AI and HolmesGPT
 
-  <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation">
 
 </details>
 
