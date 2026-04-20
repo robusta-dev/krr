@@ -86,7 +86,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
 - **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-free-saas-platform).
-- **AI-Powered Fixes**: [Generate fixes for KRR recommendations using HolmesGPT](#free-krr-ui-on-robusta-saas) on the free Robusta SaaS platform
+- **AI-Powered Fixes**: [Generate fixes for KRR recommendations using HolmesGPT](#free-krr-ui-on-robusta-saas) on the Robusta SaaS platform
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### How Much Can I Expect to Save with KRR?
