@@ -67,7 +67,7 @@ Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for **optimizing res
 
 ### Auto-Apply Mode
 
-**New:** Put right-sizing on auto-pilot by applying recommendations automatically. [Request beta access](https://robusta-dev.typeform.com/krr-auto-apply).
+Put right-sizing on auto-pilot by applying recommendations automatically. See the [KRR Enforcer docs](https://github.com/robusta-dev/krr/tree/main/enforcer).
 
 ### Data Integrations
 
