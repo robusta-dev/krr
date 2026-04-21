@@ -17,6 +17,8 @@ from .metrics_service.prometheus_metrics_service import PrometheusMetricsService
 from .metrics_service.thanos_metrics_service import ThanosMetricsService
 from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 from .metrics_service.mimir_metrics_service import MimirMetricsService
+from .metrics_service.gcp_metrics_service import GcpManagedPrometheusMetricsService
+from .metrics_service.anthos_metrics_service import AnthosMetricsService
 
 if TYPE_CHECKING:
     from robusta_krr.core.abstract.strategies import BaseStrategy, MetricsPodData
@@ -53,7 +55,18 @@ class PrometheusMetricsLoader:
     ) -> Optional[PrometheusMetricsService]:
         if settings.prometheus_url is not None:
             logger.info("Prometheus URL is specified, will not auto-detect a metrics service")
-            metrics_to_check = [PrometheusMetricsService]
+            
+            # Check if the URL is for GCP Managed Prometheus
+            if "monitoring.googleapis.com" in settings.prometheus_url:
+                # Check if Anthos mode is explicitly enabled
+                if settings.gcp_anthos:
+                    logger.info("GCP Anthos mode enabled, using Anthos-specific service")
+                    metrics_to_check = [AnthosMetricsService]
+                else:
+                    logger.info("Detected GCP Managed Prometheus URL, using GCP-specific service")
+                    metrics_to_check = [GcpManagedPrometheusMetricsService]
+            else:
+                metrics_to_check = [PrometheusMetricsService]
         else:
             logger.info("No Prometheus URL is specified, trying to auto-detect a metrics service")
             metrics_to_check = [VictoriaMetricsService, ThanosMetricsService, MimirMetricsService, PrometheusMetricsService]
