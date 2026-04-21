@@ -5,6 +5,8 @@ import sys
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
 from rich.console import Console
@@ -17,7 +19,7 @@ from robusta_krr.core.models.objects import KindLiteral
 logger = logging.getLogger("krr")
 
 
-class Config(pd.BaseSettings):
+class Config(BaseSettings):
     quiet: bool = pd.Field(False)
     verbose: bool = pd.Field(False)
 
@@ -98,7 +100,8 @@ class Config(pd.BaseSettings):
     def Formatter(self) -> formatters.FormatterFunc:
         return formatters.find(self.format)
 
-    @pd.validator("prometheus_url")
+    @field_validator("prometheus_url")
+    @classmethod
     def validate_prometheus_url(cls, v: Optional[str]):
         if v is None:
             return None
@@ -110,14 +113,16 @@ class Config(pd.BaseSettings):
 
         return v
 
-    @pd.validator("prometheus_other_headers", pre=True)
+    @field_validator("prometheus_other_headers", mode="before")
+    @classmethod
     def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
         if isinstance(headers, dict):
             return headers
 
         return {k.strip().lower(): v.strip() for k, v in [header.split(":") for header in headers]}
 
-    @pd.validator("namespaces")
+    @field_validator("namespaces")
+    @classmethod
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
             return "*"
@@ -129,7 +134,8 @@ class Config(pd.BaseSettings):
 
         return [val.lower() for val in v]
 
-    @pd.validator("resources", pre=True)
+    @field_validator("resources", mode="before")
+    @classmethod
     def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
         if v == []:
             return "*"
@@ -138,7 +144,8 @@ class Config(pd.BaseSettings):
         # So this will preserve the big and small letters of the resource
         return [next(r for r in KindLiteral.__args__ if r.lower() == val.lower()) for val in v]
 
-    @pd.validator("job_grouping_labels", pre=True)
+    @field_validator("job_grouping_labels", mode="before")
+    @classmethod
     def validate_job_grouping_labels(cls, v: Union[list[str], str, None]) -> Union[list[str], None]:
         if v is None:
             return None
@@ -152,12 +159,14 @@ class Config(pd.BaseSettings):
         StrategySettingsType = StrategyType.get_settings_type()
         return StrategyType(StrategySettingsType(**self.other_args))  # type: ignore
 
-    @pd.validator("strategy")
+    @field_validator("strategy")
+    @classmethod
     def validate_strategy(cls, v: str) -> str:
         BaseStrategy.find(v)  # NOTE: raises if strategy is not found
         return v
 
-    @pd.validator("format")
+    @field_validator("format")
+    @classmethod
     def validate_format(cls, v: str) -> str:
         formatters.find(v)  # NOTE: raises if strategy is not found
         return v
@@ -213,7 +222,9 @@ class Config(pd.BaseSettings):
 
 # NOTE: This class is just a proxy for _config.
 # Import settings from this module and use it like it is just a config object.
-class _Settings(Config):  # Config here is used for type checking
+class _Settings:
+    """Proxy that delegates attribute access to the global _config instance."""
+
     def __init__(self) -> None:
         pass
 

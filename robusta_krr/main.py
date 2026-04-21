@@ -427,14 +427,14 @@ def load_commands() -> None:
                         name=field_name,
                         kind=inspect.Parameter.KEYWORD_ONLY,
                         default=OptionInfo(
-                            default=field_meta.default,
+                            default=field_info.default,
                             param_decls=list(set([f"--{field_name}", f"--{field_name.replace('_', '-')}"])),
-                            help=f"{field_meta.field_info.description}",
+                            help=f"{field_info.description}",
                             rich_help_panel="Strategy Settings",
                         ),
-                        annotation=__process_type(field_meta.type_),
+                        annotation=__process_type(field_info.annotation),
                     )
-                    for field_name, field_meta in strategy_type.get_settings_type().__fields__.items()
+                    for field_name, field_info in strategy_type.get_settings_type().model_fields.items()
                 ]
             )
 

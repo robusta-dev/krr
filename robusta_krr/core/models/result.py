@@ -69,8 +69,7 @@ class Result(pd.BaseModel):
     clusterSummary: dict[str, Any] = {}
     config: Optional[Config] = pd.Field(default_factory=Config.get_config)
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def model_post_init(self, __context: Any) -> None:
         self.score = self.__calculate_score()
 
     def format(self, formatter: Union[formatters.FormatterFunc, str]) -> Any:

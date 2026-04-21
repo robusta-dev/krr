@@ -5,6 +5,7 @@ import math
 from typing import Literal, Optional, TypeVar, Union
 
 import pydantic as pd
+from pydantic import field_validator
 from kubernetes.client.models import V1Container
 
 from robusta_krr.utils import resource_units
@@ -52,7 +53,7 @@ def format_diff(allocated, recommended, selector, multiplier=1, colored=False) -
 class ResourceAllocations(pd.BaseModel):
     requests: dict[ResourceType, RecommendationValue]
     limits: dict[ResourceType, RecommendationValue]
-    info: dict[ResourceType, Optional[str]] = {}
+    info: dict[ResourceType, Optional[str]] = pd.Field(default_factory=dict)
 
     @staticmethod
     def __parse_resource_value(value: RecommendationValueRaw) -> RecommendationValue:
@@ -67,7 +68,8 @@ class ResourceAllocations(pd.BaseModel):
 
         return float(value)
 
-    @pd.validator("requests", "limits", pre=True)
+    @field_validator("requests", "limits", mode="before")
+    @classmethod
     def validate_requests(
         cls, value: dict[ResourceType, RecommendationValueRaw]
     ) -> dict[ResourceType, RecommendationValue]:
