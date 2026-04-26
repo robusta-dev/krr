@@ -41,9 +41,6 @@ urllib3 = "^2.6.2"
 setuptools = "^80.9.0"
 zipp = "^3.19.1"
 tenacity = "^9.0.0"
-pygments = ">=2.20.0"
-pyasn1 = ">=0.6.3"
-pillow = ">=12.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
