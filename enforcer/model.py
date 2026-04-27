@@ -9,12 +9,14 @@ class PodOwner(BaseModel):
     name: str
     namespace: str
 
+
 class RsOwner(BaseModel):
     rs_name: str
     namespace: str
     owner_name: str
     owner_kind: str
     deletion_ts: Optional[float] = None
+
 
 class Resources(BaseModel):
     request: float
@@ -61,7 +63,6 @@ class WorkloadRecommendation(BaseModel):
 
     def get(self, container: str) -> Optional[ContainerRecommendation]:
         return self.container_recommendations.get(container, None)
-
 
     def add(self, container: str, recommendation: ContainerRecommendation):
         self.container_recommendations[container] = recommendation

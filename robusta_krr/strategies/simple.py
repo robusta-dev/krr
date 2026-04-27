@@ -71,7 +71,7 @@ class SimpleStrategySettings(StrategySettings):
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
-    
+
     display_name = "simple"
     rich_console = True
 
@@ -99,17 +99,17 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
             All parameters can be customized. For example: `krr simple --cpu_percentile=90 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
             """)
-        
+
         if not self.settings.allow_hpa:
             s += "\n" + textwrap.dedent(f"""\
                 This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
                 If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
                 You can override this behaviour by passing the --allow-hpa flag
-                """)        
+                """)
 
         s += "\nLearn more: [underline]https://github.com/robusta-dev/krr#algorithm[/underline]"
         return s
-        
+
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:

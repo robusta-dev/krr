@@ -21,10 +21,10 @@ CLUSTER_HEADER = "Cluster"
 SEVERITY_HEADER = "Severity"
 
 RESOURCE_REQUESTS_CURRENT_HEADER = "{resource_name} Requests Current"
-RESOURCE_REQUESTS_RECOMMENDED_HEADER = '{resource_name} Requests Recommended'
+RESOURCE_REQUESTS_RECOMMENDED_HEADER = "{resource_name} Requests Recommended"
 
 RESOURCE_LIMITS_CURRENT_HEADER = "{resource_name} Limits Current"
-RESOURCE_LIMITS_RECOMMENDED_HEADER = '{resource_name} Limits Recommended'
+RESOURCE_LIMITS_RECOMMENDED_HEADER = "{resource_name} Limits Recommended"
 
 
 def _format_value(val: Union[float, int]) -> str:
@@ -37,7 +37,7 @@ def _format_value(val: Union[float, int]) -> str:
     elif isinstance(val, str):
         return NAN_LITERAL
     else:
-        raise ValueError(f'unknown value: {val}')
+        raise ValueError(f"unknown value: {val}")
 
 
 def _format_request_current(item: ResourceScan, resource: ResourceType, selector: str) -> str:

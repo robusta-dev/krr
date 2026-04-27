@@ -52,14 +52,20 @@ class Config(pd.BaseSettings):
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
-    
+
     # Discovery settings
     discovery_job_batch_size: int = pd.Field(5000, ge=1, description="Batch size for Kubernetes job API calls")
-    discovery_job_max_batches: int = pd.Field(100, ge=1, description="Maximum number of job batches to process to prevent infinite loops")
-    
+    discovery_job_max_batches: int = pd.Field(
+        100, ge=1, description="Maximum number of job batches to process to prevent infinite loops"
+    )
+
     # Job grouping settings
-    job_grouping_labels: Union[list[str], str, None] = pd.Field(None, description="Label name(s) to use for grouping jobs into GroupedJob workload type")
-    job_grouping_limit: int = pd.Field(500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group")
+    job_grouping_labels: Union[list[str], str, None] = pd.Field(
+        None, description="Label name(s) to use for grouping jobs into GroupedJob workload type"
+    )
+    job_grouping_limit: int = pd.Field(
+        500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group"
+    )
 
     # Logging Settings
     format: str
@@ -73,7 +79,7 @@ class Config(pd.BaseSettings):
     publish_scan_url: Optional[str] = pd.Field(None)
     start_time: Optional[str] = pd.Field(None)
     scan_id: Optional[str] = pd.Field(None)
-    named_sinks: Optional[list[str]] = pd.Field(None) 
+    named_sinks: Optional[list[str]] = pd.Field(None)
 
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
@@ -144,7 +150,7 @@ class Config(pd.BaseSettings):
             return None
         if isinstance(v, str):
             # Split comma-separated string into list
-            return [label.strip() for label in v.split(',')]
+            return [label.strip() for label in v.split(",")]
         return v
 
     def create_strategy(self) -> AnyStrategy:
