@@ -5,11 +5,9 @@ from rich.table import Table
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.allocations import (
-    RecommendationValue,
     format_recommendation_value,
     format_diff,
     NONE_LITERAL,
-    NAN_LITERAL,
 )
 from robusta_krr.core.models.result import ResourceScan, ResourceType, Result
 from robusta_krr.core.models.config import settings

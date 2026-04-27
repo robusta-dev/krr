@@ -101,7 +101,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
             """)
 
         if not self.settings.allow_hpa:
-            s += "\n" + textwrap.dedent(f"""\
+            s += "\n" + textwrap.dedent("""\
                 This strategy does not work with objects with HPA defined (Horizontal Pod Autoscaler).
                 If HPA is defined for CPU or Memory, the strategy will return "?" for that resource.
                 You can override this behaviour by passing the --allow-hpa flag
