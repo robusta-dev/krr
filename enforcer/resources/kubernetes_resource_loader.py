@@ -36,19 +36,21 @@ class KubernetesResourceLoader:
                         if controllers:
                             rs_owner = controllers[0]
 
-                    cluster_rs.append(RsOwner(
-                        rs_name=replicaset.metadata.name,
-                        namespace=replicaset.metadata.namespace,
-                        owner_name=rs_owner.name,
-                        owner_kind=rs_owner.kind,
-                    ))
+                    cluster_rs.append(
+                        RsOwner(
+                            rs_name=replicaset.metadata.name,
+                            namespace=replicaset.metadata.namespace,
+                            owner_name=rs_owner.name,
+                            owner_kind=rs_owner.kind,
+                        )
+                    )
 
             continue_ref = replicasets.metadata._continue
             if not continue_ref:
                 break
-            
+
             if batch_num == DISCOVERY_MAX_BATCHES - 1:
                 replicas_limit = DISCOVERY_MAX_BATCHES * DISCOVERY_BATCH_SIZE
                 logging.warning(f"Reached replicas loading limit: {replicas_limit}.")
-        
+
         return cluster_rs

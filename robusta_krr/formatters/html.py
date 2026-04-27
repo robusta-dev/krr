@@ -4,6 +4,7 @@ from robusta_krr.core.abstract import formatters
 from robusta_krr.core.models.result import Result
 from .table import table
 
+
 @formatters.register("html")
 def html(result: Result) -> str:
     console = Console(record=True)

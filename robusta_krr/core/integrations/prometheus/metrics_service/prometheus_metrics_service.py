@@ -21,7 +21,7 @@ from ..metrics import PrometheusMetric
 from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus_config
 from .base_metric_service import MetricsService
 
-PROM_REFRESH_CREDS_SEC = int(os.environ.get("PROM_REFRESH_CREDS_SEC", "600")) # 10 minutes
+PROM_REFRESH_CREDS_SEC = int(os.environ.get("PROM_REFRESH_CREDS_SEC", "600"))  # 10 minutes
 
 logger = logging.getLogger("krr")
 
@@ -114,10 +114,12 @@ class PrometheusMetricsService(MetricsService):
 
     def get_prometheus(self):
         now = datetime.utcnow()
-        if (not self.prometheus
+        if (
+            not self.prometheus
             or not self._last_init_at
-            or now - self._last_init_at >= timedelta(seconds=PROM_REFRESH_CREDS_SEC)):
-            self.prom_config = generate_prometheus_config(url=self.url, headers=self.headers, metrics_service=self) # type: ignore
+            or now - self._last_init_at >= timedelta(seconds=PROM_REFRESH_CREDS_SEC)
+        ):
+            self.prom_config = generate_prometheus_config(url=self.url, headers=self.headers, metrics_service=self)  # type: ignore
             self.prometheus = get_custom_prometheus_connect(self.prom_config)
             self._last_init_at = now
         return self.prometheus
@@ -229,23 +231,25 @@ class PrometheusMetricsService(MetricsService):
         return data
 
     async def query_and_validate(self, prom_query) -> Any:
-            result = await self.query(prom_query)
-            if len(result) != 1:
-                logger.warning(f"Error: Expected exactly one result from Prometheus query but instead got {len(result)}. {prom_query}")
-                return None
+        result = await self.query(prom_query)
+        if len(result) != 1:
+            logger.warning(
+                f"Error: Expected exactly one result from Prometheus query but instead got {len(result)}. {prom_query}"
+            )
+            return None
 
-            result_value = result[0].get("value")
+        result_value = result[0].get("value")
 
-            # Verify that the "value" list has exactly two elements (timestamp and value)
-            if not result_value:
-                logger.warning(f"Error: Missing value in Prometheus result. {prom_query}")
-                return None
+        # Verify that the "value" list has exactly two elements (timestamp and value)
+        if not result_value:
+            logger.warning(f"Error: Missing value in Prometheus result. {prom_query}")
+            return None
 
-            if len(result_value) != 2:
-                logger.warning(f"Error: Prometheus result values are not of expected size. {prom_query}")
-                return None
+        if len(result_value) != 2:
+            logger.warning(f"Error: Prometheus result values are not of expected size. {prom_query}")
+            return None
 
-            return result_value[1]
+        return result_value[1]
 
     async def get_cluster_summary(self) -> Dict[str, Any]:
         cluster_label = self.get_prometheus_cluster_label()
@@ -273,7 +277,7 @@ class PrometheusMetricsService(MetricsService):
                 "cluster_memory": float(cluster_memory_result),
                 "cluster_cpu": float(cluster_cpu_result),
                 "kube_system_mem_req": float(kube_system_mem_result),
-                "kube_system_cpu_req": float(kube_system_cpu_result)
+                "kube_system_cpu_req": float(kube_system_cpu_result),
             }
 
         except Exception as e:
@@ -301,32 +305,28 @@ class PrometheusMetricsService(MetricsService):
         pod_owner_kind: str
         cluster_label = self.get_prometheus_cluster_label()
         if object.kind in ["Deployment", "Rollout"]:
-            replicasets = await self.query(
-                f"""
+            replicasets = await self.query(f"""
                     kube_replicaset_owner{{
                         owner_name="{object.name}",
                         owner_kind="{object.kind}",
                         namespace="{object.namespace}"
                         {cluster_label}
                     }}[{period_literal}]
-                """
-            )
+                """)
             pod_owners = {replicaset["metric"]["replicaset"] for replicaset in replicasets}
             pod_owner_kind = "ReplicaSet"
 
             del replicasets
 
         elif object.kind == "DeploymentConfig":
-            replication_controllers = await self.query(
-                f"""
+            replication_controllers = await self.query(f"""
                     kube_replicationcontroller_owner{{
                         owner_name="{object.name}",
                         owner_kind="{object.kind}",
                         namespace="{object.namespace}"
                         {cluster_label}
                     }}[{period_literal}]
-                """
-            )
+                """)
             pod_owners = {
                 repl_controller["metric"]["replicationcontroller"] for repl_controller in replication_controllers
             }
@@ -335,22 +335,20 @@ class PrometheusMetricsService(MetricsService):
             del replication_controllers
 
         elif object.kind == "CronJob":
-            jobs = await self.query(
-                f"""
+            jobs = await self.query(f"""
                     kube_job_owner{{
                         owner_name="{object.name}",
                         owner_kind="{object.kind}",
                         namespace="{object.namespace}"
                         {cluster_label}
                     }}[{period_literal}]
-                """
-            )
+                """)
             pod_owners = {job["metric"]["job_name"] for job in jobs}
             pod_owner_kind = "Job"
 
             del jobs
         elif object.kind == "GroupedJob":
-            if hasattr(object._api_resource, '_grouped_jobs'):
+            if hasattr(object._api_resource, "_grouped_jobs"):
                 pod_owners = [job.name for job in object._api_resource._grouped_jobs]
                 pod_owner_kind = "Job"
             else:
@@ -364,8 +362,7 @@ class PrometheusMetricsService(MetricsService):
         batch_size = int(os.environ.get("KRR_OWNER_BATCH_SIZE", 100))
         for owner_group in batched(pod_owners, batch_size):
             owners_regex = "|".join(owner_group)
-            related_pods_result_item = await self.query(
-                f"""
+            related_pods_result_item = await self.query(f"""
                     last_over_time(
                         kube_pod_owner{{
                             owner_name=~"{owners_regex}",
@@ -374,8 +371,7 @@ class PrometheusMetricsService(MetricsService):
                             {cluster_label}
                         }}[{period_literal}]
                     )
-                """
-            )
+                """)
             related_pods_result.extend(related_pods_result_item)
         if related_pods_result == []:
             return []
@@ -388,16 +384,14 @@ class PrometheusMetricsService(MetricsService):
 
         for pod_group in batched(related_pods, 100):
             group_regex = "|".join(pod_group)
-            pods_status_result = await self.query(
-                f"""
+            pods_status_result = await self.query(f"""
                     kube_pod_status_phase{{
                         phase="Running",
                         {related_pod_label}=~"{group_regex}",
                         namespace="{object.namespace}"
                         {cluster_label}
                     }} == 1
-                """
-            )
+                """)
             current_pods_set |= {pod["metric"][related_pod_label] for pod in pods_status_result}
             del pods_status_result
 

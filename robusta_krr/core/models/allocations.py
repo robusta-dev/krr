@@ -28,6 +28,7 @@ Self = TypeVar("Self", bound="ResourceAllocations")
 NONE_LITERAL = "unset"
 NAN_LITERAL = "?"
 
+
 def format_recommendation_value(value: RecommendationValue) -> str:
     if value is None:
         return NONE_LITERAL
@@ -35,6 +36,7 @@ def format_recommendation_value(value: RecommendationValue) -> str:
         return NAN_LITERAL
     else:
         return resource_units.format(value)
+
 
 def format_diff(allocated, recommended, selector, multiplier=1, colored=False) -> str:
     if recommended is None or isinstance(recommended.value, str) or selector != "requests":
@@ -46,9 +48,10 @@ def format_diff(allocated, recommended, selector, multiplier=1, colored=False) -
         if colored:
             diff_sign = "[green]+[/green]" if diff_val >= 0 else "[red]-[/red]"
         else:
-            diff_sign = "+" if diff_val >= 0 else "-"         
+            diff_sign = "+" if diff_val >= 0 else "-"
         return f"{diff_sign}{format_recommendation_value(abs(diff_val) * multiplier)}"
-    
+
+
 class ResourceAllocations(pd.BaseModel):
     requests: dict[ResourceType, RecommendationValue]
     limits: dict[ResourceType, RecommendationValue]
@@ -88,19 +91,27 @@ class ResourceAllocations(pd.BaseModel):
 
         return cls(
             requests={
-                ResourceType.CPU: container.resources.requests.get("cpu")
-                if container.resources and container.resources.requests
-                else None,
-                ResourceType.Memory: container.resources.requests.get("memory")
-                if container.resources and container.resources.requests
-                else None,
+                ResourceType.CPU: (
+                    container.resources.requests.get("cpu")
+                    if container.resources and container.resources.requests
+                    else None
+                ),
+                ResourceType.Memory: (
+                    container.resources.requests.get("memory")
+                    if container.resources and container.resources.requests
+                    else None
+                ),
             },
             limits={
-                ResourceType.CPU: container.resources.limits.get("cpu")
-                if container.resources and container.resources.limits
-                else None,
-                ResourceType.Memory: container.resources.limits.get("memory")
-                if container.resources and container.resources.limits
-                else None,
+                ResourceType.CPU: (
+                    container.resources.limits.get("cpu")
+                    if container.resources and container.resources.limits
+                    else None
+                ),
+                ResourceType.Memory: (
+                    container.resources.limits.get("memory")
+                    if container.resources and container.resources.limits
+                    else None
+                ),
             },
         )
