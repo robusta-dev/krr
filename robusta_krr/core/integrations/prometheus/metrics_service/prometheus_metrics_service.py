@@ -254,19 +254,18 @@ class PrometheusMetricsService(MetricsService):
     async def get_cluster_summary(self) -> Dict[str, Any]:
         cluster_label = self.get_prometheus_cluster_label()
 
-        # use this for queries with no labels. turn ', cluster="xxx"' to 'cluster="xxx"'
-        single_cluster_label = cluster_label.replace(",", "")
         memory_query = f"""
-            sum(max by (instance) (machine_memory_bytes{{ {single_cluster_label} }}))
+            sum(kube_node_status_capacity{{ resource="memory" {cluster_label} }})
         """
+
         cpu_query = f"""
-            sum(max by (instance) (machine_cpu_cores{{ {single_cluster_label} }}))
+            sum(kube_node_status_capacity{{ resource="cpu" {cluster_label} }})
         """
         kube_system_requests_mem = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='memory' {cluster_label} }})  by (job, pod, container) )
+            sum(max(kube_pod_container_resource_requests{{ namespace="kube-system", resource="memory" {cluster_label} }})  by (job, pod, container) )
         """
         kube_system_requests_cpu = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='cpu' {cluster_label} }})  by (job, pod, container) )
+            sum(max(kube_pod_container_resource_requests{{ namespace="kube-system", resource="cpu" {cluster_label} }})  by (job, pod, container) )
         """
         try:
             cluster_memory_result = await self.query_and_validate(memory_query)
