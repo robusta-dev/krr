@@ -5,6 +5,7 @@ import sys
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
+import pydantic_settings as pds
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
 from rich.console import Console
@@ -17,7 +18,7 @@ from robusta_krr.core.models.objects import KindLiteral
 logger = logging.getLogger("krr")
 
 
-class Config(pd.BaseSettings):
+class Config(pds.BaseSettings):
     quiet: bool = pd.Field(False)
     verbose: bool = pd.Field(False)
 
