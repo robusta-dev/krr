@@ -408,11 +408,11 @@ def load_commands() -> None:
                         start_time=start_time,
                         scan_id=scan_id,
                         named_sinks=named_sinks,
-                        )
+                    )
                     Config.set_config(config)
                 except ValidationError as e:
                     logger.exception("Error occured while parsing arguments")
-                    publish_input_error( publish_scan_url, scan_id, start_time, str(e), named_sinks)
+                    publish_input_error(publish_scan_url, scan_id, start_time, str(e), named_sinks)
                 else:
                     runner = Runner()
                     exit_code = asyncio.run(runner.run())

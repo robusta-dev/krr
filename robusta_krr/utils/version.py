@@ -14,7 +14,7 @@ def get_version() -> str:
     # the version string was patched by a release - return __version__ which will be correct
     if robusta_krr.__version__ != "dev":
         return robusta_krr.__version__
-    
+
     # we are running from an unreleased dev version
     try:
         # Get the latest git tag
@@ -28,7 +28,7 @@ def get_version() -> str:
         dirty = "-dirty" if status else ""
 
         return f"{tag}-{branch}{dirty}"
-    
+
     except Exception:
         return robusta_krr.__version__
 

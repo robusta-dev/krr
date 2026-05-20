@@ -8,6 +8,14 @@ A mutating webhook server that automatically enforces [KRR (Kubernetes Resource 
 - **Flexible Enforcement Modes**: Support for enforce/ignore modes per workload
 - **REST API**: Query recommendations via HTTP endpoints
 
+## Prerequisites
+
+The KRR Enforcer requires Robusta (which bundles KRR) to be installed in your cluster, along with a Robusta UI account (free tier available) to store KRR scan results.
+
+Start by installing Robusta in your cluster using the [all-in-one installation guide](https://docs.robusta.dev/master/setup-robusta/installation/all-in-one-installation.html)
+
+Once Robusta is running, you can install the KRR Enforcer as described below.
+
 ## Enforcement Modes
 
 Enforcement can be configured globally or on a per-workload basis.
@@ -44,7 +52,6 @@ The webhook uses `failurePolicy: Ignore` by default, meaning if the webhook fail
 ### Prerequisites
 - Helm 3.x
 - Prometheus Operator (optional, for metrics collection)
-- Robusta UI account - used to store KRR scan results
 
 ### Certificate
 

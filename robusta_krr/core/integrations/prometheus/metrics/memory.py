@@ -70,6 +70,7 @@ class MemoryAmountLoader(PrometheusMetric):
             )
         """
 
+
 # TODO: Need to battle test if this one is correct.
 class MaxOOMKilledMemoryLoader(PrometheusMetric):
     """
