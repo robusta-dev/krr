@@ -1,3 +1,5 @@
+"""Thanos-based metrics service implementation."""
+
 from typing import Optional
 
 from kubernetes.client import ApiClient
@@ -9,6 +11,7 @@ from .prometheus_metrics_service import PrometheusMetricsService
 
 
 class ThanosMetricsDiscovery(MetricsServiceDiscovery):
+    """Discover Thanos instances in a Kubernetes cluster."""
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Thanos URL using selectors.

@@ -1,3 +1,5 @@
+"""Runner module for executing Kubernetes resource recommendations."""
+
 import asyncio
 import logging
 import math
@@ -39,13 +41,18 @@ def custom_print(*objects, rich: bool = True, force: bool = False) -> None:
         print_func(*objects)  # type: ignore
 
 
-class CriticalRunnerException(Exception): ...
+class CriticalRunnerException(Exception):
+    """Exception raised for critical runner errors."""
 
 
 class Runner:
+    """Main runner for calculating and reporting Kubernetes resource recommendations."""
+
     EXPECTED_EXCEPTIONS = (KeyboardInterrupt, PrometheusNotFound)
 
     def __init__(self) -> None:
+        """Initialize the Runner with Kubernetes loader, strategy, and executor."""
+
         self._k8s_loader = KubernetesLoader()
         self._metrics_service_loaders: dict[Optional[str], Union[PrometheusMetricsLoader, Exception]] = {}
         self._metrics_service_loaders_error_logged: set[Exception] = set()
@@ -57,6 +64,8 @@ class Runner:
         self._executor = ThreadPoolExecutor(settings.max_workers)
 
     def _get_prometheus_loader(self, cluster: Optional[str]) -> Optional[PrometheusMetricsLoader]:
+        """Get or create a PrometheusMetricsLoader for the given cluster."""
+
         if cluster not in self._metrics_service_loaders:
             try:
                 self._metrics_service_loaders[cluster] = PrometheusMetricsLoader(cluster=cluster)
@@ -76,10 +85,14 @@ class Runner:
 
     @staticmethod
     def __parse_version_string(version: str) -> tuple[int, ...]:
+        """Parse a version string into a tuple of integers."""
+
         version_trimmed = version.replace("-dev", "").replace("v", "")
         return tuple(map(int, version_trimmed.split(".")))
 
     def __check_newer_version_available(self, current_version: str, latest_version: str) -> bool:
+        """Check if a newer version of KRR is available."""
+
         try:
             current_version_parsed = self.__parse_version_string(current_version)
             latest_version_parsed = self.__parse_version_string(latest_version)
@@ -91,6 +104,8 @@ class Runner:
             return False
 
     async def _greet(self) -> None:
+        """Print the greeting message with version and strategy info."""
+
         if settings.quiet:
             return
 
@@ -106,6 +121,8 @@ class Runner:
         custom_print("")
 
     def _process_result(self, result: Result) -> None:
+        """Format, display, and export the scan result."""
+
         result.errors = self.errors
 
         Formatter = settings.Formatter
@@ -169,6 +186,8 @@ class Runner:
                 os.remove(file_name)
 
     def _upload_to_azure_blob(self, file_name: str, base_sas_url: str):
+        """Upload a file to Azure Blob Storage using a SAS URL."""
+
         try:
             logger.info(f"Uploading {file_name} to Azure Blob Storage")
 
@@ -286,6 +305,8 @@ class Runner:
         return f"https://portal.azure.com/#view/Microsoft_Azure_Storage/ContainerMenuBlade/~/overview/storageAccountId/%2Fsubscriptions%2F{settings.azure_subscription_id}%2FresourceGroups%2F{settings.azure_resource_group}%2Fproviders%2FMicrosoft.Storage%2FstorageAccounts%2F{storage_account}/path/{container}"
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
+        """Return the minimal allowed value for a given resource type."""
+
         if resource == ResourceType.CPU:
             return 1 / 1000 * settings.cpu_min_value
         elif resource == ResourceType.Memory:
@@ -294,6 +315,8 @@ class Runner:
             return 0
 
     def _round_value(self, value: Optional[float], resource: ResourceType) -> Optional[float]:
+        """Round a resource value to the appropriate precision and enforce minimums."""
+
         if value is None or math.isnan(value):
             return value
 
@@ -314,6 +337,8 @@ class Runner:
         return max(rounded, minimal)
 
     def _format_result(self, result: RunResult) -> RunResult:
+        """Round and format all resource recommendations in a result."""
+
         return {
             resource: ResourceRecommendation(
                 request=self._round_value(recommendation.request, resource),
@@ -324,6 +349,8 @@ class Runner:
         }
 
     async def _calculate_object_recommendations(self, object: K8sObjectData) -> Optional[RunResult]:
+        """Calculate resource recommendations for a single Kubernetes object."""
+
         try:
             prometheus_loader = self._get_prometheus_loader(object.cluster)
 
@@ -363,6 +390,8 @@ class Runner:
             return None
 
     async def _check_data_availability(self, cluster: Optional[str]) -> None:
+        """Check if enough historical data is available for the cluster."""
+
         prometheus_loader = self._get_prometheus_loader(cluster)
         if prometheus_loader is None:
             return
@@ -402,6 +431,8 @@ class Runner:
             )
 
     async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> Optional[ResourceScan]:
+        """Gather resource allocations and recommendations for a Kubernetes object."""
+
         recommendation = await self._calculate_object_recommendations(k8s_object)
 
         self.__progressbar.progress()
@@ -419,6 +450,8 @@ class Runner:
         )
 
     async def _collect_result(self) -> Result:
+        """Collect all scan results from clusters and workloads."""
+
         clusters = await self._k8s_loader.list_clusters()
         if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
@@ -509,15 +542,21 @@ class Runner:
     def _send_result(
         self, url: str, start_time: datetime, scan_id: str, named_sinks: Optional[List[str]], result: Result
     ):
+        """Send the scan result to the configured destination."""
+
         result_dict = json.loads(result.json(indent=2))
         _send_scan_payload(url, scan_id, start_time, result_dict, named_sinks, is_error=False)
 
 
 def publish_input_error(url: str, scan_id: str, start_time: str, error: str, named_sinks: Optional[List[str]]):
+    """Publish an input validation error to the configured scan URL."""
+
     _send_scan_payload(url, scan_id, start_time, error, named_sinks, is_error=True)
 
 
 def publish_error(error: str):
+    """Publish an error to the configured scan URL."""
+
     _send_scan_payload(
         settings.publish_scan_url, settings.scan_id, settings.start_time, error, settings.named_sinks, is_error=True
     )
@@ -525,6 +564,8 @@ def publish_error(error: str):
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=8), reraise=True)
 def _post_scan_request(url: str, headers: dict, payload: dict, scan_id: str, is_error: bool):
+    """Post a scan request to the given URL with retry logic."""
+
     logger_msg = "Sending error scan" if is_error else "Sending scan"
     logger.info(f"{logger_msg} for scan_id={scan_id} to url={url}")
     response = requests.post(url, headers=headers, json=payload)
@@ -541,6 +582,8 @@ def _send_scan_payload(
     named_sinks: Optional[List[str]],
     is_error: bool = False,
 ):
+    """Build and send a scan payload to the configured endpoint."""
+
     if not url or not scan_id or not start_time:
         logger.debug(
             f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}"

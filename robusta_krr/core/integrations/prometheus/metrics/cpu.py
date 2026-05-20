@@ -1,3 +1,5 @@
+"""CPU metric loaders for Prometheus queries."""
+
 from robusta_krr.core.models.objects import K8sObjectData
 
 from .base import PrometheusMetric, QueryType
@@ -11,6 +13,7 @@ class CPULoader(PrometheusMetric):
     query_type: QueryType = QueryType.QueryRange
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        """Return a PromQL query for CPU usage rate."""
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
@@ -36,7 +39,10 @@ def PercentileCPULoader(percentile: float) -> type[PrometheusMetric]:
         raise ValueError("percentile must be between 0 and 100")
 
     class PercentileCPULoader(PrometheusMetric):
+        """Metric loader for percentile CPU usage over a time range."""
+
         def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+            """Return a PromQL query for percentile CPU usage."""
             pods_selector = "|".join(pod.name for pod in object.pods)
             cluster_label = self.get_prometheus_cluster_label()
             return f"""
@@ -65,6 +71,7 @@ class CPUAmountLoader(PrometheusMetric):
     """
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        """Return a PromQL query for CPU data point count."""
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""

@@ -1,3 +1,5 @@
+"""Service discovery utilities for finding in-cluster Prometheus services."""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -15,10 +17,12 @@ logger = logging.getLogger("krr")
 
 
 class ServiceDiscovery:
+    """Discovers in-cluster services and ingresses by label selectors."""
     SERVICE_CACHE_TTL_SEC = 900
     cache: TTLCache = TTLCache(maxsize=1, ttl=SERVICE_CACHE_TTL_SEC)
 
     def __init__(self, api_client: Optional[ApiClient] = None) -> None:
+        """Initialize ServiceDiscovery with an optional Kubernetes API client."""
         self.api_client = api_client
 
     def find_service_url(self, label_selector: str) -> Optional[str]:
@@ -87,6 +91,8 @@ class ServiceDiscovery:
 
 
 class MetricsServiceDiscovery(ServiceDiscovery, ABC):
+    """Abstract base class for discovering metrics service URLs."""
     @abstractmethod
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
+        """Find the metrics service URL using service discovery."""
         pass

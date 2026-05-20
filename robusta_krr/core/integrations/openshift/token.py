@@ -1,3 +1,5 @@
+"""Utilities for loading OpenShift service account tokens."""
+
 from typing import Optional
 
 from robusta_krr.core.models.config import settings
@@ -7,6 +9,7 @@ TOKEN_LOCATION = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 
 def load_token() -> Optional[str]:
+    """Load the OpenShift service account token if OpenShift is enabled."""
     if not settings.openshift:
         return None
 

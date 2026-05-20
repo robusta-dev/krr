@@ -1,3 +1,5 @@
+"""Base classes for Prometheus metric loaders."""
+
 from __future__ import annotations
 
 import abc
@@ -20,16 +22,22 @@ from robusta_krr.core.models.objects import K8sObjectData
 
 
 class PrometheusSeries(TypedDict):
+    """TypedDict representing a single Prometheus time series result."""
+
     metric: dict[str, Any]
     values: list[list[float]]
 
 
 class QueryType(str, enum.Enum):
+    """Enum for Prometheus query types."""
+
     Query = "query"
     QueryRange = "query_range"
 
 
 class PrometheusMetricData(pd.BaseModel):
+    """Pydantic model holding data needed for a Prometheus query."""
+
     query: str
     start_time: datetime.datetime
     end_time: datetime.datetime
@@ -68,6 +76,7 @@ class PrometheusMetric(BaseMetric):
         service_name: str,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
+        """Initialize a PrometheusMetric instance."""
         self.prometheus = prometheus
         self.service_name = service_name
 
@@ -119,6 +128,7 @@ class PrometheusMetric(BaseMetric):
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     def _query_prometheus_sync(self, data: PrometheusMetricData) -> list[PrometheusSeries]:
+        """Execute a synchronous Prometheus query with retry logic."""
         if data.type == QueryType.QueryRange:
             response = self.prometheus.safe_custom_query_range(
                 query=data.query,
@@ -207,6 +217,7 @@ class PrometheusMetric(BaseMetric):
 
     @staticmethod
     def get_target_name(series: PrometheusSeries) -> Optional[str]:
+        """Extract the target name (pod, container, or node) from a series."""
         for label in ["pod", "container", "node"]:
             if label in series["metric"]:
                 return series["metric"][label]

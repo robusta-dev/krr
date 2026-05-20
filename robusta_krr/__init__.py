@@ -1,3 +1,5 @@
+"""Robusta KRR - Kubernetes Resource Recommender."""
+
 from .main import run
 
 __version__ = "dev"

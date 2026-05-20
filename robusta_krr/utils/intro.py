@@ -1,3 +1,5 @@
+"""Utilities for loading the KRR intro message."""
+
 import requests
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -11,6 +13,7 @@ TIMEOUT = 0.5
 
 # Synchronous function to fetch intro message
 def fetch_intro_message() -> str:
+    """Fetch the intro message from the online API or a local fallback file."""
     try:
         # Attempt to get the message from the URL
         response = requests.get(ONLINE_LINK, params={"version": get_version()}, timeout=TIMEOUT)
@@ -32,6 +35,7 @@ def fetch_intro_message() -> str:
 
 
 async def load_intro_message() -> str:
+    """Load the intro message asynchronously in a separate thread."""
     loop = asyncio.get_running_loop()
     # Use a ThreadPoolExecutor to run the synchronous function in a separate thread
     with ThreadPoolExecutor() as pool:

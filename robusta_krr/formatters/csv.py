@@ -1,3 +1,5 @@
+"""CSV output formatter with diff information."""
+
 import csv
 import io
 import itertools
@@ -27,6 +29,7 @@ RESOURCE_LIMITS_HEADER = "{resource_name} Limits"
 
 
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
+    """Format a resource request or limit as a string with diff."""
     allocated = getattr(item.object.allocations, selector)[resource]
     recommended = getattr(item.recommended, selector)[resource]
 
@@ -41,6 +44,7 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
 
 
 def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current: int) -> str:
+    """Format the total resource diff across all pods."""
     selector = "requests"
     allocated = getattr(item.object.allocations, selector)[resource]
     recommended = getattr(item.recommended, selector)[resource]
@@ -50,6 +54,7 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
 
 @formatters.register("csv")
 def csv_exporter(result: Result) -> str:
+    """Format the result as CSV with diff information."""
     # We need to order the resource columns so that they are in the format of Namespace,Name,Pods,Old Pods,Type,Container,CPU Diff,CPU Requests,CPU Limits,Memory Diff,Memory Requests,Memory Limits
     csv_columns = ["Namespace", "Name", "Pods", "Old Pods", "Type", "Container"]
 

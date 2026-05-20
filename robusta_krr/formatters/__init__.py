@@ -1,3 +1,5 @@
+"""Output formatters for KRR results."""
+
 from .json import json
 from .pprint import pprint
 from .table import table

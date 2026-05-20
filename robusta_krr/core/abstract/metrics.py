@@ -1,3 +1,5 @@
+"""Abstract base classes for metric data loaders."""
+
 import datetime
 from abc import ABC, abstractmethod
 
@@ -17,4 +19,6 @@ class BaseMetric(ABC):
     @abstractmethod
     async def load_data(
         self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
-    ) -> PodsTimeData: ...
+    ) -> PodsTimeData:
+        """Load metric data for the given object over the specified period and step."""
+        ...

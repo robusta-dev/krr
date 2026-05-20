@@ -1,3 +1,5 @@
+"""Memory metric loaders for Prometheus queries."""
+
 from robusta_krr.core.models.objects import K8sObjectData
 
 from .base import PrometheusMetric, QueryType
@@ -11,6 +13,7 @@ class MemoryLoader(PrometheusMetric):
     query_type: QueryType = QueryType.QueryRange
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        """Return a PromQL query for memory working set."""
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
@@ -31,6 +34,7 @@ class MaxMemoryLoader(PrometheusMetric):
     """
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        """Return a PromQL query for max memory working set over time."""
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
@@ -54,6 +58,7 @@ class MemoryAmountLoader(PrometheusMetric):
     """
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        """Return a PromQL query for memory data point count."""
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""
@@ -80,6 +85,7 @@ class MaxOOMKilledMemoryLoader(PrometheusMetric):
     warning_on_no_data = False
 
     def get_query(self, object: K8sObjectData, duration: str, step: str) -> str:
+        """Return a PromQL query for max memory of OOMKilled containers."""
         pods_selector = "|".join(pod.name for pod in object.pods)
         cluster_label = self.get_prometheus_cluster_label()
         return f"""

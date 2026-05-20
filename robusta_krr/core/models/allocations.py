@@ -1,3 +1,5 @@
+"""Resource allocation models for Kubernetes containers."""
+
 from __future__ import annotations
 
 import enum
@@ -30,6 +32,7 @@ NAN_LITERAL = "?"
 
 
 def format_recommendation_value(value: RecommendationValue) -> str:
+    """Format a recommendation value as a human-readable string."""
     if value is None:
         return NONE_LITERAL
     elif isinstance(value, str):
@@ -39,6 +42,7 @@ def format_recommendation_value(value: RecommendationValue) -> str:
 
 
 def format_diff(allocated, recommended, selector, multiplier=1, colored=False) -> str:
+    """Format the difference between allocated and recommended values."""
     if recommended is None or isinstance(recommended.value, str) or selector != "requests":
         return ""
     else:
@@ -53,12 +57,14 @@ def format_diff(allocated, recommended, selector, multiplier=1, colored=False) -
 
 
 class ResourceAllocations(pd.BaseModel):
+    """Resource requests and limits for a Kubernetes container."""
     requests: dict[ResourceType, RecommendationValue]
     limits: dict[ResourceType, RecommendationValue]
     info: dict[ResourceType, Optional[str]] = {}
 
     @staticmethod
     def __parse_resource_value(value: RecommendationValueRaw) -> RecommendationValue:
+        """Parse a raw resource value into a recommendation value."""
         if value is None:
             return None
 
@@ -74,6 +80,7 @@ class ResourceAllocations(pd.BaseModel):
     def validate_requests(
         cls, value: dict[ResourceType, RecommendationValueRaw]
     ) -> dict[ResourceType, RecommendationValue]:
+        """Validate and parse requests and limits fields."""
         return {
             resource_type: cls.__parse_resource_value(resource_value) for resource_type, resource_value in value.items()
         }

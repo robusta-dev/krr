@@ -1,3 +1,5 @@
+"""Result models for resource scan recommendations."""
+
 from __future__ import annotations
 
 from typing import Any, Optional, Union
@@ -12,23 +14,30 @@ from robusta_krr.core.models.config import Config
 
 
 class Recommendation(pd.BaseModel):
+    """A single resource recommendation with severity."""
+
     value: RecommendationValue
     severity: Severity
 
 
 class ResourceRecommendation(pd.BaseModel):
+    """Resource recommendations for requests and limits."""
+
     requests: dict[ResourceType, Union[RecommendationValue, Recommendation]]
     limits: dict[ResourceType, Union[RecommendationValue, Recommendation]]
     info: dict[ResourceType, Optional[str]]
 
 
 class ResourceScan(pd.BaseModel):
+    """Scan result for a single Kubernetes object."""
+
     object: K8sObjectData
     recommended: ResourceRecommendation
     severity: Severity
 
     @classmethod
     def calculate(cls, object: K8sObjectData, recommendation: ResourceAllocations) -> ResourceScan:
+        """Calculate a resource scan with severities for the given object and recommendation."""
         recommendation_processed = ResourceRecommendation(requests={}, limits={}, info={})
 
         for resource_type in ResourceType:
@@ -55,11 +64,15 @@ class ResourceScan(pd.BaseModel):
 
 
 class StrategyData(pd.BaseModel):
+    """Metadata about the strategy used for recommendations."""
+
     name: str
     settings: dict[str, Any]
 
 
 class Result(pd.BaseModel):
+    """Aggregated scan results with scoring."""
+
     scans: list[ResourceScan]
     score: int = 0
     resources: list[str] = ["cpu", "memory"]
@@ -70,6 +83,7 @@ class Result(pd.BaseModel):
     config: Optional[Config] = pd.Field(default_factory=Config.get_config)
 
     def __init__(self, *args, **kwargs) -> None:
+        """Initialize the result and calculate the score."""
         super().__init__(*args, **kwargs)
         self.score = self.__calculate_score()
 
@@ -88,10 +102,11 @@ class Result(pd.BaseModel):
 
     @staticmethod
     def __scan_cost(scan: ResourceScan) -> float:
+        """Return the cost weight of a single scan based on severity."""
         return 0.7 if scan.severity == Severity.WARNING else 1 if scan.severity == Severity.CRITICAL else 0
 
     def __calculate_score(self) -> int:
-        """Get the score of the result.
+        """Calculate the overall score based on scan severities.
 
         Returns:
             The score of the result.
@@ -102,6 +117,7 @@ class Result(pd.BaseModel):
 
     @property
     def score_letter(self) -> str:
+        """Return the letter grade for the score."""
         return (
             "F"
             if self.score < 30

@@ -1,3 +1,5 @@
+"""Configuration models for krr settings."""
+
 from __future__ import annotations
 
 import logging
@@ -18,6 +20,8 @@ logger = logging.getLogger("krr")
 
 
 class Config(pd.BaseSettings):
+    """Configuration settings for krr."""
+
     quiet: bool = pd.Field(False)
     verbose: bool = pd.Field(False)
 
@@ -98,14 +102,17 @@ class Config(pd.BaseSettings):
     _logging_console: Optional[Console] = pd.PrivateAttr(None)
 
     def __init__(self, **kwargs: Any) -> None:
+        """Initialize the configuration."""
         super().__init__(**kwargs)
 
     @property
     def Formatter(self) -> formatters.FormatterFunc:
+        """Return the configured output formatter."""
         return formatters.find(self.format)
 
     @pd.validator("prometheus_url")
     def validate_prometheus_url(cls, v: Optional[str]):
+        """Validate that the Prometheus URL starts with http:// or https://."""
         if v is None:
             return None
 
@@ -118,6 +125,7 @@ class Config(pd.BaseSettings):
 
     @pd.validator("prometheus_other_headers", pre=True)
     def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
+        """Parse additional Prometheus headers from list or dict format."""
         if isinstance(headers, dict):
             return headers
 
@@ -125,6 +133,7 @@ class Config(pd.BaseSettings):
 
     @pd.validator("namespaces")
     def validate_namespaces(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
+        """Validate and normalize namespace values."""
         if v == []:
             return "*"
 
@@ -137,6 +146,7 @@ class Config(pd.BaseSettings):
 
     @pd.validator("resources", pre=True)
     def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
+        """Validate and normalize resource kind values."""
         if v == [] or v == "*":
             return "*"
 
@@ -146,6 +156,7 @@ class Config(pd.BaseSettings):
 
     @pd.validator("job_grouping_labels", pre=True)
     def validate_job_grouping_labels(cls, v: Union[list[str], str, None]) -> Union[list[str], None]:
+        """Parse job grouping labels from comma-separated string or list."""
         if v is None:
             return None
         if isinstance(v, str):
@@ -154,31 +165,37 @@ class Config(pd.BaseSettings):
         return v
 
     def create_strategy(self) -> AnyStrategy:
+        """Create a strategy instance from the configured strategy name and settings."""
         StrategyType = AnyStrategy.find(self.strategy)
         StrategySettingsType = StrategyType.get_settings_type()
         return StrategyType(StrategySettingsType(**self.other_args))  # type: ignore
 
     @pd.validator("strategy")
     def validate_strategy(cls, v: str) -> str:
+        """Validate that the strategy name is registered."""
         BaseStrategy.find(v)  # NOTE: raises if strategy is not found
         return v
 
     @pd.validator("format")
     def validate_format(cls, v: str) -> str:
+        """Validate that the output format is registered."""
         formatters.find(v)  # NOTE: raises if strategy is not found
         return v
 
     @property
     def context(self) -> Optional[str]:
+        """Return the first cluster name as the kubeconfig context."""
         return self.clusters[0] if self.clusters != "*" and self.clusters else None
 
     @property
     def logging_console(self) -> Console:
+        """Return the Rich console for logging output."""
         if getattr(self, "_logging_console") is None:
             self._logging_console = Console(file=sys.stderr if self.log_to_stderr else sys.stdout, width=self.width)
         return self._logging_console
 
     def load_kubeconfig(self) -> None:
+        """Load Kubernetes configuration from kubeconfig file or in-cluster config."""
         try:
             config.load_kube_config(config_file=self.kubeconfig, context=self.context)
             self.inside_cluster = False
@@ -187,6 +204,7 @@ class Config(pd.BaseSettings):
             self.inside_cluster = True
 
     def get_kube_client(self, context: Optional[str] = None):
+        """Create a Kubernetes API client for the given context."""
         if context is None:
             return None
 
@@ -200,6 +218,7 @@ class Config(pd.BaseSettings):
 
     @staticmethod
     def set_config(config: Config) -> None:
+        """Set the global configuration and configure logging."""
         global _config
 
         _config = config
@@ -214,16 +233,21 @@ class Config(pd.BaseSettings):
 
     @staticmethod
     def get_config() -> Optional[Config]:
+        """Return the global configuration instance."""
         return _config
 
 
 # NOTE: This class is just a proxy for _config.
 # Import settings from this module and use it like it is just a config object.
 class _Settings(Config):  # Config here is used for type checking
+    """Proxy class that delegates attribute access to the global config."""
+
     def __init__(self) -> None:
+        """Initialize the settings proxy."""
         pass
 
     def __getattr__(self, name: str):
+        """Delegate attribute access to the global config instance."""
         if _config is None:
             raise AttributeError("Config is not set")
 

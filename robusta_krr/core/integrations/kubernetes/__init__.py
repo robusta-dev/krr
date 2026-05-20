@@ -1,3 +1,5 @@
+"""Kubernetes integration for loading cluster resources and pods."""
+
 import asyncio
 import logging
 import re
@@ -28,6 +30,7 @@ class LightweightJobInfo:
     """Lightweight job object containing only the fields needed for GroupedJob processing."""
 
     def __init__(self, name: str, namespace: str):
+        """Initialize a LightweightJobInfo instance."""
         self.name = name
         self.namespace = namespace
 
@@ -41,7 +44,10 @@ HPAKey = tuple[str, str, str]
 
 
 class ClusterLoader:
+    """Loads scannable objects and pods from a single Kubernetes cluster."""
+
     def __init__(self, cluster: Optional[str] = None):
+        """Initialize a ClusterLoader for the given cluster."""
         self.cluster = cluster
         # This executor will be running requests to Kubernetes API
         self.executor = ThreadPoolExecutor(settings.max_workers)
@@ -128,6 +134,7 @@ class ClusterLoader:
         ]
 
     async def _list_jobs_for_cronjobs(self, namespace: str) -> list[V1Job]:
+        """List jobs for cronjobs in a given namespace."""
         if namespace not in self.__jobs_for_cronjobs:
             loop = asyncio.get_running_loop()
 
@@ -142,6 +149,7 @@ class ClusterLoader:
         return self.__jobs_for_cronjobs[namespace]
 
     async def list_pods(self, object: K8sObjectData) -> list[PodData]:
+        """List pods for the given Kubernetes object."""
         loop = asyncio.get_running_loop()
 
         if object.kind == "CronJob":
@@ -191,6 +199,7 @@ class ClusterLoader:
 
     @staticmethod
     def _get_match_expression_filter(expression) -> str:
+        """Convert a match expression to a label selector string."""
         if expression.operator.lower() == "exists":
             return expression.key
         elif expression.operator.lower() == "doesnotexist":
@@ -201,6 +210,7 @@ class ClusterLoader:
 
     @staticmethod
     def _build_selector_query(selector: Any) -> Union[str, None]:
+        """Build a label selector query string from a selector object."""
         label_filters = []
 
         if selector.match_labels is not None:
@@ -234,6 +244,7 @@ class ClusterLoader:
     def __build_scannable_object(
         self, item: AnyKubernetesAPIObject, container: V1Container, kind: Optional[str] = None
     ) -> K8sObjectData:
+        """Build a K8sObjectData from a Kubernetes object and container."""
         name = item.metadata.name
         namespace = item.metadata.namespace
         kind = kind or item.__class__.__name__[2:]
@@ -267,6 +278,7 @@ class ClusterLoader:
         return obj
 
     def _should_list_resource(self, resource: str) -> bool:
+        """Check if a resource type should be listed based on settings."""
         if settings.resources == "*":
             return True
         return resource in settings.resources
@@ -290,6 +302,7 @@ class ClusterLoader:
         limit: Optional[int] = None,
         continue_ref: Optional[str] = None,
     ) -> tuple[list[Any], Optional[str]]:
+        """List objects with pagination support using limit and continue token."""
         logger.debug("Listing %s in %s with batching (limit=%d)", kind, self.cluster, limit)
         loop = asyncio.get_running_loop()
 
@@ -348,6 +361,7 @@ class ClusterLoader:
     async def _list_namespaced_or_global_objects(
         self, kind: KindLiteral, all_namespaces_request: Callable, namespaced_request: Callable
     ) -> list[Any]:
+        """List objects across all namespaces or specific namespaces."""
         logger.debug(f"Listing {kind}s in {self.cluster}")
         loop = asyncio.get_running_loop()
 
@@ -387,6 +401,7 @@ class ClusterLoader:
         extract_containers: Callable[[Any], Union[Iterable[V1Container], Awaitable[Iterable[V1Container]]]],
         filter_workflows: Optional[Callable[[Any], bool]] = None,
     ) -> list[K8sObjectData]:
+        """List scannable objects of a given kind from the cluster."""
         if not self._should_list_resource(kind):
             logger.debug(f"Skipping {kind}s in {self.cluster}")
             return []
@@ -417,6 +432,7 @@ class ClusterLoader:
         return result
 
     def _list_deployments(self) -> list[K8sObjectData]:
+        """List all deployments in the cluster."""
         return self._list_scannable_objects(
             kind="Deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
@@ -425,7 +441,9 @@ class ClusterLoader:
         )
 
     def _list_rollouts(self) -> list[K8sObjectData]:
+        """List all Argo Rollouts in the cluster."""
         async def _extract_containers(item: Any) -> list[V1Container]:
+            """Extract containers from an Argo Rollout item."""
             if item.spec.template is not None:
                 return item.spec.template.spec.containers
 
@@ -472,6 +490,7 @@ class ClusterLoader:
         )
 
     def _list_strimzipodsets(self) -> list[K8sObjectData]:
+        """List all StrimziPodSets in the cluster."""
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
         return self._list_scannable_objects(
@@ -496,6 +515,7 @@ class ClusterLoader:
         )
 
     def _list_deploymentconfig(self) -> list[K8sObjectData]:
+        """List all DeploymentConfigs in the cluster."""
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
         return self._list_scannable_objects(
@@ -520,6 +540,7 @@ class ClusterLoader:
         )
 
     def _list_all_statefulsets(self) -> list[K8sObjectData]:
+        """List all StatefulSets in the cluster."""
         return self._list_scannable_objects(
             kind="StatefulSet",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
@@ -528,6 +549,7 @@ class ClusterLoader:
         )
 
     def _list_all_daemon_set(self) -> list[K8sObjectData]:
+        """List all DaemonSets in the cluster."""
         return self._list_scannable_objects(
             kind="DaemonSet",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
@@ -587,6 +609,7 @@ class ClusterLoader:
             return all_jobs
 
     def _list_all_cronjobs(self) -> list[K8sObjectData]:
+        """List all CronJobs in the cluster."""
         return self._list_scannable_objects(
             kind="CronJob",
             all_namespaces_request=self.batch.list_cron_job_for_all_namespaces,
@@ -705,6 +728,7 @@ class ClusterLoader:
         return result
 
     async def __list_hpa_v1(self) -> dict[HPAKey, HPAData]:
+        """List all HPA objects using the autoscaling/v1 API."""
         loop = asyncio.get_running_loop()
         res = await loop.run_in_executor(
             self.executor,
@@ -731,6 +755,7 @@ class ClusterLoader:
         }
 
     async def __list_hpa_v2(self) -> dict[HPAKey, HPAData]:
+        """List all HPA objects using the autoscaling/v2 API."""
         res = await self._list_namespaced_or_global_objects(
             kind="HPA-v2",
             all_namespaces_request=self.autoscaling_v2.list_horizontal_pod_autoscaler_for_all_namespaces,
@@ -738,6 +763,7 @@ class ClusterLoader:
         )
 
         def __get_metric(hpa: V2HorizontalPodAutoscaler, metric_name: str) -> Optional[float]:
+            """Extract a resource metric value from an HPA spec."""
             return next(
                 (
                     metric.resource.target.average_utilization
@@ -783,6 +809,7 @@ class ClusterLoader:
             return await self.__list_hpa_v1()
 
     async def _try_list_hpa(self) -> dict[HPAKey, HPAData]:
+        """Try to list HPA objects, returning empty dict on failure."""
         try:
             return await self.__list_hpa()
         except Exception as e:
@@ -795,7 +822,10 @@ class ClusterLoader:
 
 
 class KubernetesLoader:
+    """Loads Kubernetes objects across one or more clusters."""
+
     def __init__(self) -> None:
+        """Initialize a KubernetesLoader instance."""
         self._cluster_loaders: dict[Optional[str], ClusterLoader] = {}
 
     async def list_clusters(self) -> Optional[list[str]]:
@@ -839,6 +869,7 @@ class KubernetesLoader:
         return [context["name"] for context in contexts if context["name"] in settings.clusters]
 
     def _try_create_cluster_loader(self, cluster: Optional[str]) -> Optional[ClusterLoader]:
+        """Try to create a ClusterLoader for the given cluster, returning None on failure."""
         try:
             return ClusterLoader(cluster=cluster)
         except Exception as e:
@@ -868,6 +899,7 @@ class KubernetesLoader:
         ]
 
     async def load_pods(self, object: K8sObjectData) -> list[PodData]:
+        """Load pods for the given Kubernetes object from the appropriate cluster."""
         try:
             cluster_loader = self.cluster_loaders[object.cluster]
         except KeyError:

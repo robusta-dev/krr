@@ -1,3 +1,5 @@
+"""Utilities for retrieving and checking the KRR version."""
+
 import asyncio
 import os
 import subprocess
@@ -11,6 +13,7 @@ import robusta_krr
 
 
 def get_version() -> str:
+    """Return the current KRR version string."""
     # the version string was patched by a release - return __version__ which will be correct
     if robusta_krr.__version__ != "dev":
         return robusta_krr.__version__
@@ -35,6 +38,7 @@ def get_version() -> str:
 
 # Synchronous function to fetch the latest release version from GitHub API
 def fetch_latest_version() -> Optional[str]:
+    """Fetch the latest release version tag from the GitHub API."""
     url = "https://api.github.com/repos/robusta-dev/krr/releases/latest"
     try:
         response = requests.get(url, timeout=0.5)  # 0.5 seconds timeout
@@ -46,6 +50,7 @@ def fetch_latest_version() -> Optional[str]:
 
 
 async def load_latest_version() -> Optional[str]:
+    """Load the latest version asynchronously in a separate thread."""
     loop = asyncio.get_running_loop()
     # Run the synchronous function in a separate thread
     with ThreadPoolExecutor() as pool:

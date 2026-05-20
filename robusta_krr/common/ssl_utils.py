@@ -1,3 +1,5 @@
+"""Utilities for handling custom SSL certificates."""
+
 import base64
 import os
 
@@ -7,6 +9,7 @@ CUSTOM_CERTIFICATE_PATH = "/tmp/custom_ca.pem"
 
 
 def append_custom_certificate(custom_ca: str) -> None:
+    """Append a custom CA certificate to the certifi CA bundle."""
     with open(certifi.where(), "ab") as outfile:
         outfile.write(base64.b64decode(custom_ca))
 
@@ -14,6 +17,7 @@ def append_custom_certificate(custom_ca: str) -> None:
 
 
 def create_temporary_certificate(custom_ca: str) -> None:
+    """Create a temporary certificate file combining certifi CA bundle with a custom CA."""
     with open(certifi.where(), "rb") as base_cert:
         base_cert_content = base_cert.read()
 
@@ -27,6 +31,7 @@ def create_temporary_certificate(custom_ca: str) -> None:
 
 
 def add_custom_certificate(custom_ca: str) -> bool:
+    """Add a custom CA certificate, falling back to a temporary file on permission errors."""
     if not custom_ca:
         return False
 

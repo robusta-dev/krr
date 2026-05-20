@@ -1,3 +1,5 @@
+"""Monkey patches for the Kubernetes Python client."""
+
 import logging
 
 from kubernetes.client.models.v1_pod_failure_policy_rule import V1PodFailurePolicyRule
@@ -11,6 +13,7 @@ def create_monkey_patches():
     logger.debug("Creating kubernetes python cli monkey patches")
 
     def patched_setter_pod_failure_policy(self, on_pod_conditions):
+        """Patched setter that allows None for on_pod_conditions."""
         self._on_pod_conditions = on_pod_conditions
 
     V1PodFailurePolicyRule.on_pod_conditions = V1PodFailurePolicyRule.on_pod_conditions.setter(

@@ -1,3 +1,5 @@
+"""Abstract base classes and types for resource recommendation strategies."""
+
 from __future__ import annotations
 
 import abc
@@ -31,6 +33,8 @@ class ResourceRecommendation(pd.BaseModel):
 
     @classmethod
     def undefined(cls: type[SelfRR], info: Optional[str] = None) -> SelfRR:
+        """Create a ResourceRecommendation with undefined (NaN) values."""
+
         return cls(request=float("NaN"), limit=float("NaN"), info=info)
 
 
@@ -51,10 +55,14 @@ class StrategySettings(pd.BaseModel):
 
     @property
     def history_timedelta(self) -> datetime.timedelta:
+        """Return the history duration as a timedelta."""
+
         return datetime.timedelta(hours=self.history_duration)
 
     @property
     def timeframe_timedelta(self) -> datetime.timedelta:
+        """Return the timeframe duration as a timedelta."""
+
         return datetime.timedelta(minutes=self.timeframe_duration)
 
     def history_range_enough(self, history_range: tuple[datetime.timedelta, datetime.timedelta]) -> bool:
@@ -103,12 +111,15 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     @property
     @abc.abstractmethod
     def metrics(self) -> Sequence[type[PrometheusMetric]]:
+        """Return the list of metric types used by this strategy."""
         pass
 
     def __init__(self, settings: _StrategySettings):
+        """Initialize the strategy with the given settings."""
         self.settings = settings
 
     def __str__(self) -> str:
+        """Return the human-readable strategy name."""
         return self.display_name.title()
 
     @property
@@ -123,11 +134,14 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     # This method is intended to calculate resource recommendation based on history data and kubernetes object data.
     @abc.abstractmethod
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
+        """Calculate resource recommendations from historical data."""
         pass
 
     # This method is intended to return a strategy by its name.
     @classmethod
     def find(cls: type[SelfBS], name: str) -> type[SelfBS]:
+        """Find and return a strategy class by its name."""
+
         strategies = cls.get_all()
         if name.lower() in strategies:
             return strategies[name.lower()]
@@ -137,6 +151,8 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     # This method is intended to return all the available strategies.
     @classmethod
     def get_all(cls: type[SelfBS]) -> dict[str, type[SelfBS]]:
+        """Return a mapping of all registered strategy names to their classes."""
+
         from robusta_krr import strategies as _  # noqa: F401
 
         return {sub_cls.display_name.lower(): sub_cls for sub_cls in cls.__subclasses__()}
@@ -144,6 +160,8 @@ class BaseStrategy(abc.ABC, Generic[_StrategySettings]):
     # This method is intended to return the type of settings used in strategy.
     @classmethod
     def get_settings_type(cls) -> type[StrategySettings]:
+        """Return the settings type used by this strategy."""
+
         return get_args(cls.__orig_bases__[0])[0]  # type: ignore
 
 

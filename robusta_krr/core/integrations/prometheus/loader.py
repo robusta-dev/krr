@@ -1,3 +1,5 @@
+"""Prometheus metrics loader for gathering resource usage data."""
+
 from __future__ import annotations
 
 import datetime
@@ -25,6 +27,8 @@ logger = logging.getLogger("krr")
 
 
 class PrometheusMetricsLoader:
+    """Loads and queries metrics from a Prometheus-compatible metrics service."""
+
     def __init__(self, *, cluster: Optional[str] = None) -> None:
         """
         Initializes the Prometheus Loader.
@@ -52,6 +56,7 @@ class PrometheusMetricsLoader:
         api_client: Optional[ApiClient] = None,
         cluster: Optional[str] = None,
     ) -> Optional[PrometheusMetricsService]:
+        """Auto-detect and return a compatible metrics service for the cluster."""
         if settings.prometheus_url is not None:
             logger.info("Prometheus URL is specified, will not auto-detect a metrics service")
             metrics_to_check = [PrometheusMetricsService]
@@ -86,9 +91,11 @@ class PrometheusMetricsLoader:
     async def get_history_range(
         self, history_duration: datetime.timedelta
     ) -> Optional[tuple[datetime.datetime, datetime.datetime]]:
+        """Get the available history range for the given duration."""
         return await self.loader.get_history_range(history_duration)
 
     async def load_pods(self, object: K8sObjectData, period: datetime.timedelta) -> list[PodData]:
+        """Load pod data for a Kubernetes object over the given period."""
         try:
             return await self.loader.load_pods(object, period)
         except Exception as e:
@@ -96,6 +103,7 @@ class PrometheusMetricsLoader:
             return []
 
     async def get_cluster_summary(self) -> Dict[str, Any]:
+        """Get a summary of cluster metrics from the metrics service."""
         try:
             return await self.loader.get_cluster_summary()
         except Exception as e:

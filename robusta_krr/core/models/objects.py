@@ -1,3 +1,5 @@
+"""Kubernetes object data models."""
+
 from __future__ import annotations
 
 from typing import Literal, Optional
@@ -22,14 +24,18 @@ KindLiteral = Literal[
 
 
 class PodData(pd.BaseModel):
+    """Data representing a single Kubernetes pod."""
+
     name: str
     deleted: bool
 
     def __hash__(self) -> int:
+        """Return hash based on pod name."""
         return hash(self.name)
 
 
 class HPAData(pd.BaseModel):
+    """Data representing a Horizontal Pod Autoscaler."""
     min_replicas: Optional[int]
     max_replicas: int
     current_replicas: Optional[int]
@@ -46,6 +52,8 @@ PodWarning = Literal[
 
 
 class K8sObjectData(pd.BaseModel):
+    """Data representing a Kubernetes workload object and its container."""
+
     # NOTE: Here None means that we are running inside the cluster
     cluster: Optional[str]
     name: str
@@ -62,28 +70,35 @@ class K8sObjectData(pd.BaseModel):
     _api_resource = pd.PrivateAttr(None)
 
     def __str__(self) -> str:
+        """Return a human-readable representation of the object."""
         return f"{self.kind} {self.namespace}/{self.name}/{self.container}"
 
     def __hash__(self) -> int:
+        """Return hash based on string representation."""
         return hash(str(self))
 
     def add_warning(self, warning: PodWarning) -> None:
+        """Add a warning to this object."""
         self.warnings.add(warning)
 
     @property
     def current_pods_count(self) -> int:
+        """Return the number of non-deleted pods."""
         return len([pod for pod in self.pods if not pod.deleted])
 
     @property
     def deleted_pods_count(self) -> int:
+        """Return the number of deleted pods."""
         return len([pod for pod in self.pods if pod.deleted])
 
     @property
     def pods_count(self) -> int:
+        """Return the total number of pods."""
         return len(self.pods)
 
     @property
     def selector(self) -> V1LabelSelector:
+        """Return the label selector from the underlying API resource."""
         if self._api_resource is None:
             raise ValueError("api_resource is not set")
 

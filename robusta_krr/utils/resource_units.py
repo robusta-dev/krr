@@ -1,3 +1,5 @@
+"""Utilities for parsing and formatting Kubernetes resource units."""
+
 from typing import Literal, Union
 
 UNITS: dict[str, float] = {

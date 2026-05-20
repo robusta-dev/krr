@@ -1,3 +1,5 @@
+"""CSV output formatter with raw current and recommended values."""
+
 import csv
 import io
 import logging
@@ -28,6 +30,7 @@ RESOURCE_LIMITS_RECOMMENDED_HEADER = "{resource_name} Limits Recommended"
 
 
 def _format_value(val: Union[float, int]) -> str:
+    """Format a numeric value as a string."""
     if isinstance(val, int):
         return str(val)
     elif isinstance(val, float):
@@ -41,6 +44,7 @@ def _format_value(val: Union[float, int]) -> str:
 
 
 def _format_request_current(item: ResourceScan, resource: ResourceType, selector: str) -> str:
+    """Format the current resource allocation as a string."""
     allocated = getattr(item.object.allocations, selector)[resource]
     if allocated is None:
         return NONE_LITERAL
@@ -48,6 +52,7 @@ def _format_request_current(item: ResourceScan, resource: ResourceType, selector
 
 
 def _format_request_recommend(item: ResourceScan, resource: ResourceType, selector: str) -> str:
+    """Format the recommended resource allocation as a string."""
     recommended = getattr(item.recommended, selector)[resource]
     if recommended is None:
         return NONE_LITERAL
@@ -56,6 +61,7 @@ def _format_request_recommend(item: ResourceScan, resource: ResourceType, select
 
 @formatters.register("csv-raw")
 def csv_raw(result: Result) -> str:
+    """Format the result as CSV with raw current and recommended values."""
     # We need to order the resource columns so that they are in the format of
     # Namespace, Name, Pods, Old Pods, Type, Container,
     # CPU Requests Current, CPU Requests Recommend, CPU Limits Current, CPU Limits Recommend,

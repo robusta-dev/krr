@@ -1,3 +1,5 @@
+"""Simple resource recommendation strategy based on percentile CPU and max memory."""
+
 import textwrap
 from datetime import timedelta
 
@@ -25,6 +27,8 @@ from robusta_krr.core.integrations.prometheus.metrics import (
 
 
 class SimpleStrategySettings(StrategySettings):
+    """Settings for the simple resource recommendation strategy."""
+
     cpu_percentile: float = pd.Field(95, gt=0, le=100, description="The percentile to use for the CPU recommendation.")
     memory_buffer_percentage: float = pd.Field(
         15, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
@@ -45,6 +49,7 @@ class SimpleStrategySettings(StrategySettings):
     )
 
     def calculate_memory_proposal(self, data: PodsTimeData, max_oomkill: float = 0) -> float:
+        """Calculate memory proposal based on peak usage and OOMKill data."""
         data_ = [np.max(values[:, 1]) for values in data.values()]
         if len(data_) == 0:
             return float("NaN")
@@ -55,6 +60,7 @@ class SimpleStrategySettings(StrategySettings):
         )
 
     def calculate_cpu_proposal(self, data: PodsTimeData) -> float:
+        """Calculate CPU proposal as the maximum observed value."""
         if len(data) == 0:
             return float("NaN")
 
@@ -66,17 +72,20 @@ class SimpleStrategySettings(StrategySettings):
         return np.max(data_)
 
     def history_range_enough(self, history_range: tuple[timedelta, timedelta]) -> bool:
+        """Check if the history range is at least 3 hours."""
         start, end = history_range
         return (end - start) >= timedelta(hours=3)
 
 
 class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
+    """Simple strategy that recommends CPU based on percentile and memory based on peak usage."""
 
     display_name = "simple"
     rich_console = True
 
     @property
     def metrics(self) -> list[type[PrometheusMetric]]:
+        """Return the list of Prometheus metrics used by this strategy."""
         metrics = [
             PercentileCPULoader(self.settings.cpu_percentile),
             MaxMemoryLoader,
@@ -91,6 +100,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
 
     @property
     def description(self):
+        """Return a human-readable description of the strategy configuration."""
         s = textwrap.dedent(f"""\
             CPU request: {self.settings.cpu_percentile}% percentile, limit: unset
             Memory request: max + {self.settings.memory_buffer_percentage}%, limit: max + {self.settings.memory_buffer_percentage}%
@@ -113,6 +123,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     def __calculate_cpu_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
+        """Calculate CPU resource recommendation from historical data."""
         data = history_data["PercentileCPULoader"]
 
         if len(data) == 0:
@@ -140,6 +151,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
     def __calculate_memory_proposal(
         self, history_data: MetricsPodData, object_data: K8sObjectData
     ) -> ResourceRecommendation:
+        """Calculate memory resource recommendation from historical data."""
         data = history_data["MaxMemoryLoader"]
 
         oomkill_detected = False
@@ -182,6 +194,7 @@ class SimpleStrategy(BaseStrategy[SimpleStrategySettings]):
         )
 
     def run(self, history_data: MetricsPodData, object_data: K8sObjectData) -> RunResult:
+        """Run the strategy and return CPU and memory recommendations."""
         return {
             ResourceType.CPU: self.__calculate_cpu_proposal(history_data, object_data),
             ResourceType.Memory: self.__calculate_memory_proposal(history_data, object_data),

@@ -1,3 +1,5 @@
+"""Rich table output formatter."""
+
 import itertools
 from typing import Any
 
@@ -20,6 +22,7 @@ INFO_COLORS: dict[str, str] = {
 
 
 def _format_request_str(item: ResourceScan, resource: ResourceType, selector: str) -> str:
+    """Format a resource request or limit as a colored string with diff."""
     allocated = getattr(item.object.allocations, selector)[resource]
     info = item.recommended.info.get(resource)
     recommended = getattr(item.recommended, selector)[resource]
@@ -50,6 +53,7 @@ def _format_request_str(item: ResourceScan, resource: ResourceType, selector: st
 
 
 def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current: int) -> str:
+    """Format the total resource diff with pod count info."""
     selector = "requests"
     allocated = getattr(item.object.allocations, selector)[resource]
     recommended = getattr(item.recommended, selector)[resource]

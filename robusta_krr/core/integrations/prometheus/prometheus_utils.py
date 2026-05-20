@@ -1,3 +1,5 @@
+"""Utilities for generating Prometheus configuration."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -24,6 +26,7 @@ class ClusterNotSpecifiedException(Exception):
 def generate_prometheus_config(
     url: str, headers: dict[str, str], metrics_service: PrometheusMetricsService
 ) -> PrometheusConfig:
+    """Generate a PrometheusConfig based on the configured provider settings."""
     from .metrics_service.victoria_metrics_service import VictoriaMetricsService
 
     baseconfig = {

@@ -1,3 +1,5 @@
+"""Utility for batching iterables."""
+
 import itertools
 from typing import Iterable, TypeVar
 

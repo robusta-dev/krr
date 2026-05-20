@@ -1,3 +1,5 @@
+"""Main entry point for the KRR CLI application."""
+
 from __future__ import annotations
 
 import asyncio
@@ -35,6 +37,7 @@ logger = logging.getLogger("krr")
 
 @app.command(rich_help_panel="Utils")
 def version() -> None:
+    """Display the current KRR version."""
     typer.echo(get_version())
 
 
@@ -49,9 +52,13 @@ def __process_type(_T: type) -> type:
 
 
 def load_commands() -> None:
+    """Load all strategy commands into the Typer app."""
+
     for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ignore
         # NOTE: This wrapper here is needed to avoid the strategy_name being overwritten in the loop
         def strategy_wrapper(_strategy_name: str = strategy_name):
+            """Create and register a CLI command for a strategy."""
+
             def run_strategy(
                 ctx: typer.Context,
                 kubeconfig: Optional[str] = typer.Option(
@@ -352,7 +359,8 @@ def load_commands() -> None:
                 ),
                 **strategy_args,
             ) -> None:
-                f"""Run KRR using the `{_strategy_name}` strategy"""
+                """Run KRR with the current strategy and CLI options."""
+
                 if not show_severity and format != "csv":
                     raise click.BadOptionUsage("--exclude-severity", "--exclude-severity works only with format=csv")
 
@@ -444,6 +452,8 @@ def load_commands() -> None:
 
 
 def run() -> None:
+    """Entry point that loads commands and runs the Typer app."""
+
     load_commands()
     app()
 

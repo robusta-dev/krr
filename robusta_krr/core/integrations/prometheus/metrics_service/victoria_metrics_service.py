@@ -1,3 +1,5 @@
+"""Victoria Metrics-based metrics service implementation."""
+
 from typing import Optional
 
 from kubernetes.client import ApiClient
@@ -9,6 +11,7 @@ from .prometheus_metrics_service import PrometheusMetricsService
 
 
 class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
+    """Discover Victoria Metrics instances in a Kubernetes cluster."""
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Victoria Metrics URL using selectors.
@@ -44,6 +47,7 @@ class VictoriaMetricsService(PrometheusMetricsService):
 
     @classmethod
     def name(cls) -> str:
+        """Return the human-readable name of this metrics service."""
         return "Victoria Metrics"
 
     def check_connection(self):

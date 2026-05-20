@@ -1,3 +1,5 @@
+"""Severity calculation for resource recommendations."""
+
 from __future__ import annotations
 
 import enum
@@ -22,6 +24,7 @@ class Severity(str, enum.Enum):
 
     @property
     def color(self) -> str:
+        """Return the Rich color name for this severity level."""
         return {
             self.UNKNOWN: "dim",
             self.GOOD: "green",
@@ -34,6 +37,7 @@ class Severity(str, enum.Enum):
     def calculate(
         cls, current: RecommendationValue, recommended: RecommendationValue, resource_type: ResourceType
     ) -> Severity:
+        """Calculate severity from current and recommended values."""
         if isinstance(recommended, str) or isinstance(current, str):
             return cls.UNKNOWN
 
@@ -57,6 +61,7 @@ def register_severity_calculator(resource_type: ResourceType) -> Callable[[Sever
     """
 
     def decorator(func: SeverityCalculator) -> SeverityCalculator:
+        """Register the severity calculator function for the resource type."""
         SEVERITY_CALCULATORS_REGISTRY[resource_type] = func
         return func
 
@@ -83,6 +88,7 @@ def calculate_severity(current: Optional[float], recommended: Optional[float], r
 def default_severity_calculator(
     current: Optional[float], recommended: Optional[float], resource_type: ResourceType
 ) -> Severity:
+    """Return UNKNOWN severity as the default fallback."""
     return Severity.UNKNOWN
 
 
@@ -90,6 +96,7 @@ def default_severity_calculator(
 def cpu_severity_calculator(
     current: Optional[float], recommended: Optional[float], resource_type: ResourceType
 ) -> Severity:
+    """Calculate severity for CPU resource based on absolute difference."""
     if current is None and recommended is None:
         return Severity.GOOD
     if current is None or recommended is None:
@@ -111,6 +118,7 @@ def cpu_severity_calculator(
 def memory_severity_calculator(
     current: Optional[float], recommended: Optional[float], resource_type: ResourceType
 ) -> Severity:
+    """Calculate severity for memory resource based on difference in megabytes."""
     if current is None and recommended is None:
         return Severity.GOOD
     if current is None or recommended is None:

@@ -1,3 +1,5 @@
+"""HTML output formatter."""
+
 from rich.console import Console
 
 from robusta_krr.core.abstract import formatters
@@ -7,6 +9,7 @@ from .table import table
 
 @formatters.register("html")
 def html(result: Result) -> str:
+    """Format the result as HTML."""
     console = Console(record=True)
     table_output = table(result)
     console.print(table_output)

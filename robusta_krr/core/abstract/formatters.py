@@ -1,3 +1,5 @@
+"""Formatter registry for output formatting."""
+
 from __future__ import annotations
 
 from typing import Any, Callable, Optional
@@ -36,6 +38,8 @@ def register(
     """
 
     def decorator(func: FormatterFunc) -> FormatterFunc:
+        """Register the given function as a formatter."""
+
         name = display_name or func.__name__
 
         FORMATTERS_REGISTRY[name] = func

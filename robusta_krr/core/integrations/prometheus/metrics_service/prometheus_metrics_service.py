@@ -1,3 +1,5 @@
+"""Prometheus-based metrics service implementation."""
+
 import asyncio
 import logging
 import os
@@ -27,6 +29,8 @@ logger = logging.getLogger("krr")
 
 
 class PrometheusDiscovery(MetricsServiceDiscovery):
+    """Discover Prometheus instances in a Kubernetes cluster."""
+
     def find_metrics_url(self, *, api_client: Optional[ApiClient] = None) -> Optional[str]:
         """
         Finds the Prometheus URL using selectors.
@@ -66,6 +70,13 @@ class PrometheusMetricsService(MetricsService):
         api_client: Optional[ApiClient] = None,
         executor: Optional[ThreadPoolExecutor] = None,
     ) -> None:
+        """Initialize the Prometheus metrics service.
+
+        Args:
+            cluster: Optional cluster name.
+            api_client: Optional Kubernetes API client.
+            executor: Optional thread pool executor.
+        """
         super().__init__(api_client=api_client, cluster=cluster, executor=executor)
 
         logger.info(f"Trying to connect to {self.name()} for {self.cluster} cluster")
@@ -113,6 +124,7 @@ class PrometheusMetricsService(MetricsService):
         self.get_prometheus()
 
     def get_prometheus(self):
+        """Return a Prometheus connection, refreshing credentials if expired."""
         now = datetime.utcnow()
         if (
             not self.prometheus
@@ -134,6 +146,7 @@ class PrometheusMetricsService(MetricsService):
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query(self, query: str) -> dict:
+        """Execute an instant PromQL query."""
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
@@ -142,6 +155,7 @@ class PrometheusMetricsService(MetricsService):
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> dict:
+        """Execute a range PromQL query."""
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
@@ -151,6 +165,7 @@ class PrometheusMetricsService(MetricsService):
         )
 
     def validate_cluster_name(self):
+        """Validate that the configured cluster label exists in Prometheus."""
         if not settings.prometheus_cluster_label and not settings.prometheus_label:
             return
 
@@ -171,6 +186,7 @@ class PrometheusMetricsService(MetricsService):
             )
 
     def get_cluster_names(self) -> Optional[List[str]]:
+        """Return the list of cluster names from Prometheus label values."""
         try:
             return self.get_prometheus().get_label_values(label_name=settings.prometheus_label)
         except PrometheusApiClientException:
@@ -231,6 +247,7 @@ class PrometheusMetricsService(MetricsService):
         return data
 
     async def query_and_validate(self, prom_query) -> Any:
+        """Execute a query and validate that it returns exactly one result."""
         result = await self.query(prom_query)
         if len(result) != 1:
             logger.warning(
@@ -252,6 +269,7 @@ class PrometheusMetricsService(MetricsService):
         return result_value[1]
 
     async def get_cluster_summary(self) -> Dict[str, Any]:
+        """Return a summary of cluster memory and CPU resources."""
         cluster_label = self.get_prometheus_cluster_label()
 
         # use this for queries with no labels. turn ', cluster="xxx"' to 'cluster="xxx"'
