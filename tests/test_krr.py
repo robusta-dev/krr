@@ -5,12 +5,27 @@ from typer.testing import CliRunner
 
 from robusta_krr.main import app, load_commands
 from robusta_krr.core.integrations.kubernetes import ClusterLoader
-from robusta_krr.core.models.config import settings
+from robusta_krr.core.models.config import settings, Config
+import robusta_krr.core.models.config as config_module
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 load_commands()
 
 STRATEGY_NAME = "simple"
+
+
+@pytest.fixture()
+def minimal_config():
+    config = Config(
+        format="table",
+        show_cluster_name=False,
+        strategy="simple",
+        log_to_stderr=False,
+        other_args={},
+    )
+    Config.set_config(config)
+    yield
+    config_module._config = None
 
 
 def test_help():
@@ -70,6 +85,7 @@ def test_output_formats(format: str, output: str):
     ],
 )
 def test_cluster_namespace_list(
+    minimal_config: None,
     setting_namespaces: Union[Literal["*"], list[str]],
     cluster_all_ns: list[str],
     expected: Union[Literal["*"], list[str]],

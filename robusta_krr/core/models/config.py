@@ -137,7 +137,7 @@ class Config(pd.BaseSettings):
 
     @pd.validator("resources", pre=True)
     def validate_resources(cls, v: Union[list[str], Literal["*"]]) -> Union[list[str], Literal["*"]]:
-        if v == []:
+        if v == [] or v == "*":
             return "*"
 
         # NOTE: KindLiteral.__args__ is a tuple of all possible values of KindLiteral
