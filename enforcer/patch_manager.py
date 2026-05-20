@@ -38,9 +38,9 @@ def to_cpu_num(cpu_str: Optional[str]) -> Optional[float]:
         return None
 
     # Handle millicpu format (e.g., "100m", "1500m")
-    if cpu_str.endswith('m'):
+    if cpu_str.endswith("m"):
         return float(cpu_str[:-1]) / 1000.0
-    if cpu_str.endswith('k'):
+    if cpu_str.endswith("k"):
         return float(cpu_str[:-1]) * 1000.0
 
     # Handle regular float/int format (e.g., "0.5", "1", "2.5")
@@ -77,29 +77,29 @@ def to_mem_bytes(mem_str: Optional[str]) -> Optional[int]:
 
     # Binary (base 1024) suffixes
     binary_suffixes = {
-        'Ki': 1024,
-        'Mi': 1024 ** 2,
-        'Gi': 1024 ** 3,
-        'Ti': 1024 ** 4,
-        'Pi': 1024 ** 5,
-        'Ei': 1024 ** 6,
+        "Ki": 1024,
+        "Mi": 1024**2,
+        "Gi": 1024**3,
+        "Ti": 1024**4,
+        "Pi": 1024**5,
+        "Ei": 1024**6,
     }
 
     # Decimal (base 1000) suffixes
     decimal_suffixes = {
-        'k': 1000,
-        'M': 1000 ** 2,
-        'G': 1000 ** 3,
-        'T': 1000 ** 4,
-        'P': 1000 ** 5,
-        'E': 1000 ** 6,
+        "k": 1000,
+        "M": 1000**2,
+        "G": 1000**3,
+        "T": 1000**4,
+        "P": 1000**5,
+        "E": 1000**6,
     }
 
     # Check binary suffixes first (more common in K8s)
     for suffix, multiplier in binary_suffixes.items():
         if mem_str.endswith(suffix):
             try:
-                return int(float(mem_str[:-len(suffix)]) * multiplier)
+                return int(float(mem_str[: -len(suffix)]) * multiplier)
             except ValueError:
                 logger.warning(f"Invalid memory string format: {mem_str}")
                 return None
@@ -108,7 +108,7 @@ def to_mem_bytes(mem_str: Optional[str]) -> Optional[int]:
     for suffix, multiplier in decimal_suffixes.items():
         if mem_str.endswith(suffix):
             try:
-                return int(float(mem_str[:-len(suffix)]) * multiplier)
+                return int(float(mem_str[: -len(suffix)]) * multiplier)
             except ValueError:
                 logger.warning(f"Invalid memory string format: {mem_str}")
                 return None
@@ -174,63 +174,64 @@ def get_updated_resources(resources: Dict[str, Any], recommendation: ContainerRe
 
     return resources
 
+
 def validate_resources(resources: Dict[str, Any]) -> bool:
     """
     Validate that resource requests and limits are valid.
-    
+
     Rules:
     1. If request is defined, it must be > 0
     2. If both request and limit are defined, limit >= request
-    
+
     Args:
         resources: Resource dict with requests/limits (K8s format with string values)
-        
+
     Returns:
         True if valid, False if invalid
     """
     requests = resources.get(REQ, {})
     limits = resources.get(LIM, {})
-    
+
     # Validate CPU
     cpu_req_str = requests.get(CPU)
     cpu_lim_str = limits.get(CPU)
-    
+
     cpu_req = to_cpu_num(cpu_req_str) if cpu_req_str else None
     cpu_lim = to_cpu_num(cpu_lim_str) if cpu_lim_str else None
-    
+
     # Rule 1: CPU request must be > 0 if defined
     if cpu_req is not None and cpu_req <= 0:
         logger.warning(f"Invalid CPU request: {cpu_req_str} (must be > 0)")
         return False
-    
+
     # Rule 2: CPU limit >= request if both defined
     if cpu_req is not None and cpu_lim is not None and cpu_lim < cpu_req:
         logger.warning(f"Invalid CPU: limit {cpu_lim_str} < request {cpu_req_str}")
         return False
-    
+
     # Validate Memory
     mem_req_str = requests.get(MEM)
     mem_lim_str = limits.get(MEM)
-    
+
     mem_req = to_mem_bytes(mem_req_str) if mem_req_str else None
     mem_lim = to_mem_bytes(mem_lim_str) if mem_lim_str else None
-    
+
     # Rule 1: Memory request must be > 0 if defined
     if mem_req is not None and mem_req <= 0:
         logger.warning(f"Invalid memory request: {mem_req_str} (must be > 0)")
         return False
-    
+
     # Rule 2: Memory limit >= request if both defined
     if mem_req is not None and mem_lim is not None and mem_lim < mem_req:
         logger.warning(f"Invalid memory: limit {mem_lim_str} < request {mem_req_str}")
         return False
-    
+
     return True
 
+
 def patch_container_resources(
-        container_index: int,
-        container: Dict[str, Any],
-        recommendation: Optional[ContainerRecommendation]) -> List[Dict[str, Any]]:
+    container_index: int, container: Dict[str, Any], recommendation: Optional[ContainerRecommendation]
+) -> List[Dict[str, Any]]:
     """
     Validate container resources and return patches if needed.
 
@@ -248,15 +249,17 @@ def patch_container_resources(
         return patches
 
     had_resources = "resources" in container
-    resources = copy.deepcopy(container.get('resources', {}))
-    updated_resources = get_updated_resources(container.get('resources', {}), recommendation)
+    resources = copy.deepcopy(container.get("resources", {}))
+    updated_resources = get_updated_resources(container.get("resources", {}), recommendation)
 
     if resources != updated_resources:
         if validate_resources(updated_resources):
-            patches.append({
-                "op": "replace" if had_resources else "add",
-                "path": f"/spec/containers/{container_index}/resources",
-                "value": updated_resources
-            })
+            patches.append(
+                {
+                    "op": "replace" if had_resources else "add",
+                    "path": f"/spec/containers/{container_index}/resources",
+                    "value": updated_resources,
+                }
+            )
 
     return patches

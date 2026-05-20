@@ -5,6 +5,7 @@ from typing import Dict, Optional
 
 from pydantic.types import SecretStr
 
+
 def get_env_replacement(value: str) -> Optional[str]:
     env_values = re.findall(r"{{[ ]*env\.(.*)[ ]*}}", value)
     if env_values:

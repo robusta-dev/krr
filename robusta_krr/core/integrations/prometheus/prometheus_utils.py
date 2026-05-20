@@ -47,7 +47,9 @@ def generate_prometheus_config(
             # we need at least one parameter from credentials, but we should use whatever we can from settings (this has higher precedence)
             credentials = credentials.get_frozen_credentials()
             access_key = settings.eks_access_key if settings.eks_access_key else credentials.access_key
-            secret_key = settings.eks_secret_key.get_secret_value() if settings.eks_secret_key else credentials.secret_key
+            secret_key = (
+                settings.eks_secret_key.get_secret_value() if settings.eks_secret_key else credentials.secret_key
+            )
             token = credentials.token
 
         service_name = settings.eks_service_name if settings.eks_secret_key else "aps"

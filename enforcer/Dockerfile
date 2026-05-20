@@ -18,9 +18,8 @@ COPY ./resources/ resources/
 COPY ./requirements.txt requirements.txt
 
 
-RUN pip install --no-cache-dir --upgrade pip
-# Install the project dependencies
-RUN python -m ensurepip --upgrade
+RUN pip install --no-cache-dir "pip>=25.3" \
+    && rm -rf /usr/local/lib/python3.12/ensurepip/_bundled/pip-*.whl
 RUN pip install --no-cache-dir -r requirements.txt
 
 CMD ["python", "enforcer_main.py"]
