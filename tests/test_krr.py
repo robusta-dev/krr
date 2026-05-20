@@ -7,7 +7,7 @@ from robusta_krr.main import app, load_commands
 from robusta_krr.core.integrations.kubernetes import ClusterLoader
 from robusta_krr.core.models.config import settings
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 load_commands()
 
 STRATEGY_NAME = "simple"

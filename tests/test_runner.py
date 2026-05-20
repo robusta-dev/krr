@@ -4,7 +4,7 @@ from typer.testing import CliRunner
 
 from robusta_krr.main import app, load_commands
 
-runner = CliRunner(mix_stderr=False)
+runner = CliRunner()
 load_commands()
 
 
