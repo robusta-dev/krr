@@ -35,11 +35,12 @@ logger = logging.getLogger("krr")
 
 @app.command(rich_help_panel="Utils")
 def version() -> None:
+    """Print the current version of KRR."""
     typer.echo(get_version())
 
 
 def __process_type(_T: type) -> type:
-    """Process type to a python literal"""
+    """Process type annotation to a Python literal suitable for CLI parsing."""
     if _T in (int, float, str, bool, datetime, UUID):
         return _T
     elif _T is Optional:
@@ -49,9 +50,11 @@ def __process_type(_T: type) -> type:
 
 
 def load_commands() -> None:
+    """Dynamically register CLI commands for all available strategies."""
     for strategy_name, strategy_type in BaseStrategy.get_all().items():  # type: ignore
         # NOTE: This wrapper here is needed to avoid the strategy_name being overwritten in the loop
         def strategy_wrapper(_strategy_name: str = strategy_name):
+            """Wrap strategy registration to capture the strategy name."""
             def run_strategy(
                 ctx: typer.Context,
                 kubeconfig: Optional[str] = typer.Option(
@@ -352,7 +355,7 @@ def load_commands() -> None:
                 ),
                 **strategy_args,
             ) -> None:
-                f"""Run KRR using the `{_strategy_name}` strategy"""
+                """Run KRR using the configured strategy."""
                 if not show_severity and format != "csv":
                     raise click.BadOptionUsage("--exclude-severity", "--exclude-severity works only with format=csv")
 
@@ -444,6 +447,7 @@ def load_commands() -> None:
 
 
 def run() -> None:
+    """Entry point that loads commands and starts the Typer application."""
     load_commands()
     app()
 

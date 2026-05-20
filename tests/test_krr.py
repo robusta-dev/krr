@@ -14,6 +14,7 @@ STRATEGY_NAME = "simple"
 
 
 def test_help():
+    """Verify that the help command exits successfully."""
     result = runner.invoke(app, [STRATEGY_NAME, "--help"])
     try:
         assert result.exit_code == 0
@@ -23,6 +24,7 @@ def test_help():
 
 @pytest.mark.parametrize("log_flag", ["-v", "-q"])
 def test_run(log_flag: str):
+    """Verify that a simple scan runs successfully with log flags."""
     result = runner.invoke(app, [STRATEGY_NAME, log_flag, "--namespace", "default"])
     try:
         assert result.exit_code == 0, result.stdout
@@ -33,6 +35,7 @@ def test_run(log_flag: str):
 @pytest.mark.parametrize("format", ["json", "yaml", "table", "pprint", "csv"])
 @pytest.mark.parametrize("output", ["--logtostderr", "-q"])
 def test_output_formats(format: str, output: str):
+    """Verify that all supported output formats produce successful results."""
     result = runner.invoke(app, [STRATEGY_NAME, output, "-f", format])
     try:
         assert result.exit_code == 0, result.exc_info
@@ -74,6 +77,7 @@ def test_cluster_namespace_list(
     cluster_all_ns: list[str],
     expected: Union[Literal["*"], list[str]],
 ):
+    """Verify namespace filtering and regex matching for cluster loader."""
     cluster = ClusterLoader()
     with patch("robusta_krr.core.models.config.settings.namespaces", setting_namespaces):
         with patch.object(

@@ -17,5 +17,6 @@ load_commands()
     ],
 )
 def test_exclude_severity_option(args: list[str], expected_exit_code: int) -> None:
+    """Verify that --exclude-severity flag behaves correctly across formats."""
     result: Result = runner.invoke(app, ["simple", *args])
     assert result.exit_code == expected_exit_code
