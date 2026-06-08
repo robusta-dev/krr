@@ -27,6 +27,7 @@ class VictoriaMetricsDiscovery(MetricsServiceDiscovery):
             url = super().find_url(
                 selectors=[
                     "app.kubernetes.io/name=vmselect",
+                    "app.kubernetes.io/component=vmselect",
                     "app=vmselect",
                 ]
             )
