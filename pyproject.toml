@@ -9,7 +9,7 @@ packages = [{ include = "robusta_krr" }]
 
 [tool.black]
 line-length = 120
-target-version = ['py39']
+target-version = ['py310', 'py311', 'py312', 'py313']
 
 [tool.isort]
 line_length = 120
@@ -23,16 +23,19 @@ plugins = "numpy.typing.mypy_plugin,pydantic.mypy"
 krr = "robusta_krr.main:run"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<=3.12.9"
-typer = { extras = ["all"], version = "^0.7.0" }
+python = ">=3.10,<3.14"
+typer = { extras = ["all"], version = ">=0.15.0,<1" }
 pydantic = "^1.10.7"
 kubernetes = "^26.1.0"
 prometheus-api-client = "0.5.3"
-numpy = ">=1.26.4,<1.27.0"
+numpy = [
+    {version = ">=2.1.0,<3", python = ">=3.13"},
+    {version = ">=1.26.4,<3", python = "<3.13"},
+]
 alive-progress = "^3.1.2"
 prometrix = "0.2.11"
 slack-sdk = "^3.21.3"
-pandas = "2.2.2"
+pandas = ">=2.2.3,<4"
 requests = ">2.32.4"
 pyyaml = "6.0.1"
 typing-extensions = "4.6.0"
