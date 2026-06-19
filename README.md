@@ -86,7 +86,7 @@ _View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recomm
 - **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
 - **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-free-saas-platform).
-- **AI-Powered Fixes**: [Generate fixes for KRR recommendations using HolmesGPT](#free-krr-ui-on-robusta-saas) on the Robusta SaaS platform
+- **Agentic Cost Savings**: Go beyond KRR's rule-based recommendations with [HolmesGPT](#free-krr-ui-on-robusta-saas) — an AI agent that investigates your cluster to find and fix cost-saving opportunities, and generates fixes for KRR's recommendations.
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### How Much Can I Expect to Save with KRR?
@@ -269,6 +269,8 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Sort and filter recommendations by namespace, priority, and more
 - Give devs a YAML snippet to fix the problems KRR finds
 - Automatically generate fixes for KRR recommendations using AI and HolmesGPT
+
+KRR right-sizes your workloads using predetermined strategies. To uncover cost-saving opportunities that go beyond fixed rules, the platform pairs KRR with [HolmesGPT](https://github.com/robusta-dev/holmesgpt) — an AI agent that investigates your clusters and reasons about where you're overspending, instead of relying on hardcoded rules. Let it find and fix cost-saving opportunities for you.
 
 <p align="center">
   <img src="./images/krr-create-pr.png" alt="Create PR with AI-generated fix for KRR recommendation" width="450">
@@ -660,6 +662,7 @@ We highly recommend using the [free Robusta SaaS platform](https://platform.robu
 - Sort and filter recommendations by namespace, priority, and more
 - Give dev's a YAML snippet to fix the problems KRR finds
 - Automatically generate fixes for KRR recommendations using AI and HolmesGPT
+- Go beyond KRR's rule-based recommendations with [HolmesGPT](https://github.com/robusta-dev/holmesgpt), an AI agent that investigates your cluster to find and fix cost-saving opportunities
 
 
 </details>
