@@ -1,7 +1,7 @@
 # Use the official Python 3.12 slim image as the base image
 FROM python:3.12-slim AS builder
 ENV LANG=C.UTF-8
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONDONTWRYTEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
 
@@ -23,6 +23,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./krr.py krr.py
 COPY ./robusta_krr/ robusta_krr/
 COPY ./intro.txt intro.txt
+
+# Create a non-root user for security
+RUN adduser --disabled-password --gecos "" --uid 1000 krr && \
+    chown -R krr:krr /app
+
+# Switch to non-root user
+USER 1000
 
 # Run the application using 'poetry run krr simple'
 CMD ["python", "krr.py", "simple"]
