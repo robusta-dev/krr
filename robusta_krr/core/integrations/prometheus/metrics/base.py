@@ -4,6 +4,7 @@ import abc
 import asyncio
 import datetime
 import enum
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from typing import Any, Optional, TypedDict
@@ -17,6 +18,12 @@ from robusta_krr.core.abstract.metrics import BaseMetric
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
+
+logger = logging.getLogger("krr")
+
+# Maximum number of data points to request from Prometheus
+# Using 10,000 as a safety margin below the typical 11,000 hard limit
+MAX_PROMETHEUS_POINTS = 10_000
 
 
 class PrometheusSeries(TypedDict):
@@ -117,6 +124,42 @@ class PrometheusMetric(BaseMetric):
             return f"{int(step.total_seconds()) // (60 * 60 * 24)}d"
         return f"{int(step.total_seconds()) // 60}m"
 
+    def _calculate_safe_step(self, period: datetime.timedelta, step: datetime.timedelta) -> datetime.timedelta:
+        """
+        Calculate a step size that won't exceed Prometheus's maximum resolution limit.
+
+        If the number of data points (period / step) would exceed MAX_PROMETHEUS_POINTS,
+        this function returns an increased step size that keeps the point count under the limit.
+
+        Args:
+            period: The time period for the query.
+            step: The originally requested step size.
+
+        Returns:
+            A step size that keeps the number of data points under MAX_PROMETHEUS_POINTS.
+        """
+        period_seconds = period.total_seconds()
+        step_seconds = step.total_seconds()
+
+        # Calculate expected number of points
+        expected_points = period_seconds / step_seconds
+
+        if expected_points <= MAX_PROMETHEUS_POINTS:
+            return step
+
+        # Calculate the minimum step size needed to stay under the limit
+        min_step_seconds = period_seconds / MAX_PROMETHEUS_POINTS
+
+        # Round up to the nearest second to ensure we're under the limit
+        adjusted_step_seconds = int(min_step_seconds) + 1
+
+        logger.debug(
+            f"Adjusting step from {step_seconds}s to {adjusted_step_seconds}s to avoid exceeding "
+            f"Prometheus max resolution ({expected_points:.0f} points -> {period_seconds / adjusted_step_seconds:.0f} points)"
+        )
+
+        return datetime.timedelta(seconds=adjusted_step_seconds)
+
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     def _query_prometheus_sync(self, data: PrometheusMetricData) -> list[PrometheusSeries]:
         if data.type == QueryType.QueryRange:
@@ -167,6 +210,10 @@ class PrometheusMetric(BaseMetric):
         Returns:
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
         """
+
+        # For range queries, adjust step size if needed to avoid exceeding Prometheus limits
+        if self.query_type == QueryType.QueryRange:
+            step = self._calculate_safe_step(period, step)
 
         step_str = f"{round(step.total_seconds())}s"
         duration_str = self._step_to_string(period)
