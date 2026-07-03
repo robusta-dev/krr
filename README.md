@@ -483,6 +483,10 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 - For memory, we take the maximum value over the past week and add a 15% buffer.
 
+### Native sidecars
+
+KRR right-sizes [native sidecar containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) — init containers with `restartPolicy: Always` (GA in Kubernetes 1.29) — alongside regular containers, since they run for the whole pod lifetime and reserve real requests. They appear as ordinary container rows in the report. One-shot init containers are intentionally **not** right-sized: they run only briefly at startup, so their usage is not representative of steady state. (Reading the container-level `restartPolicy` requires the `kubernetes` client `>= 28.1.0`.)
+
 ### Prometheus connection
 
 Find about how KRR tries to find the default Prometheus to connect <a href="#prometheus-victoria-metrics-and-thanos-auto-discovery">here</a>.
