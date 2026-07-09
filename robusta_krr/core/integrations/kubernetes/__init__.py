@@ -40,6 +40,39 @@ AnyKubernetesAPIObject = Union[V1Deployment, V1DaemonSet, V1StatefulSet, V1Pod, 
 HPAKey = tuple[str, str, str]
 
 
+def _native_sidecars(pod_spec: Any) -> list[Any]:
+    """Return init containers that are native sidecars (``restartPolicy: Always``).
+
+    Native sidecars (GA in Kubernetes 1.29) run for the whole pod lifetime and
+    reserve real resource requests, so they are right-sized like normal containers.
+    One-shot init containers are intentionally excluded: their startup-only usage is
+    not representative of steady-state consumption.
+
+    Handles both typed clients (snake_case ``init_containers`` / ``restart_policy``)
+    and custom-resource workloads wrapped in :class:`ObjectLikeDict` (camelCase
+    ``initContainers`` / ``restartPolicy``). ``getattr(..., None)`` means an older
+    kubernetes client that lacks the container-level ``restart_policy`` field simply
+    yields nothing, so the feature degrades to a no-op instead of raising.
+    """
+    if pod_spec is None:
+        return []
+    init_containers = getattr(pod_spec, "init_containers", None) or getattr(pod_spec, "initContainers", None) or []
+    return [
+        container
+        for container in init_containers
+        if (getattr(container, "restart_policy", None) or getattr(container, "restartPolicy", None)) == "Always"
+    ]
+
+
+def _scannable_containers(pod_spec: Any) -> list[Any]:
+    """Regular containers plus native sidecars for a pod spec.
+
+    Single point where the two container classes KRR right-sizes are combined,
+    so every workload discovery path stays consistent.
+    """
+    return list(pod_spec.containers) + _native_sidecars(pod_spec)
+
+
 class ClusterLoader:
     def __init__(self, cluster: Optional[str] = None):
         self.cluster = cluster
@@ -421,13 +454,13 @@ class ClusterLoader:
             kind="Deployment",
             all_namespaces_request=self.apps.list_deployment_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_deployment,
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            extract_containers=lambda item: _scannable_containers(item.spec.template.spec),
         )
 
     def _list_rollouts(self) -> list[K8sObjectData]:
         async def _extract_containers(item: Any) -> list[V1Container]:
             if item.spec.template is not None:
-                return item.spec.template.spec.containers
+                return _scannable_containers(item.spec.template.spec)
 
             loop = asyncio.get_running_loop()
 
@@ -444,7 +477,7 @@ class ClusterLoader:
                         namespace=item.metadata.namespace, name=workloadRef.name
                     ),
                 )
-                return ret.spec.template.spec.containers
+                return _scannable_containers(ret.spec.template.spec)
 
             return []
 
@@ -492,7 +525,7 @@ class ClusterLoader:
                     **kwargs,
                 )
             ),
-            extract_containers=lambda item: item.spec.pods[0].spec.containers,
+            extract_containers=lambda item: _scannable_containers(item.spec.pods[0].spec),
         )
 
     def _list_deploymentconfig(self) -> list[K8sObjectData]:
@@ -516,7 +549,7 @@ class ClusterLoader:
                     **kwargs,
                 )
             ),
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            extract_containers=lambda item: _scannable_containers(item.spec.template.spec),
         )
 
     def _list_all_statefulsets(self) -> list[K8sObjectData]:
@@ -524,7 +557,7 @@ class ClusterLoader:
             kind="StatefulSet",
             all_namespaces_request=self.apps.list_stateful_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_stateful_set,
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            extract_containers=lambda item: _scannable_containers(item.spec.template.spec),
         )
 
     def _list_all_daemon_set(self) -> list[K8sObjectData]:
@@ -532,7 +565,7 @@ class ClusterLoader:
             kind="DaemonSet",
             all_namespaces_request=self.apps.list_daemon_set_for_all_namespaces,
             namespaced_request=self.apps.list_namespaced_daemon_set,
-            extract_containers=lambda item: item.spec.template.spec.containers,
+            extract_containers=lambda item: _scannable_containers(item.spec.template.spec),
         )
 
     async def _list_all_jobs(self) -> list[K8sObjectData]:
@@ -571,7 +604,7 @@ class ClusterLoader:
                             continue
                         if self._is_job_grouped(job):
                             continue
-                        for container in job.spec.template.spec.containers:
+                        for container in _scannable_containers(job.spec.template.spec):
                             all_jobs.append(self.__build_scannable_object(job, container, "Job"))
                     if not continue_ref:
                         break
@@ -591,7 +624,7 @@ class ClusterLoader:
             kind="CronJob",
             all_namespaces_request=self.batch.list_cron_job_for_all_namespaces,
             namespaced_request=self.batch.list_namespaced_cron_job,
-            extract_containers=lambda item: item.spec.job_template.spec.template.spec.containers,
+            extract_containers=lambda item: _scannable_containers(item.spec.job_template.spec.template.spec),
         )
 
     async def _list_all_groupedjobs(self) -> list[K8sObjectData]:
@@ -678,13 +711,14 @@ class ClusterLoader:
             for namespace, namespace_jobs in jobs_by_namespace.items():
                 limited_jobs = namespace_jobs[: settings.job_grouping_limit]
 
+                template_containers = _scannable_containers(template_job.spec.template.spec)
                 container_names = set()
-                for container in template_job.spec.template.spec.containers:
+                for container in template_containers:
                     container_names.add(container.name)
 
                 for container_name in container_names:
                     template_container = None
-                    for container in template_job.spec.template.spec.containers:
+                    for container in template_containers:
                         if container.name == container_name:
                             template_container = container
                             break
