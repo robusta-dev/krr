@@ -27,6 +27,9 @@ from robusta_krr.core.integrations.prometheus.metrics import (
 class SimpleLimitStrategySettings(StrategySettings):
     cpu_request: float = pd.Field(66, gt=0, le=100, description="The percentile to use for the CPU request.")
     cpu_limit: float = pd.Field(96, gt=0, le=100, description="The percentile to use for the CPU limit.")
+    cpu_limit_multiplier: float = pd.Field(
+        1.0, gt=0, description="Multiplier for CPU limit based on percentile. For example, 2.0 means 200% of percentile, 1.5 means 150%."
+    )
     memory_buffer_percentage: float = pd.Field(
         15, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
@@ -92,13 +95,14 @@ class SimpleLimitStrategy(BaseStrategy[SimpleLimitStrategySettings]):
 
     @property
     def description(self):
+        cpu_limit_percentage = int(self.settings.cpu_limit_multiplier * 100)
         s = textwrap.dedent(f"""\
-            CPU request: {self.settings.cpu_request}% percentile, limit: {self.settings.cpu_limit}% percentile
+            CPU request: {self.settings.cpu_request}% percentile, limit: {cpu_limit_percentage}% of {self.settings.cpu_limit}% percentile
             Memory request: max + {self.settings.memory_buffer_percentage}%, limit: max + {self.settings.memory_buffer_percentage}%
             History: {self.settings.history_duration} hours
             Step: {self.settings.timeframe_duration} minutes
 
-            All parameters can be customized. For example: `krr simple_limit --cpu_request=66 --cpu_limit=96 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
+            All parameters can be customized. For example: `krr simple_limit --cpu_request=66 --cpu_limit=96 --cpu_limit_multiplier=2.0 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
             """)
 
         if not self.settings.allow_hpa:
@@ -136,7 +140,8 @@ class SimpleLimitStrategy(BaseStrategy[SimpleLimitStrategySettings]):
             return ResourceRecommendation.undefined(info="HPA detected")
 
         cpu_request = self.settings.calculate_cpu_percentile(data, self.settings.cpu_request)
-        cpu_limit = self.settings.calculate_cpu_percentile(data, self.settings.cpu_limit)
+        cpu_limit_base = self.settings.calculate_cpu_percentile(data, self.settings.cpu_limit)
+        cpu_limit = cpu_limit_base * self.settings.cpu_limit_multiplier
         return ResourceRecommendation(request=cpu_request, limit=cpu_limit)
 
     def __calculate_memory_proposal(
