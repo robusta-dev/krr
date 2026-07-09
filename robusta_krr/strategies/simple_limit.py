@@ -25,8 +25,8 @@ from robusta_krr.core.integrations.prometheus.metrics import (
 
 
 class SimpleLimitStrategySettings(StrategySettings):
-    cpu_request: float = pd.Field(66, gt=0, le=100, description="The percentile to use for the CPU request.")
-    cpu_limit: float = pd.Field(96, gt=0, le=100, description="The percentile to use for the CPU limit.")
+    cpu_request: float = pd.Field(95, gt=0, le=100, description="The percentile to use for the CPU request.")
+    cpu_limit: float = pd.Field(95, gt=0, le=100, description="The percentile to use for the CPU limit. Unlike 'simple' strategy, this strategy sets explicit CPU limits.")
     memory_buffer_percentage: float = pd.Field(
         15, gt=0, description="The percentage of added buffer to the peak memory usage for memory recommendation."
     )
@@ -97,6 +97,9 @@ class SimpleLimitStrategy(BaseStrategy[SimpleLimitStrategySettings]):
             Memory request: max + {self.settings.memory_buffer_percentage}%, limit: max + {self.settings.memory_buffer_percentage}%
             History: {self.settings.history_duration} hours
             Step: {self.settings.timeframe_duration} minutes
+            
+            Unlike the 'simple' strategy, this strategy sets explicit CPU limits instead of leaving them unset.
+            Use this when you want to prevent CPU bursting beyond the configured limit.
 
             All parameters can be customized. For example: `krr simple_limit --cpu_request=66 --cpu_limit=96 --memory_buffer_percentage=15 --history_duration=24 --timeframe_duration=0.5`
             """)
