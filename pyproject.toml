@@ -35,7 +35,8 @@ slack-sdk = "^3.21.3"
 pandas = "2.2.2"
 requests = ">=2.33.0"
 pyyaml = "6.0.1"
-typing-extensions = "4.6.0"
+# pytest-asyncio >=1.3 (needed for pytest 9 / CVE-2025-71176) requires typing-extensions >=4.12
+typing-extensions = ">=4.12.0,<5"
 idna = "3.7"
 urllib3 = "^2.7.0"
 setuptools = "^80.9.0"
@@ -51,8 +52,9 @@ flake8 = "^6.0.0"
 types-pyyaml = "^6.0.12.8"
 types-cachetools = "^5.3.0.4"
 types-requests = "^2.28.11.15"
-pytest = "^7.2.2"
-pytest-asyncio = ">=0.21,<0.24"
+# Pin to fix CVE-2025-71176 (pytest < 9.0.3)
+pytest = "^9.0.3"
+pytest-asyncio = "^1.3"
 
 [build-system]
 requires = ["poetry-core"]
