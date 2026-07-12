@@ -35,7 +35,18 @@ from enforcer.metrics import pod_admission_mutations, replicaset_admissions, rs_
 # Configure logging
 logger = logging.getLogger()
 logHandler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+# When ENABLE_JSON_LOGS_FORMAT is set, emit JSON logs (one object per line) so
+# scrapers like Filebeat can index them; otherwise keep the plain text format.
+if os.environ.get("ENABLE_JSON_LOGS_FORMAT", "false").strip().lower() in ("true", "1", "yes"):
+    from pythonjsonlogger.json import JsonFormatter
+
+    formatter: logging.Formatter = JsonFormatter(
+        fmt="%(asctime)s %(levelname)s %(name)s %(filename)s %(lineno)d %(funcName)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+        rename_fields={"levelname": "severity"},
+    )
+else:
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))

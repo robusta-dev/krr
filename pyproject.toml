@@ -42,6 +42,7 @@ urllib3 = "^2.7.0"
 setuptools = "^80.9.0"
 zipp = "^3.19.1"
 tenacity = "^9.0.0"
+python-json-logger = "^3.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

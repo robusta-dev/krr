@@ -118,6 +118,8 @@ spec:
               value: "/etc/webhook/certs/tls.crt"
             - name: LOG_LEVEL
               value: {{ .Values.logLevel | quote }}
+            - name: ENABLE_JSON_LOGS_FORMAT
+              value: {{ .Values.global.enableJsonLogsFormat | default .Values.enableJsonLogsFormat | default false | quote }}
             {{- if .Values.certificate }}
             - name: CERTIFICATE
               value: {{ .Values.certificate | quote }}

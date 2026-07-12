@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from typing import Any, Literal, Optional, Union
 
@@ -203,12 +204,28 @@ class Config(pd.BaseSettings):
         global _config
 
         _config = config
-        logging.basicConfig(
-            level="NOTSET",
-            format="%(message)s",
-            datefmt="[%X]",
-            handlers=[RichHandler(console=config.logging_console)],
-        )
+        # ENABLE_JSON_LOGS_FORMAT is env-driven (never a CLI flag) so the
+        # interactive CLI keeps its Rich output, while in-cluster scan jobs can
+        # emit JSON logs (one object per line) for scrapers like Filebeat.
+        if os.environ.get("ENABLE_JSON_LOGS_FORMAT", "false").strip().lower() in ("true", "1", "yes"):
+            from pythonjsonlogger.json import JsonFormatter
+
+            handler = logging.StreamHandler(config.logging_console.file)
+            handler.setFormatter(
+                JsonFormatter(
+                    fmt="%(asctime)s %(levelname)s %(name)s %(filename)s %(lineno)d %(funcName)s %(message)s",
+                    datefmt="%Y-%m-%dT%H:%M:%S",
+                    rename_fields={"levelname": "severity"},
+                )
+            )
+            logging.basicConfig(level="NOTSET", handlers=[handler], force=True)
+        else:
+            logging.basicConfig(
+                level="NOTSET",
+                format="%(message)s",
+                datefmt="[%X]",
+                handlers=[RichHandler(console=config.logging_console)],
+            )
         logging.getLogger("").setLevel(logging.CRITICAL)
         logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
 
