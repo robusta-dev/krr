@@ -23,6 +23,7 @@ from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from pythonjsonlogger.json import JsonFormatter
 
 from enforcer.dal.supabase_dal import SupabaseDal
 from enforcer.patch_manager import patch_container_resources
@@ -38,8 +39,6 @@ logHandler = logging.StreamHandler(sys.stdout)
 # When ENABLE_JSON_LOGS_FORMAT is set, emit JSON logs (one object per line) so
 # scrapers like Filebeat can index them; otherwise keep the plain text format.
 if os.environ.get("ENABLE_JSON_LOGS_FORMAT", "false").strip().lower() in ("true", "1", "yes"):
-    from pythonjsonlogger.json import JsonFormatter
-
     formatter: logging.Formatter = JsonFormatter(
         fmt="%(asctime)s %(levelname)s %(name)s %(filename)s %(lineno)d %(funcName)s %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S",

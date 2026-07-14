@@ -8,6 +8,7 @@ from typing import Any, Literal, Optional, Union
 import pydantic as pd
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
+from pythonjsonlogger.json import JsonFormatter
 from rich.console import Console
 from rich.logging import RichHandler
 
@@ -208,8 +209,6 @@ class Config(pd.BaseSettings):
         # interactive CLI keeps its Rich output, while in-cluster scan jobs can
         # emit JSON logs (one object per line) for scrapers like Filebeat.
         if os.environ.get("ENABLE_JSON_LOGS_FORMAT", "false").strip().lower() in ("true", "1", "yes"):
-            from pythonjsonlogger.json import JsonFormatter
-
             handler = logging.StreamHandler(config.logging_console.file)
             handler.setFormatter(
                 JsonFormatter(
