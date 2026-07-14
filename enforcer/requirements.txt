@@ -1,10 +1,11 @@
-fastapi==0.121.3
+fastapi==0.139.0
 uvicorn==0.27.1
-pydantic==2.6.1
+pydantic==2.13.4
+starlette>=1.0.0
 supabase==2.5
 PyYAML==6.0.1
 cachetools==5.3.3
 prometheus-client==0.20.0
 kubernetes==26.1.0
 pyasn1>=0.6.2
-urllib3==2.6.3
+urllib3==2.7.0
