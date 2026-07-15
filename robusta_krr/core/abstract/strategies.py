@@ -49,7 +49,7 @@ class StrategySettings(pd.BaseModel):
         24 * 7 * 2, ge=1, description="The duration of the history data to use (in hours)."
     )
     timeframe_duration: float = pd.Field(1.25, gt=0, description="The step for the history data (in minutes).")
-    end_epoch: float = pd.Field(time.time(), ge=0.0, description="...")
+    end_epoch: float = pd.Field(time.time(), ge=0.0, description="The Unix epoch timestamp marking the end of the query window.")
 
     @property
     def history_timedelta(self) -> datetime.timedelta:
