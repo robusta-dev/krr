@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 import abc
 import datetime
 from textwrap import dedent
@@ -48,6 +49,7 @@ class StrategySettings(pd.BaseModel):
         24 * 7 * 2, ge=1, description="The duration of the history data to use (in hours)."
     )
     timeframe_duration: float = pd.Field(1.25, gt=0, description="The step for the history data (in minutes).")
+    end_epoch: float = pd.Field(time.time(), ge=0.0, description="...")
 
     @property
     def history_timedelta(self) -> datetime.timedelta:
@@ -56,6 +58,10 @@ class StrategySettings(pd.BaseModel):
     @property
     def timeframe_timedelta(self) -> datetime.timedelta:
         return datetime.timedelta(minutes=self.timeframe_duration)
+
+    @property
+    def end_datetime(self) -> datetime.datetime:
+        return datetime.datetime.utcfromtimestamp(self.end_epoch)
 
     def history_range_enough(self, history_range: tuple[datetime.timedelta, datetime.timedelta]) -> bool:
         """Override this function to check if the history range is enough for the strategy."""

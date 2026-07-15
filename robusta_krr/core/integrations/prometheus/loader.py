@@ -107,6 +107,7 @@ class PrometheusMetricsLoader:
         object: K8sObjectData,
         strategy: BaseStrategy,
         period: datetime.timedelta,
+        end_time: datetime.datetime,
         *,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> MetricsPodData:
@@ -124,6 +125,6 @@ class PrometheusMetricsLoader:
         """
 
         return {
-            MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, step)
+            MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, end_time, step)
             for MetricLoader in strategy.metrics
         }
