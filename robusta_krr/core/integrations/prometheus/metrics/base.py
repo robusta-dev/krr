@@ -163,6 +163,7 @@ class PrometheusMetric(BaseMetric):
         object (K8sObjectData): The object for which metrics need to be loaded.
         period (datetime.timedelta): The time period for which metrics need to be loaded.
         step (datetime.timedelta): The time interval between successive metric values.
+        end_time (datetime.datetime): The timestamp marking the end of the query window.
 
         Returns:
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
