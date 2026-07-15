@@ -1,5 +1,12 @@
 certificate: "" # base64 encoded
 logLevel: INFO
+# When true, logs are emitted as JSON (one object per line) instead of plain
+# text. Useful for log scrapers like Filebeat. Defaults to false.
+enableJsonLogsFormat: false
+
+# Values shared with/from a parent umbrella chart. Declared so templates can
+# safely reference .Values.global.* when the chart is installed standalone.
+global: {}
 
 # Certificate job configuration
 certJob:
