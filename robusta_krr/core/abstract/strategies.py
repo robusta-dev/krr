@@ -61,7 +61,7 @@ class StrategySettings(pd.BaseModel):
 
     @property
     def end_datetime(self) -> datetime.datetime:
-        return datetime.datetime.utcfromtimestamp(self.end_epoch)
+        return datetime.datetime.fromtimestamp(self.end_epoch, tz=datetime.timezone.utc)
 
     def history_range_enough(self, history_range: tuple[datetime.timedelta, datetime.timedelta]) -> bool:
         """Override this function to check if the history range is enough for the strategy."""
