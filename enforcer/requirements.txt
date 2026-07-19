@@ -1,6 +1,7 @@
-fastapi==0.121.3
+fastapi==0.139.0
 uvicorn==0.27.1
-pydantic==2.6.1
+pydantic==2.13.4
+starlette>=1.0.0
 supabase==2.5
 PyYAML==6.0.1
 cachetools==5.3.3
