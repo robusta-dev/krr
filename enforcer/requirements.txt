@@ -6,6 +6,7 @@ supabase==2.5
 PyYAML==6.0.1
 cachetools==5.3.3
 prometheus-client==0.20.0
+python-json-logger==3.3.0
 kubernetes==26.1.0
 pyasn1>=0.6.2
 urllib3==2.7.0

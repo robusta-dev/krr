@@ -27,9 +27,7 @@ class ResourceRecommendation(pd.BaseModel):
 
     request: Optional[float]
     limit: Optional[float]
-    info: Optional[str] = pd.Field(
-        None, description="Additional information about the recommendation."
-    )
+    info: Optional[str] = pd.Field(None, description="Additional information about the recommendation.")
 
     @classmethod
     def undefined(cls: type[SelfRR], info: Optional[str] = None) -> SelfRR:

@@ -28,28 +28,28 @@ class OwnerStore:
         """Initialize rs_owners on-demand, thread-safe, only once."""
         if self._owners_loaded.is_set():
             return  # Already loaded
-            
+
         # Try to acquire the loading lock without blocking
         if not self._loading_in_progress.acquire(blocking=False):
             # Another thread is loading, just return
             return
-            
+
         try:
             if self._owners_loaded.is_set():
                 return
-                
+
             replica_sets_owners: List[RsOwner] = KubernetesResourceLoader.load_replicasets()
             loaded_owners: Dict[str, RsOwner] = {}
             for owner in replica_sets_owners:
                 loaded_owners[self._rs_key(owner.rs_name, owner.namespace)] = owner
-            
+
             with self._rs_owners_lock:
                 self.rs_owners.update(loaded_owners)
                 rs_owners_size.set(len(self.rs_owners))
-            
+
             self._owners_loaded.set()
             logging.info(f"Loaded {len(loaded_owners)} ReplicaSet owners")
-            
+
         except Exception:
             logging.exception(f"Failed to load ReplicaSet owners")
         finally:
@@ -67,9 +67,7 @@ class OwnerStore:
 
         try:
             if not owner_references:  # pod has no owner, standalone pod. Return the pod
-                return PodOwner(
-                    kind="Pod", namespace=namespace, name=self.get_pod_name(pod)
-                )
+                return PodOwner(kind="Pod", namespace=namespace, name=self.get_pod_name(pod))
 
             # get only owners with controller == true
             controllers = [owner for owner in owner_references if owner.get("controller", False)]
@@ -82,11 +80,15 @@ class OwnerStore:
                 if controller_kind == "ReplicaSet":
                     with self._rs_owners_lock:
                         rs_owner = self.rs_owners.get(self._rs_key(controller.get("name"), namespace), None)
-                        return PodOwner(
-                            name=rs_owner.owner_name,
-                            namespace=rs_owner.namespace,
-                            kind=rs_owner.owner_kind,
-                        ) if rs_owner else None
+                        return (
+                            PodOwner(
+                                name=rs_owner.owner_name,
+                                namespace=rs_owner.namespace,
+                                kind=rs_owner.owner_kind,
+                            )
+                            if rs_owner
+                            else None
+                        )
                 else:  # Pod owner is a k8s workload: Job, StatefulSet, DaemonSet
                     return PodOwner(kind=controller_kind, name=controller.get("name"), namespace=namespace)
         except Exception:
@@ -125,17 +127,18 @@ class OwnerStore:
         else:
             logging.warning(f"No owner references for {rs_create_request}")
 
-
     def _cleanup_deleted_replica_sets(self):
         current_time = time.time()
 
         with self._rs_owners_lock:
             # Delete rs owners that were deleted more than REPLICA_SET_DELETION_WAIT seconds ago
             keys_to_delete = [
-                key for key, rs_owner in self.rs_owners.items()
-                if rs_owner.deletion_ts is not None and (current_time - rs_owner.deletion_ts) >= REPLICA_SET_DELETION_WAIT
+                key
+                for key, rs_owner in self.rs_owners.items()
+                if rs_owner.deletion_ts is not None
+                and (current_time - rs_owner.deletion_ts) >= REPLICA_SET_DELETION_WAIT
             ]
-            
+
             for key in keys_to_delete:
                 del self.rs_owners[key]
 

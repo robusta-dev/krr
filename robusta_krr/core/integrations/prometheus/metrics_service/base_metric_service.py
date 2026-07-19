@@ -24,8 +24,7 @@ class MetricsService(abc.ABC):
         self.executor = executor
 
     @abc.abstractmethod
-    def check_connection(self):
-        ...
+    def check_connection(self): ...
 
     @classmethod
     def name(cls) -> str:
@@ -33,12 +32,10 @@ class MetricsService(abc.ABC):
         return classname.replace("MetricsService", "") if classname != MetricsService.__name__ else classname
 
     @abc.abstractmethod
-    def get_cluster_names(self) -> Optional[List[str]]:
-        ...
+    def get_cluster_names(self) -> Optional[List[str]]: ...
 
     @abc.abstractmethod
-    async def get_cluster_summary(self) -> Dict[str, Any]:
-        ...
+    async def get_cluster_summary(self) -> Dict[str, Any]: ...
 
     @abc.abstractmethod
     async def gather_data(
@@ -47,8 +44,7 @@ class MetricsService(abc.ABC):
         LoaderClass: type[PrometheusMetric],
         period: datetime.timedelta,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
-    ) -> PodsTimeData:
-        ...
+    ) -> PodsTimeData: ...
 
     def get_prometheus_cluster_label(self) -> str:
         """

@@ -21,8 +21,9 @@ class RecommendationStore:
         self._reload_thread = threading.Thread(target=self._periodic_reload, daemon=True)
         self._reload_thread.start()
 
-
-    def _load_recommendations(self, current_stored_scan: Optional[str]) -> Tuple[Optional[str], Optional[Dict[str, WorkloadRecommendation]]]:
+    def _load_recommendations(
+        self, current_stored_scan: Optional[str]
+    ) -> Tuple[Optional[str], Optional[Dict[str, WorkloadRecommendation]]]:
         latest_scan_id, latest_scan = self.dal.get_latest_krr_scan(current_stored_scan)
 
         if not latest_scan:
@@ -33,10 +34,10 @@ class RecommendationStore:
         for container_recommendation in latest_scan:
             try:
                 store_key = self._store_key(
-                        name=container_recommendation["name"],
-                        namespace=container_recommendation["namespace"],
-                        kind=container_recommendation["kind"],
-                    )
+                    name=container_recommendation["name"],
+                    namespace=container_recommendation["namespace"],
+                    kind=container_recommendation["kind"],
+                )
 
                 recommendation = ContainerRecommendation.build(container_recommendation)
                 if recommendation:  # if a valid recommendation was created, connect it to the workload
@@ -77,4 +78,3 @@ class RecommendationStore:
     def get_recommendations(self, name: str, namespace: str, kind: str) -> Optional[WorkloadRecommendation]:
         with self._recommendations_lock:
             return self.recommendations.get(self._store_key(name, namespace, kind))
-

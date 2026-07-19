@@ -110,7 +110,9 @@ class Runner:
 
         Formatter = settings.Formatter
 
-        self._send_result(settings.publish_scan_url, settings.start_time, settings.scan_id, settings.named_sinks, result)
+        self._send_result(
+            settings.publish_scan_url, settings.start_time, settings.scan_id, settings.named_sinks, result
+        )
         formatted = result.format(Formatter)
         rich = getattr(Formatter, "__rich_console__", False)
 
@@ -139,30 +141,31 @@ class Runner:
                     console.print(formatted)
 
             if settings.azureblob_output:
-                self._upload_to_azure_blob(file_name, settings.azureblob_output)   
+                self._upload_to_azure_blob(file_name, settings.azureblob_output)
                 if settings.teams_webhook:
                     storage_account, container = self._extract_storage_info_from_sas(settings.azureblob_output)
-                    self._notify_teams(settings.teams_webhook, storage_account, container)  
+                    self._notify_teams(settings.teams_webhook, storage_account, container)
                 os.remove(file_name)
 
             if settings.slack_output:
                 client = WebClient(os.environ["SLACK_BOT_TOKEN"])
                 warnings.filterwarnings("ignore", category=UserWarning)
-                
+
                 # Upload file without specifying channel
                 result = client.files_upload_v2(
                     title="KRR Report",
                     file_uploads=[{"file": f"./{file_name}", "filename": file_name, "title": "KRR Report"}],
                 )
                 file_permalink = result["file"]["permalink"]
-                
+
                 # Post message with file link to channel
-                slack_title = settings.slack_title if settings.slack_title else f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}'
-                client.chat_postMessage(
-                    channel=settings.slack_output,
-                    text=f'{slack_title}\n{file_permalink}'
+                slack_title = (
+                    settings.slack_title
+                    if settings.slack_title
+                    else f'Kubernetes Resource Report for {(" ".join(settings.namespaces))}'
                 )
-                
+                client.chat_postMessage(channel=settings.slack_output, text=f"{slack_title}\n{file_permalink}")
+
                 os.remove(file_name)
 
     def _upload_to_azure_blob(self, file_name: str, base_sas_url: str):
@@ -186,8 +189,8 @@ class Runner:
             elif file_name.endswith(".html"):
                 headers["Content-Type"] = "text/html"
 
-            base_url = base_sas_url.rstrip('/')
-            url_part, query_part = base_url.split('?', 1)
+            base_url = base_sas_url.rstrip("/")
+            url_part, query_part = base_url.split("?", 1)
             full_sas_url = f"{url_part}/{file_name}?{query_part}"
 
             response = requests.put(full_sas_url, headers=headers, data=file_data)
@@ -204,7 +207,7 @@ class Runner:
         """Send notification to Teams with configurable webhook URL."""
         try:
             azure_portal_url = self._build_azure_portal_url(storage_account, container)
-            
+
             adaptive_card = {
                 "type": "message",
                 "attachments": [
@@ -220,52 +223,33 @@ class Runner:
                                     "text": "📊 KRR Report Generated",
                                     "weight": "Bolder",
                                     "size": "Medium",
-                                    "color": "Good"
+                                    "color": "Good",
                                 },
                                 {
                                     "type": "TextBlock",
                                     "text": f"Kubernetes Resource Report for {(' '.join(settings.namespaces))} has been generated and uploaded to Azure Blob Storage.",
                                     "wrap": True,
-                                    "spacing": "Medium"
+                                    "spacing": "Medium",
                                 },
                                 {
                                     "type": "FactSet",
                                     "facts": [
-                                        {
-                                            "title": "Namespaces:",
-                                            "value": ' '.join(settings.namespaces)
-                                        },
-                                        {
-                                            "title": "Format:",
-                                            "value": settings.format
-                                        },
-                                        {
-                                            "title": "Storage Account:",
-                                            "value": storage_account
-                                        },
-                                        {
-                                            "title": "Container:",
-                                            "value": container
-                                        },
-                                        {
-                                            "title": "Generated:",
-                                            "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                                        }
-                                    ]
-                                }
+                                        {"title": "Namespaces:", "value": " ".join(settings.namespaces)},
+                                        {"title": "Format:", "value": settings.format},
+                                        {"title": "Storage Account:", "value": storage_account},
+                                        {"title": "Container:", "value": container},
+                                        {"title": "Generated:", "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+                                    ],
+                                },
                             ],
                             "actions": [
-                                {
-                                    "type": "Action.OpenUrl",
-                                    "title": "View in Azure Storage",
-                                    "url": azure_portal_url
-                                }
-                            ]
-                        }
+                                {"type": "Action.OpenUrl", "title": "View in Azure Storage", "url": azure_portal_url}
+                            ],
+                        },
                     }
-                ]
+                ],
             }
-            
+
             response = requests.post(webhook_url, json=adaptive_card)
             if response.status_code == 202:
                 logger.info("Successfully notified Microsoft Teams about the report generation.")
@@ -281,14 +265,14 @@ class Runner:
         """
         try:
             parsed = urlparse(sas_url)
-            storage_account = parsed.hostname.split('.')[0]  # Extract the storage account name from the hostname
-            container = parsed.path.strip('/').split('/')[0]  # Extract the first part of the path as the container name
+            storage_account = parsed.hostname.split(".")[0]  # Extract the storage account name from the hostname
+            container = parsed.path.strip("/").split("/")[0]  # Extract the first part of the path as the container name
 
             return storage_account, container
         except Exception as e:
             logger.error(f"Failed to extract storage info from SAS URL: {e}")
             raise ValueError("Invalid SAS URL format. Please provide a valid Azure Blob Storage SAS URL.") from e
-    
+
     def _build_azure_portal_url(self, storage_account: str, container: str) -> str:
         """
         Builds the Azure portal URL to view the specified storage account and container.
@@ -296,7 +280,9 @@ class Runner:
 
         if not settings.azure_subscription_id or not settings.azure_resource_group:
             # Return a generic Azure portal link if specific info is missing
-            logger.warning("Azure subscription ID or resource group not provided. Azure portal link will not be specific.")
+            logger.warning(
+                "Azure subscription ID or resource group not provided. Azure portal link will not be specific."
+            )
         return f"https://portal.azure.com/#view/Microsoft_Azure_Storage/ContainerMenuBlade/~/overview/storageAccountId/%2Fsubscriptions%2F{settings.azure_subscription_id}%2FresourceGroups%2F{settings.azure_resource_group}%2Fproviders%2FMicrosoft.Storage%2FstorageAccounts%2F{storage_account}/path/{container}"
 
     def __get_resource_minimal(self, resource: ResourceType) -> float:
@@ -453,7 +439,7 @@ class Runner:
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             workloads = await self._k8s_loader.list_scannable_objects(clusters)
             if not clusters or len(clusters) == 1:
-                cluster_name = clusters[0] if clusters else None # its none if krr is running inside cluster
+                cluster_name = clusters[0] if clusters else None  # its none if krr is running inside cluster
                 prometheus_loader = self._get_prometheus_loader(cluster_name)
                 cluster_summary = await prometheus_loader.get_cluster_summary()
             else:
@@ -480,7 +466,7 @@ class Runner:
                 name=str(self._strategy).lower(),
                 settings=self._strategy.settings.dict(),
             ),
-            clusterSummary=cluster_summary
+            clusterSummary=cluster_summary,
         )
 
     async def run(self) -> int:
@@ -520,21 +506,24 @@ class Runner:
         else:
             return 0  # Exit with success
 
-    def _send_result(self, url: str, start_time: datetime, scan_id: str,named_sinks: Optional[List[str]], result: Result):
+    def _send_result(
+        self, url: str, start_time: datetime, scan_id: str, named_sinks: Optional[List[str]], result: Result
+    ):
         result_dict = json.loads(result.json(indent=2))
         _send_scan_payload(url, scan_id, start_time, result_dict, named_sinks, is_error=False)
+
 
 def publish_input_error(url: str, scan_id: str, start_time: str, error: str, named_sinks: Optional[List[str]]):
     _send_scan_payload(url, scan_id, start_time, error, named_sinks, is_error=True)
 
-def publish_error(error: str):
-    _send_scan_payload(settings.publish_scan_url, settings.scan_id, settings.start_time, error, settings.named_sinks, is_error=True)
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=8),
-    reraise=True
-)
+def publish_error(error: str):
+    _send_scan_payload(
+        settings.publish_scan_url, settings.scan_id, settings.start_time, error, settings.named_sinks, is_error=True
+    )
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=8), reraise=True)
 def _post_scan_request(url: str, headers: dict, payload: dict, scan_id: str, is_error: bool):
     logger_msg = "Sending error scan" if is_error else "Sending scan"
     logger.info(f"{logger_msg} for scan_id={scan_id} to url={url}")
@@ -550,10 +539,12 @@ def _send_scan_payload(
     start_time: Union[str, datetime],
     result_data: Union[str, dict],
     named_sinks: Optional[List[str]],
-    is_error: bool = False
+    is_error: bool = False,
 ):
     if not url or not scan_id or not start_time:
-        logger.debug(f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}")
+        logger.debug(
+            f"Missing required parameters: url={bool(url)}, scan_id={bool(scan_id)}, start_time={bool(start_time)}"
+        )
         return
 
     logger.debug(f"Preparing to send scan payload. scan_id={scan_id}, to sink {named_sinks}, is_error={is_error}")
@@ -571,7 +562,7 @@ def _send_scan_payload(
             "scan_type": "krr",
             "scan_id": scan_id,
             "start_time": start_time,
-        }
+        },
     }
     if named_sinks:
         action_request["sinks"] = named_sinks

@@ -45,9 +45,7 @@ class SupabaseDal:
         if not self.enabled:
             logging.info("Not connecting to Robusta platform - robusta token not provided")
             return
-        logging.info(
-            f"Initializing Robusta platform connection for account {self.account_id} cluster {self.cluster}"
-        )
+        logging.info(f"Initializing Robusta platform connection for account {self.account_id} cluster {self.cluster}")
         options = ClientOptions(postgrest_client_timeout=SUPABASE_TIMEOUT_SECONDS)
         self.client = create_client(self.url, self.api_key, options)
         self.user_id = self.sign_in()
@@ -67,9 +65,7 @@ class SupabaseDal:
                 message = exc.message or ""
                 if exc.code == "PGRST301" or "expired" in message.lower():
                     # JWT expired. Sign in again and retry the query
-                    logging.error(
-                        "JWT token expired/invalid, signing in to Supabase again"
-                    )
+                    logging.error("JWT token expired/invalid, signing in to Supabase again")
                     self.sign_in()
                     # update the session to the new one, after re-sign in
                     _self.session = self.client.postgrest.session
@@ -81,7 +77,7 @@ class SupabaseDal:
         SyncQueryRequestBuilder.execute = execute_with_retry
 
     @staticmethod
-    def __load_robusta_config() -> (Optional[RobustaToken],Optional[str]):
+    def __load_robusta_config() -> (Optional[RobustaToken], Optional[str]):
         config_file_path = ROBUSTA_CONFIG_PATH
         env_ui_token = os.environ.get("ROBUSTA_UI_TOKEN")
         cluster_name = os.environ.get("CLUSTER_NAME")
@@ -92,9 +88,7 @@ class SupabaseDal:
                 decoded = base64.b64decode(env_ui_token)
                 return RobustaToken(**json.loads(decoded)), cluster_name
             except binascii.Error:
-                raise Exception(
-                    "binascii.Error encountered. The Robusta UI token is not a valid base64."
-                )
+                raise Exception("binascii.Error encountered. The Robusta UI token is not a valid base64.")
             except json.JSONDecodeError:
                 raise Exception(
                     "json.JSONDecodeError encountered. The Robusta UI token could not be parsed as JSON after being base64 decoded."
@@ -112,10 +106,7 @@ class SupabaseDal:
                 if "robusta_sink" in conf.keys():
                     token = conf["robusta_sink"].get("token")
                     if not token:
-                        raise Exception(
-                            "No robusta token provided.\n"
-                            "Please set a valid Robusta UI token.\n "
-                        )
+                        raise Exception("No robusta token provided.\n" "Please set a valid Robusta UI token.\n ")
                     env_replacement_token = get_env_replacement(token)
                     if env_replacement_token:
                         token = env_replacement_token
@@ -131,9 +122,7 @@ class SupabaseDal:
                         decoded = base64.b64decode(token)
                         return RobustaToken(**json.loads(decoded)), config.global_config.get("cluster_name")
                     except binascii.Error:
-                        raise Exception(
-                            "binascii.Error encountered. The robusta token provided is not a valid base64."
-                        )
+                        raise Exception("binascii.Error encountered. The robusta token provided is not a valid base64.")
                     except json.JSONDecodeError:
                         raise Exception(
                             "json.JSONDecodeError encountered. The Robusta token provided could not be parsed as JSON after being base64 decoded."
@@ -167,12 +156,8 @@ class SupabaseDal:
 
     def sign_in(self) -> str:
         logging.info("Supabase DAL login")
-        res = self.client.auth.sign_in_with_password(
-            {"email": self.email, "password": self.password}
-        )
-        self.client.auth.set_session(
-            res.session.access_token, res.session.refresh_token
-        )
+        res = self.client.auth.sign_in_with_password({"email": self.email, "password": self.password})
+        self.client.auth.set_session(res.session.access_token, res.session.refresh_token)
         self.client.postgrest.auth(res.session.access_token)
         return res.user.id
 
@@ -200,7 +185,7 @@ class SupabaseDal:
                 latest_scan_data = sorted_scans[0]
             else:
                 latest_scan_data = scans_meta_response.data[0]
-                
+
             latest_scan_id = latest_scan_data["scan_id"]
 
             if latest_scan_id == current_scan_id:
@@ -211,7 +196,9 @@ class SupabaseDal:
             scan_datetime = datetime.fromisoformat(scan_start)
             max_age = timedelta(hours=SCAN_AGE_HOURS_THRESHOLD)
             if datetime.now(timezone.utc) - scan_datetime > max_age:
-                logging.warning(f"Latest scan {latest_scan_id} is too old (started {scan_start}). No fresh KRR scan available.")
+                logging.warning(
+                    f"Latest scan {latest_scan_id} is too old (started {scan_start}). No fresh KRR scan available."
+                )
                 return None, None
 
             scans_results_response = (
@@ -229,6 +216,3 @@ class SupabaseDal:
         except Exception:
             logging.exception("Supabase error while retrieving krr scan data")
             return None, None
-
-
-

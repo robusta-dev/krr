@@ -32,6 +32,8 @@ ENFORCER_EXPECTED_LINES = [
     "# DO NOT ADD ANY CODE ABOVE THIS\n",
     "# ADDING IMPORTS BEFORE ADDING THE CUSTOM CERTS MIGHT INIT HTTP CLIENTS THAT DOESN'T RESPECT THE CUSTOM CERT\n",
 ]
+
+
 @pytest.mark.parametrize(
     "file_path,file_name,expected_lines",
     [

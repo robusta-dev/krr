@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from typing import Any, Literal, Optional, Union
 
 import pydantic as pd
 from kubernetes import config
 from kubernetes.config.config_exception import ConfigException
+from pythonjsonlogger.json import JsonFormatter
 from rich.console import Console
 from rich.logging import RichHandler
 
@@ -52,14 +54,20 @@ class Config(pd.BaseSettings):
 
     # Threading settings
     max_workers: int = pd.Field(6, ge=1)
-    
+
     # Discovery settings
     discovery_job_batch_size: int = pd.Field(5000, ge=1, description="Batch size for Kubernetes job API calls")
-    discovery_job_max_batches: int = pd.Field(100, ge=1, description="Maximum number of job batches to process to prevent infinite loops")
-    
+    discovery_job_max_batches: int = pd.Field(
+        100, ge=1, description="Maximum number of job batches to process to prevent infinite loops"
+    )
+
     # Job grouping settings
-    job_grouping_labels: Union[list[str], str, None] = pd.Field(None, description="Label name(s) to use for grouping jobs into GroupedJob workload type")
-    job_grouping_limit: int = pd.Field(500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group")
+    job_grouping_labels: Union[list[str], str, None] = pd.Field(
+        None, description="Label name(s) to use for grouping jobs into GroupedJob workload type"
+    )
+    job_grouping_limit: int = pd.Field(
+        500, ge=1, description="Maximum number of jobs/pods to query per GroupedJob group"
+    )
 
     # Logging Settings
     format: str
@@ -73,7 +81,7 @@ class Config(pd.BaseSettings):
     publish_scan_url: Optional[str] = pd.Field(None)
     start_time: Optional[str] = pd.Field(None)
     scan_id: Optional[str] = pd.Field(None)
-    named_sinks: Optional[list[str]] = pd.Field(None) 
+    named_sinks: Optional[list[str]] = pd.Field(None)
 
     # Output Settings
     file_output: Optional[str] = pd.Field(None)
@@ -144,7 +152,7 @@ class Config(pd.BaseSettings):
             return None
         if isinstance(v, str):
             # Split comma-separated string into list
-            return [label.strip() for label in v.split(',')]
+            return [label.strip() for label in v.split(",")]
         return v
 
     def create_strategy(self) -> AnyStrategy:
@@ -197,12 +205,26 @@ class Config(pd.BaseSettings):
         global _config
 
         _config = config
-        logging.basicConfig(
-            level="NOTSET",
-            format="%(message)s",
-            datefmt="[%X]",
-            handlers=[RichHandler(console=config.logging_console)],
-        )
+        # ENABLE_JSON_LOGS_FORMAT is env-driven (never a CLI flag) so the
+        # interactive CLI keeps its Rich output, while in-cluster scan jobs can
+        # emit JSON logs (one object per line) for scrapers like Filebeat.
+        if os.environ.get("ENABLE_JSON_LOGS_FORMAT", "false").strip().lower() in ("true", "1", "yes"):
+            handler = logging.StreamHandler(config.logging_console.file)
+            handler.setFormatter(
+                JsonFormatter(
+                    fmt="%(asctime)s %(levelname)s %(name)s %(filename)s %(lineno)d %(funcName)s %(message)s",
+                    datefmt="%Y-%m-%dT%H:%M:%S",
+                    rename_fields={"levelname": "severity"},
+                )
+            )
+            logging.basicConfig(level="NOTSET", handlers=[handler], force=True)
+        else:
+            logging.basicConfig(
+                level="NOTSET",
+                format="%(message)s",
+                datefmt="[%X]",
+                handlers=[RichHandler(console=config.logging_console)],
+            )
         logging.getLogger("").setLevel(logging.CRITICAL)
         logger.setLevel(logging.DEBUG if config.verbose else logging.CRITICAL if config.quiet else logging.INFO)
 

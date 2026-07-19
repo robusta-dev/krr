@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("krr")
 
+
 class PrometheusMetricsLoader:
     def __init__(self, *, cluster: Optional[str] = None) -> None:
         """
@@ -56,7 +57,12 @@ class PrometheusMetricsLoader:
             metrics_to_check = [PrometheusMetricsService]
         else:
             logger.info("No Prometheus URL is specified, trying to auto-detect a metrics service")
-            metrics_to_check = [VictoriaMetricsService, ThanosMetricsService, MimirMetricsService, PrometheusMetricsService]
+            metrics_to_check = [
+                VictoriaMetricsService,
+                ThanosMetricsService,
+                MimirMetricsService,
+                PrometheusMetricsService,
+            ]
 
         for metric_service_class in metrics_to_check:
             service_name = metric_service_class.name()
