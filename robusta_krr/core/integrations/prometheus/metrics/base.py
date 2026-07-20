@@ -154,7 +154,7 @@ class PrometheusMetric(BaseMetric):
         return await loop.run_in_executor(self.executor, lambda: self._query_prometheus_sync(data))
 
     async def load_data(
-        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
+        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta, end_time: datetime.datetime
     ) -> PodsTimeData:
         """
         Asynchronous method that loads metric data for a specific object.
@@ -163,6 +163,7 @@ class PrometheusMetric(BaseMetric):
         object (K8sObjectData): The object for which metrics need to be loaded.
         period (datetime.timedelta): The time period for which metrics need to be loaded.
         step (datetime.timedelta): The time interval between successive metric values.
+        end_time (datetime.datetime): The timestamp marking the end of the query window.
 
         Returns:
         ResourceHistoryData: An instance of the ResourceHistoryData class representing the loaded metrics.
@@ -172,14 +173,13 @@ class PrometheusMetric(BaseMetric):
         duration_str = self._step_to_string(period)
 
         query = self.get_query(object, duration_str, step_str)
-        end_time = datetime.datetime.utcnow().replace(second=0, microsecond=0)
         start_time = end_time - period
 
         # Here if we split the object into multiple sub-objects, we query each sub-object recursively.
         if self.pods_batch_size is not None and object.pods_count > self.pods_batch_size:
             results = await asyncio.gather(
                 *[
-                    self.load_data(splitted_object, period, step)
+                    self.load_data(splitted_object, period, step, end_time)
                     for splitted_object in object.split_into_batches(self.pods_batch_size)
                 ]
             )
