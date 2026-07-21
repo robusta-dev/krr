@@ -5,13 +5,8 @@ on:
     types: [created]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        # we build on macos-15-intel for x86 builds
-        os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
-
-    runs-on: ${{ matrix.os }}
+  build-ubuntu:
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -20,7 +15,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.11'
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -28,12 +23,121 @@ jobs:
         pip install pyinstaller
 
     - name: Install dependancies (Linux)
-      if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get install -y binutils
 
+    - name: Set version in code
+      run: |
+        awk 'NR==3{$0="__version__ = \"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
+        cat ./robusta_krr/__init__.py
+
+    - name: Build with PyInstaller
+      shell: bash
+      run: |
+        pyinstaller krr.py
+        mkdir -p ./dist/krr/grapheme/data
+        cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
+        cp ./intro.txt ./dist/krr/intro.txt
+
+    - name: Zip the application
+      run: |
+        cd dist
+        zip -r krr-ubuntu-latest-${{ github.ref_name }}.zip krr
+        mv krr-ubuntu-latest-${{ github.ref_name }}.zip ../
+        cd ..
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./krr-ubuntu-latest-${{ github.ref_name }}.zip
+        asset_name: krr-ubuntu-latest-${{ github.ref_name }}.zip
+        asset_content_type: application/octet-stream
+
+    - name: Upload build as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: krr-ubuntu-latest-${{ github.ref_name }}
+        path: ./krr-ubuntu-latest-${{ github.ref_name }}.zip
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Set version in code
+      run: |
+        $content = Get-Content -Path .\robusta_krr\__init__.py
+        $content[2] = "__version__=`"$($env:GITHUB_REF_NAME)`""
+        $content | Out-File -FilePath .\robusta_krr\__init__.py -Encoding ascii
+        Get-Content .\robusta_krr\__init__.py
+      shell: pwsh
+      env:
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+
+    - name: Build with PyInstaller
+      shell: bash
+      run: |
+        pyinstaller krr.py
+        mkdir -p ./dist/krr/grapheme/data
+        cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
+        cp ./intro.txt ./dist/krr/intro.txt
+
+    - name: Zip the application
+      run: |
+        Set-Location -Path dist
+        Compress-Archive -Path krr -DestinationPath krr-windows-latest-${{ github.ref_name }}.zip -Force
+        Move-Item -Path krr-windows-latest-${{ github.ref_name }}.zip -Destination ..\
+        Set-Location -Path ..
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./krr-windows-latest-${{ github.ref_name }}.zip
+        asset_name: krr-windows-latest-${{ github.ref_name }}.zip
+        asset_content_type: application/octet-stream
+
+    - name: Upload build as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: krr-windows-latest-${{ github.ref_name }}
+        path: ./krr-windows-latest-${{ github.ref_name }}.zip
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
     - name: Install the Apple certificate and provisioning profile
-      if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel' 
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -62,25 +166,12 @@ jobs:
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
-    - name: Set version in code (Unix)
-      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-15-intel' 
+    - name: Set version in code
       run: |
         awk 'NR==3{$0="__version__ = \"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
         cat ./robusta_krr/__init__.py
 
-    - name: Set version in code (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        $content = Get-Content -Path .\robusta_krr\__init__.py
-        $content[2] = "__version__=`"$($env:GITHUB_REF_NAME)`""
-        $content | Out-File -FilePath .\robusta_krr\__init__.py -Encoding ascii
-        Get-Content .\robusta_krr\__init__.py
-      shell: pwsh
-      env:
-        GITHUB_REF_NAME: ${{ github.ref_name }}
-
     - name: Build with PyInstaller
-      if: matrix.os == 'macos-latest' 
       shell: bash
       run: |
         pyinstaller --target-architecture arm64 krr.py
@@ -88,8 +179,87 @@ jobs:
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
         cp ./intro.txt ./dist/krr/intro.txt
 
+    - name: Zip the application
+      run: |
+        cd dist
+        zip -r krr-macos-latest-${{ github.ref_name }}.zip krr
+        mv krr-macos-latest-${{ github.ref_name }}.zip ../
+        cd ..
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./krr-macos-latest-${{ github.ref_name }}.zip
+        asset_name: krr-macos-latest-${{ github.ref_name }}.zip
+        asset_content_type: application/octet-stream
+
+    - name: Upload build as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: krr-macos-latest-${{ github.ref_name }}
+        path: ./krr-macos-latest-${{ github.ref_name }}.zip
+
+    - name: Clean up keychain and provisioning profile
+      if: always()
+      run: |
+        security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+        rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
+
+  build-macos-intel:
+    runs-on: macos-15-intel
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Install the Apple certificate and provisioning profile
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        # create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        # import certificate and provisioning profile from secrets
+        echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+        echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+        # create temporary keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+        # import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+
+        # apply provisioning profile
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+    - name: Set version in code
+      run: |
+        awk 'NR==3{$0="__version__ = \"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
+        cat ./robusta_krr/__init__.py
+
     - name: Build with PyInstaller
-      if: matrix.os != 'macos-latest'
       shell: bash
       run: |
         pyinstaller krr.py
@@ -97,46 +267,37 @@ jobs:
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
         cp ./intro.txt ./dist/krr/intro.txt
 
-    - name: Zip the application (Unix)
-      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-15-intel'
+    - name: Zip the application
       run: |
         cd dist
-        zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip krr
-        mv krr-${{ matrix.os }}-${{ github.ref_name }}.zip ../
+        zip -r krr-macos-15-intel-${{ github.ref_name }}.zip krr
+        mv krr-macos-15-intel-${{ github.ref_name }}.zip ../
         cd ..
-
-    - name: Zip the application (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        Set-Location -Path dist
-        Compress-Archive -Path krr -DestinationPath krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Force
-        Move-Item -Path krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Destination ..\
-        Set-Location -Path ..
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ github.event.release.upload_url }} 
-        asset_path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
-        asset_name: krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./krr-macos-15-intel-${{ github.ref_name }}.zip
+        asset_name: krr-macos-15-intel-${{ github.ref_name }}.zip
         asset_content_type: application/octet-stream
 
     - name: Upload build as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: krr-${{ matrix.os }}-${{ github.ref_name }}
-        path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+        name: krr-macos-15-intel-${{ github.ref_name }}
+        path: ./krr-macos-15-intel-${{ github.ref_name }}.zip
 
     - name: Clean up keychain and provisioning profile
-      if: (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel') && always()
+      if: always()
       run: |
         security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
         rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
 
   check-latest:
-    needs: build
+    needs: [build-macos, build-ubuntu]
     runs-on: ubuntu-latest
     outputs: 
       IS_LATEST: ${{ steps.check-latest.outputs.release == github.ref_name }}
