@@ -100,6 +100,51 @@ By right-sizing your containers with KRR, you can save an average of 69% on clou
 
 Read more about [how KRR works](#how-krr-works)
 
+<!-- QUICK START -->
+
+## Quick Start Guide
+
+Get up and running with KRR in under 5 minutes:
+
+### 1. Install KRR
+
+```bash
+pip install robusta-krr
+```
+
+### 2. Verify Installation
+
+```bash
+krr --help
+```
+
+### 3. Run Your First Scan
+
+```bash
+krr simple --prometheus-url=http://localhost:9090
+```
+
+That's it! You now have recommendations for optimizing your Kubernetes resources.
+
+For more details, see the full [Installation](#installation) and [Usage](#usage) sections below.
+
+
+## Quick Start Guide
+
+Get started with KRR in under 5 minutes:
+
+```bash
+# Install with Homebrew
+brew tap robusta-dev/homebrew-krr
+brew install krr
+
+# Verify installation
+krr version
+
+# Run your first scan
+krr simple
+```
+
 ## Difference with Kubernetes VPA
 
 | Feature 🛠️                  | Robusta KRR 🚀                                                                                             | Kubernetes VPA 🌐                                           |
