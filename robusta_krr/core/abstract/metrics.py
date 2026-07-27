@@ -16,5 +16,5 @@ class BaseMetric(ABC):
 
     @abstractmethod
     async def load_data(
-        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta
+        self, object: K8sObjectData, period: datetime.timedelta, step: datetime.timedelta, end_time: datetime.datetime
     ) -> PodsTimeData: ...

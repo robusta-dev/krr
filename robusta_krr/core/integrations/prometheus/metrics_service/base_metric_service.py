@@ -43,6 +43,7 @@ class MetricsService(abc.ABC):
         object: K8sObjectData,
         LoaderClass: type[PrometheusMetric],
         period: datetime.timedelta,
+        end_time: datetime.datetime,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> PodsTimeData: ...
 
