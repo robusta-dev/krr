@@ -24,5 +24,25 @@ COPY ./krr.py krr.py
 COPY ./robusta_krr/ robusta_krr/
 COPY ./intro.txt intro.txt
 
+# Remove unused OS packages with unfixed CVEs (perl-base: 4 CRITICAL; util-linux
+# family: HIGH). dpkg exits non-zero on essential-package warnings even on
+# success, so removals and runtime sanity are verified explicitly instead.
+RUN dpkg --purge --force-remove-essential --force-depends \
+      perl-base \
+      util-linux bsdutils mount \
+      libmount1 libblkid1 libsmartcols1 liblastlog2-2 libuuid1 \
+    ; rm -rf /var/lib/apt/lists/* \
+    && for p in perl-base util-linux bsdutils mount libmount1 libblkid1 \
+                libsmartcols1 liblastlog2-2 libuuid1; do \
+         status="$(dpkg-query -W -f='${db:Status-Status}' "$p" 2>/dev/null || true)"; \
+         if [ -n "$status" ] && [ "$status" != "not-installed" ]; then \
+           echo "ERROR: $p was not removed (status: $status)" >&2; exit 1; \
+         fi; \
+       done \
+    && python -c "import robusta_krr" \
+    && python -c "import uuid; uuid.uuid4(); uuid.uuid1(); uuid.getnode()" \
+    && bash -c 'echo bash-ok' \
+    && echo "purge verified"
+
 # Run the application using 'poetry run krr simple'
 CMD ["python", "krr.py", "simple"]
