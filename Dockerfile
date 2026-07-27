@@ -34,8 +34,9 @@ RUN dpkg --purge --force-remove-essential --force-depends \
     ; rm -rf /var/lib/apt/lists/* \
     && for p in perl-base util-linux bsdutils mount libmount1 libblkid1 \
                 libsmartcols1 liblastlog2-2 libuuid1; do \
-         if dpkg -l "$p" 2>/dev/null | grep -q '^[hi]i'; then \
-           echo "ERROR: $p was not removed" >&2; exit 1; \
+         status="$(dpkg-query -W -f='${db:Status-Status}' "$p" 2>/dev/null || true)"; \
+         if [ -n "$status" ] && [ "$status" != "not-installed" ]; then \
+           echo "ERROR: $p was not removed (status: $status)" >&2; exit 1; \
          fi; \
        done \
     && python -c "import robusta_krr" \
