@@ -39,15 +39,9 @@ pyyaml = "6.0.1"
 typing-extensions = ">=4.12.0,<5"
 idna = "3.7"
 urllib3 = "^2.7.0"
-# setuptools >=81 vendors jaraco.context >=6.1.0 (CVE-2026-23949) and wheel
-# >=0.46.2 (CVE-2026-24049); 83.0.0 also fixes CVE-2026-59890
 setuptools = "^83.0.0"
-# Transitive via matplotlib. Pinned to fix CVE-2026-54058, CVE-2026-54059,
-# CVE-2026-54060, CVE-2026-55379, CVE-2026-55380, CVE-2026-59197,
-# CVE-2026-59199, CVE-2026-59200, CVE-2026-59204, CVE-2026-59205 (all HIGH)
+# transitive deps pinned for CVE fixes
 pillow = "^12.3.0"
-# Transitive via google-auth/pyasn1-modules. Pinned to fix CVE-2026-59885 and
-# CVE-2026-59886 (HIGH)
 pyasn1 = "^0.6.4"
 zipp = "^3.19.1"
 tenacity = "^9.0.0"
