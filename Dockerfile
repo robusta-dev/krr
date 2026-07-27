@@ -39,6 +39,17 @@ COPY ./intro.txt intro.txt
 #     the image with no working bash for `kubectl exec`/`docker exec` debugging
 #   login (CVE-2026-53615) - dpkg protected package, cannot be removed
 #
+# Known, accepted degradation: removing libuuid1 disables CPython's optional
+# _uuid C accelerator, so the stdlib uuid module falls back to its pure-Python
+# implementation (uuid.py handles the ImportError by design). Nothing in krr
+# or its dependencies uses uuid1()/generate_time_safe - the only code paths
+# _uuid accelerates - and the fallback is exercised by the check below.
+#
+# Kubernetes is unaffected by removing mount/util-linux: volume, secret and
+# configmap mounts are performed by the container runtime on the host via
+# mount(2) syscalls before the container rootfs starts; the runtime never
+# execs the in-image mount binary.
+#
 # Note this leaves apt/dpkg unusable inside the running container. dpkg exits
 # non-zero on the essential-package warnings even when every removal succeeds,
 # so the removals are verified explicitly instead of trusting the exit code.
@@ -54,6 +65,7 @@ RUN dpkg --purge --force-remove-essential --force-depends \
          fi; \
        done \
     && python -c "import robusta_krr" \
+    && python -c "import uuid; uuid.uuid4(); uuid.uuid1(); uuid.getnode()" \
     && bash -c 'echo bash-ok' \
     && echo "purge verified"
 
