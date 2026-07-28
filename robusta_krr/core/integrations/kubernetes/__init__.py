@@ -54,6 +54,8 @@ class ClusterLoader:
         self.autoscaling_v2 = client.AutoscalingV2Api(api_client=self.api_client)
 
         self.__kind_available: defaultdict[KindLiteral, bool] = defaultdict(lambda: True)
+        self._strimzipodset_api_version: Optional[str] = None
+        self._strimzipodset_api_version_checked = False
 
         self.__jobs_for_cronjobs: dict[str, list[V1Job]] = {}
         self.__jobs_loading_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
@@ -471,15 +473,103 @@ class ClusterLoader:
             extract_containers=_extract_containers,
         )
 
-    def _list_strimzipodsets(self) -> list[K8sObjectData]:
+    def _probe_strimzipodset_api_version(self, version: str) -> None:
+        probe_kwargs = {"limit": 1}
+        group = "core.strimzi.io"
+        plural = "strimzipodsets"
+
+        if self.namespaces == "*":
+            self.custom_objects.list_cluster_custom_object(
+                group=group,
+                version=version,
+                plural=plural,
+                **probe_kwargs,
+            )
+            return
+
+        if not self.namespaces:
+            logger.debug("No namespaces configured, skipping StrimziPodSet version probe")
+            raise ApiException(status=404, reason="No namespaces configured")
+
+        last_error: Optional[ApiException] = None
+        for namespace in self.namespaces:
+            try:
+                self.custom_objects.list_namespaced_custom_object(
+                    group=group,
+                    version=version,
+                    plural=plural,
+                    namespace=namespace,
+                    **probe_kwargs,
+                )
+                return
+            except ApiException as e:
+                last_error = e
+                if e.status == 404:
+                    logger.debug(
+                        f"StrimziPodSet API version {version} not available in namespace {namespace}"
+                    )
+                else:
+                    logger.debug(
+                        f"Skipping namespace {namespace} while probing StrimziPodSet API version {version}: {e.reason}"
+                    )
+                continue
+
+        if last_error is not None:
+            raise last_error
+
+    def _resolve_strimzipodset_api_version(self) -> Optional[str]:
+        if self._strimzipodset_api_version_checked:
+            return self._strimzipodset_api_version
+
+        if self.namespaces != "*" and not self.namespaces:
+            logger.debug("No namespaces configured, skipping StrimziPodSet API detection")
+            self._strimzipodset_api_version_checked = True
+            self._strimzipodset_api_version = None
+            return None
+
+        # Strimzi >= 1.0 serves v1 only; older operators still expose v1beta2.
+        for version in ("v1", "v1beta2"):
+            try:
+                self._probe_strimzipodset_api_version(version)
+            except ApiException as e:
+                if e.status == 404:
+                    continue
+                logger.exception(
+                    f"Error {e.status} probing StrimziPodSet API version {version} in cluster {self.cluster}: {e.reason}"
+                )
+                continue
+            except Exception:
+                logger.exception(
+                    f"Unexpected error probing StrimziPodSet API version {version} in cluster {self.cluster}"
+                )
+                return None
+            else:
+                self._strimzipodset_api_version = version
+                self._strimzipodset_api_version_checked = True
+                logger.debug(f"StrimziPodSet API version {version} available in {self.cluster}")
+                return version
+
+        self._strimzipodset_api_version = None
+        self._strimzipodset_api_version_checked = True
+        return None
+
+    async def _list_strimzipodsets(self) -> list[K8sObjectData]:
         # NOTE: Using custom objects API returns dicts, but all other APIs return objects
         # We need to handle this difference using a small wrapper
-        return self._list_scannable_objects(
+        loop = asyncio.get_running_loop()
+        version = await loop.run_in_executor(self.executor, self._resolve_strimzipodset_api_version)
+        if version is None:
+            if self.__kind_available["StrimziPodSet"]:
+                logger.debug(f"StrimziPodSet API not available in {self.cluster}")
+            self.__kind_available["StrimziPodSet"] = False
+            return []
+
+        return await self._list_scannable_objects(
             kind="StrimziPodSet",
             all_namespaces_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_cluster_custom_object(
                     group="core.strimzi.io",
-                    version="v1beta2",
+                    version=version,
                     plural="strimzipodsets",
                     **kwargs,
                 )
@@ -487,7 +577,7 @@ class ClusterLoader:
             namespaced_request=lambda **kwargs: ObjectLikeDict(
                 self.custom_objects.list_namespaced_custom_object(
                     group="core.strimzi.io",
-                    version="v1beta2",
+                    version=version,
                     plural="strimzipodsets",
                     **kwargs,
                 )
