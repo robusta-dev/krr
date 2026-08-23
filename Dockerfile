@@ -9,6 +9,19 @@ ENV PATH="/app/venv/bin:$PATH"
 RUN apt-get update && \
     dpkg --add-architecture arm64
 
+# Upgrade libattr1 and libacl1 to the fixed versions (CVE-2026-54371 in
+# attr < 2.6.0; CVE-2026-54369 and CVE-2026-54370 in acl < 2.4.0). Trixie has
+# no fixed build yet (fix arrives only in a future point release), so these
+# two leaf libraries are pulled from unstable, pinned low so that nothing
+# else is upgraded from there.
+RUN echo 'deb http://deb.debian.org/debian unstable main' > /etc/apt/sources.list.d/unstable.list \
+    && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n' > /etc/apt/preferences.d/unstable \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends -t unstable libattr1 libacl1 \
+    && rm /etc/apt/sources.list.d/unstable.list /etc/apt/preferences.d/unstable \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libattr1)" ge 1:2.6.0 \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libacl1)" ge 2.4.0
+
 # Set the working directory
 WORKDIR /app
 
