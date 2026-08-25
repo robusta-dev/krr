@@ -21,7 +21,14 @@ from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
+from robusta_krr.core.models.result import (
+    ResourceAllocations,
+    ResourceScan,
+    ResourceType,
+    Result,
+    StrategyData,
+    filter_scans_by_severity,
+)
 from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version, load_latest_version
@@ -459,8 +466,10 @@ class Runner:
         elif len(successful_scans) == 0:
             raise CriticalRunnerException("No successful scans were made. Check the logs for more information.")
 
+        reported_scans = filter_scans_by_severity(successful_scans, settings.severity_threshold)
+
         return Result(
-            scans=successful_scans,
+            scans=reported_scans,
             description=f"[b]{self._strategy.display_name.title()} Strategy[/b]\n\n{self._strategy.description}",
             strategy=StrategyData(
                 name=str(self._strategy).lower(),

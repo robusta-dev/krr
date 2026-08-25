@@ -426,6 +426,18 @@ krr simple --logtostderr -f json > result.json 2> logs-and-errors.log
 </details>
 
 <details>
+  <summary>Only report workloads that need a significant change</summary>
+
+By default KRR reports every scanned workload, even ones that are already close to their recommendation. If you only care about the workloads worth acting on, use `--severity-threshold` to drop everything below a given severity from the output:
+
+```sh
+krr simple --severity-threshold WARNING
+```
+
+Accepted values are `GOOD`, `OK`, `WARNING` and `CRITICAL` (severity reflects how far the current requests/limits are from the recommendation). Workloads whose severity can't be computed are always kept.
+</details>
+
+<details>
   <summary>Centralized Prometheus (multi-cluster)</summary>
   <p ><a href="#scanning-with-a-centralized-prometheus">See below on filtering output from a centralized prometheus, so it matches only one cluster</a></p>
 
