@@ -1,0 +1,134 @@
+# -- How many operator pods should run.
+# Note: Operator features leader election for K8s 1.16 and later, so that only 1 pod is reconciling/scheduling jobs.
+# Follower pods reduce interruption time as they're on hot standby when leader is unresponsive.
+replicaCount: 1
+image:
+  # -- Operator image pull policy
+  pullPolicy: IfNotPresent
+  # -- Operator image registry
+  registry: ghcr.io
+  # -- Operator image repository
+  repository: k8up-io/k8up
+  # -- Operator image tag (version)
+  tag: v2.7.1
+
+imagePullSecrets: []
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  # -- Annotations to add to the service account.
+  annotations: {}
+
+k8up:
+  # -- envVars allows the specification of additional environment variables.
+  # See [values.yaml](values.yaml) how to specify
+  # See documentation which variables are supported.
+  envVars: []
+  # - name: BACKUP_GLOBALACCESSKEYID
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: global-s3-credentials
+  #       key: access-key-id
+
+  backupImage:
+    # -- The backup runner image repository.
+    # Defaults to `{image.registry}/{image.repository}`.
+    # Specify an image repository including registry, e.g. `example.com/repo/image`
+    repository: ""
+    # -- The backup runner image tag
+    # Defaults to `{image.tag}`
+    tag: ""
+
+  # -- Specifies the timezone K8up is using for scheduling.
+  # Empty value defaults to the timezone in which Kubernetes is deployed.
+  # Accepts `tz database` compatible entries, e.g. `Europe/Zurich`
+  timezone: ""
+
+  # -- Specifies whether leader election should be enabled.
+  enableLeaderElection: true
+
+  # -- Specifies the namespace in which K8up's `EffectiveSchedules` are stored.
+  # Defaults to release namespace if left empty.
+  operatorNamespace: ""
+
+  # -- Specify the resource requests and limits that the Pods should
+  # have when they are scheduled by K8up. You are still able to override those
+  # via K8up resources, but this gives cluster administrators custom defaults.
+  # @default -- empty values
+  globalResources:
+    requests:
+      # -- Global CPU resource requests applied to jobs. See [supported units][resource-units].
+      cpu: ""
+      # -- Global Memory resource requests applied to jobs. See [supported units][resource-units].
+      memory: ""
+    limits:
+      # -- Global CPU resource limit applied to jobs. See [supported units][resource-units].
+      cpu: ""
+      # -- Global Memory resource limit applied to jobs. See [supported units][resource-units].
+      memory: ""
+
+# -- Annotations to add to the Pod spec.
+podAnnotations: {}
+# -- Security context to add to the Pod spec.
+podSecurityContext: {}
+# -- Container security context
+securityContext: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+metrics:
+  service:
+    port: 8080
+    type: ClusterIP
+    # -- Service node port of the metrics endpoint, requires `metrics.service.type=NodePort`
+    nodePort: 0
+    # -- Annotations to add to the service
+    annotations: {}
+
+  serviceMonitor:
+    # -- Whether to enable ServiceMonitor manifests for
+    # [Prometheus Operator][prometheus-operator]
+    enabled: false
+    # -- Scrape interval to collect metrics
+    scrapeInterval: 60s
+    # -- If the object should be installed in a different namespace than operator
+    namespace: ""
+    # -- Add labels to the ServiceMonitor object
+    additionalLabels: {}
+  prometheusRule:
+    # -- Whether to enable PrometheusRule manifest for
+    # [Prometheus Operator][prometheus-operator]
+    enabled: false
+    # -- If the object should be installed in a different namespace than operator
+    namespace: ""
+    # -- Add labels to the PrometheusRule object
+    additionalLabels: {}
+    # -- Whether the default rules should be installed
+    createDefaultRules: true
+    # -- Create default rules for the given job types.
+    # Valid values are "archive", "backup", "check", "prune", and "restore".
+    jobFailedRulesFor: ["archive", "backup", "check", "prune", "restore"]
+    # -- Provide additional alert rules in addition to the defaults
+    additionalRules: []
+
+rbac:
+  # -- Create cluster roles and rolebinding.
+  # May need elevated permissions to create cluster roles and -bindings.
+  create: true
+
+resources:
+  limits:
+    # -- Memory limit of K8up operator. See [supported units][resource-units].
+    memory: 256Mi
+  requests:
+    # -- CPU request of K8up operator. See [supported units][resource-units].
+    cpu: 20m
+    # -- Memory request of K8up operator. See [supported units][resource-units].
+    memory: 128Mi

@@ -1,0 +1,8 @@
+#####################
+! Attention !
+#####################
+
+This Helm chart does not include CRDs.
+Please make sure you have installed or upgraded the necessary CRDs as instructed in the Chart README.
+
+#####################

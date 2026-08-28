@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "k8up.fullname" . }}-metrics
+  labels:
+    {{- include "k8up.labels" . | nindent 4 }}
+  {{- with .Values.metrics.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.metrics.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.metrics.service.port }}
+      targetPort: http
+      {{- if eq .Values.metrics.service.type "NodePort" }}
+      nodePort: {{ .Values.metrics.service.nodePort }}
+      {{- end }}
+  selector:
+    {{- include "k8up.selectorLabels" . | nindent 4 }}

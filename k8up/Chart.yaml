@@ -1,0 +1,14 @@
+apiVersion: v2
+description: Kubernetes and OpenShift Backup Operator based on restic
+home: https://k8up.io/
+keywords:
+- backup
+- operator
+- restic
+maintainers:
+- email: info@appuio.ch
+  name: K8up Authors
+name: k8up
+sources:
+- https://github.com/k8up-io/k8up
+version: 4.4.1

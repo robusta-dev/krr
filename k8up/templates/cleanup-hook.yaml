@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cleanup-service-account
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade,post-delete
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+{{ include "k8up.labels" . | indent 4 }}
+
+---
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8up-cleanup-roles
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade,post-delete
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    {{- include "k8up.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - "rbac.authorization.k8s.io"
+    resources:
+      - rolebindings
+      - roles
+    verbs:
+      - delete
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cleanup-rolebinding
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade,post-delete
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+    {{- include "k8up.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: k8up-cleanup-roles
+subjects:
+- kind: ServiceAccount
+  name: cleanup-service-account
+  namespace: {{ .Release.Namespace }}
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-cleanup"
+  labels:
+    {{- include "k8up.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade,post-delete
+    "helm.sh/hook-weight": "4"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ .Release.Name }}"
+      labels:
+        {{- include "k8up.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: cleanup-service-account
+      containers:
+      - name: "{{ .Release.Name }}-cleanup"
+        image: "bitnami/kubectl:latest"
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            #!/bin/bash
+
+            NAMESPACES=$(kubectl get namespace -ojson | jq -r '.items[].metadata.name')
+
+            for ns in $NAMESPACES
+            do
+              kubectl -n "$ns" delete rolebinding pod-executor-namespaced --ignore-not-found=true
+              kubectl -n "$ns" delete role pod-executor --ignore-not-found=true
+            done

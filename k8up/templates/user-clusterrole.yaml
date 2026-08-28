@@ -1,0 +1,41 @@
+{{- if .Values.rbac.create -}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    {{- include "k8up.staticLabels" . | nindent 4 }}
+  name: {{ include "k8up.fullname" . }}-edit
+rules:
+- apiGroups:
+  - k8up.io
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    {{- include "k8up.staticLabels" . | nindent 4 }}
+  name: {{ include "k8up.fullname" . }}-view
+rules:
+- apiGroups:
+  - k8up.io
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+{{- end -}}

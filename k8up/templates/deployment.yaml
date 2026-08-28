@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "k8up.fullname" . }}
+  labels:
+{{ include "k8up.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "k8up.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "k8up.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: k8up-operator
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: [ operator ]
+          env:
+            - name: BACKUP_IMAGE
+              value: "{{ include "k8up.backupImage" . }}"
+          {{- with .Values.k8up.timezone }}
+            - name: TZ
+              value: {{ . }}
+          {{- end }}
+            - name: BACKUP_ENABLE_LEADER_ELECTION
+              value: "{{ .Values.k8up.enableLeaderElection }}"
+            - name: BACKUP_OPERATOR_NAMESPACE
+          {{- if .Values.k8up.operatorNamespace }}
+              value: "{{ .Values.k8up.operatorNamespace }}"
+          {{- else }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          {{- end }}
+          {{- with .Values.k8up.globalResources.requests.cpu }}
+            - name: BACKUP_GLOBALCPU_REQUEST
+              value: {{ . }}
+          {{- end }}
+          {{- with .Values.k8up.globalResources.requests.memory }}
+            - name: BACKUP_GLOBALMEMORY_REQUEST
+              value: {{ . }}
+          {{- end }}
+          {{- with .Values.k8up.globalResources.limits.cpu }}
+            - name: BACKUP_GLOBALCPU_LIMIT
+              value: {{ . }}
+          {{- end }}
+          {{- with .Values.k8up.globalResources.limits.memory }}
+            - name: BACKUP_GLOBALMEMORY_LIMIT
+              value: {{ . }}
+          {{- end }}
+          {{- if .Values.k8up.envVars }}
+            {{- toYaml .Values.k8up.envVars | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      serviceAccountName: {{ template "k8up.serviceAccountName" . }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
