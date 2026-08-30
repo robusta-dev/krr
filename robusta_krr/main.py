@@ -353,6 +353,12 @@ def load_commands() -> None:
                 **strategy_args,
             ) -> None:
                 f"""Run KRR using the `{_strategy_name}` strategy"""
+                # typer >= 0.12 passes None (instead of an empty tuple) for unspecified list options
+                clusters = clusters or []
+                namespaces = namespaces or []
+                resources = resources or []
+                prometheus_other_headers = prometheus_other_headers or []
+                named_sinks = named_sinks or []
                 if not show_severity and format != "csv":
                     raise click.BadOptionUsage("--exclude-severity", "--exclude-severity works only with format=csv")
 

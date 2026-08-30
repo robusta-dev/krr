@@ -4,7 +4,8 @@ from typer.testing import CliRunner
 
 from robusta_krr.main import app, load_commands
 
-runner = CliRunner(mix_stderr=False)
+# click >= 8.2 removed mix_stderr; stderr is now always captured separately
+runner = CliRunner()
 load_commands()
 
 

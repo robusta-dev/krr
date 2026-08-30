@@ -119,7 +119,10 @@ class Config(pd.BaseSettings):
         return v
 
     @pd.validator("prometheus_other_headers", pre=True)
-    def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str]]) -> dict[str, str]:
+    def validate_prometheus_other_headers(cls, headers: Union[list[str], dict[str, str], None]) -> dict[str, str]:
+        if headers is None:
+            return {}
+
         if isinstance(headers, dict):
             return headers
 
