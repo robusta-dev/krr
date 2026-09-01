@@ -56,7 +56,7 @@
 </details> -->
 <!-- ABOUT THE PROJECT -->
 
-## About The Project 
+## About The Project
 
 Robusta KRR (Kubernetes Resource Recommender) is a CLI tool for **optimizing resource allocation** in Kubernetes clusters. It gathers pod usage data from Prometheus and **recommends requests and limits** for CPU and memory. This **reduces costs and improves performance**.
 
@@ -108,9 +108,9 @@ Read more about [how KRR works](#how-krr-works)
 | Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
 | Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
 | Immediate Results ⚡         | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
-| Reporting 📊                | ✅ Json, CSV, Markdown, [Web UI](#ui-for-krr-recommendations), and more!                              | ❌ Not supported                                            |
+| Reporting 📊                | ✅ Json, CSV, Markdown, [Web UI](#ui-for-krr-recommendations), and more!                                   | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
-| Explainability 📖           | ✅ [See graphs explaining the recommendations](#krr-ui-on-robusta-saas)                               | ❌ Not supported                                            |
+| Explainability 📖           | ✅ [See graphs explaining the recommendations](#krr-ui-on-robusta-saas)                                    | ❌ Not supported                                            |
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
