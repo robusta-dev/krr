@@ -81,7 +81,7 @@ _View instructions for: [Seeing recommendations in a UI](#ui-for-krr-recommendat
 
 ### Features
 
-- **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-integration).)
+- **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-notification).)
 - **Prometheus Integration**: Get recommendations based on the data you already have
 - **Explainability**: [Understand how recommendations were calculated with explanation graphs](#krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
