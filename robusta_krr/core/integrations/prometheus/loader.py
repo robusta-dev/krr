@@ -107,6 +107,7 @@ class PrometheusMetricsLoader:
         object: K8sObjectData,
         strategy: BaseStrategy,
         period: datetime.timedelta,
+        end_time: datetime.datetime,
         *,
         step: datetime.timedelta = datetime.timedelta(minutes=30),
     ) -> MetricsPodData:
@@ -117,6 +118,7 @@ class PrometheusMetricsLoader:
             object (K8sObjectData): The Kubernetes object.
             resource (ResourceType): The resource type.
             period (datetime.timedelta): The time period for which to gather data.
+            end_time (datetime.datetime): The timestamp marking the end of the query window.
             step (datetime.timedelta, optional): The time step between data points. Defaults to 30 minutes.
 
         Returns:
@@ -124,6 +126,6 @@ class PrometheusMetricsLoader:
         """
 
         return {
-            MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, step)
+            MetricLoader.__name__: await self.loader.gather_data(object, MetricLoader, period, end_time, step)
             for MetricLoader in strategy.metrics
         }
