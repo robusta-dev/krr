@@ -10,7 +10,7 @@ ENV PATH="/app/venv/bin:$PATH"
 # The base image is only rebuilt periodically, so without this step the image
 # ships whatever package versions the base happened to be built with.
 RUN apt-get update && \
-    apt-get upgrade -y --no-install-recommends && \
+    apt-get dist-upgrade -y --no-install-recommends && \
     dpkg --add-architecture arm64 && \
     dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge 3.5.7-1~deb13u2
 
