@@ -5,23 +5,14 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/venv/bin:$PATH"
 
-# Install system dependencies required for Poetry
+# Pull in all pending Debian security updates (e.g. openssl/libssl3t64
+# 3.5.7-1~deb13u2, which fixes the CVEs reported against 3.5.6-1~deb13u2).
+# The base image is only rebuilt periodically, so without this step the image
+# ships whatever package versions the base happened to be built with.
 RUN apt-get update && \
-    dpkg --add-architecture arm64
-
-# Upgrade libattr1 and libacl1 to the fixed versions (CVE-2026-54371 in
-# attr < 2.6.0; CVE-2026-54369 and CVE-2026-54370 in acl < 2.4.0). Trixie has
-# no fixed build yet (fix arrives only in a future point release), so these
-# two leaf libraries are pulled from unstable via a package-specific pin;
-# everything else in unstable stays at priority 100 so no other package
-# (e.g. libc6) can be upgraded from there.
-RUN echo 'deb http://deb.debian.org/debian unstable main' > /etc/apt/sources.list.d/unstable.list \
-    && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n\nPackage: libattr1 libacl1\nPin: release a=unstable\nPin-Priority: 990\n' > /etc/apt/preferences.d/unstable \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends libattr1 libacl1 \
-    && rm /etc/apt/sources.list.d/unstable.list /etc/apt/preferences.d/unstable \
-    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libattr1)" ge 1:2.6.0 \
-    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libacl1)" ge 2.4.0
+    apt-get dist-upgrade -y --no-install-recommends && \
+    dpkg --add-architecture arm64 && \
+    dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libssl3t64)" ge 3.5.7-1~deb13u2
 
 # Set the working directory
 WORKDIR /app
@@ -39,15 +30,25 @@ COPY ./robusta_krr/ robusta_krr/
 COPY ./intro.txt intro.txt
 
 # Remove unused OS packages with unfixed CVEs (perl-base: 4 CRITICAL; util-linux
-# family: HIGH). dpkg exits non-zero on essential-package warnings even on
-# success, so removals and runtime sanity are verified explicitly instead.
-RUN dpkg --purge --force-remove-essential --force-depends \
+# family: HIGH). Also remove libattr1/libacl1 (CVE-2026-54371, CVE-2026-54369,
+# CVE-2026-54370): trixie has no fixed version, so scanners flag *any* installed
+# version, even the fixed sid build. The vulnerable code lives in the
+# getfattr/setfattr/setfacl binaries, which were never installed; only the shared
+# libraries were, pulled in by coreutils/tar/sed/passwd, so those go too. This
+# leaves the runtime image without ls/cat/cp/tar/sed (python and bash remain).
+# dpkg exits non-zero on essential-package warnings even on success, so removals
+# and runtime sanity are verified explicitly instead.
+RUN rm -rf /var/lib/apt/lists/* \
+    ; dpkg --purge --force-remove-essential --force-depends passwd \
+    ; dpkg --purge --force-remove-essential --force-depends \
       perl-base \
       util-linux bsdutils mount \
       libmount1 libblkid1 libsmartcols1 liblastlog2-2 libuuid1 \
-    ; rm -rf /var/lib/apt/lists/* \
-    && for p in perl-base util-linux bsdutils mount libmount1 libblkid1 \
-                libsmartcols1 liblastlog2-2 libuuid1; do \
+      tar sed coreutils libacl1 libattr1 \
+    ; dpkg --clear-avail \
+    ; for p in perl-base util-linux bsdutils mount libmount1 libblkid1 \
+                libsmartcols1 liblastlog2-2 libuuid1 \
+                passwd tar sed coreutils libacl1 libattr1; do \
          status="$(dpkg-query -W -f='${db:Status-Status}' "$p" 2>/dev/null || true)"; \
          if [ -n "$status" ] && [ "$status" != "not-installed" ]; then \
            echo "ERROR: $p was not removed (status: $status)" >&2; exit 1; \
