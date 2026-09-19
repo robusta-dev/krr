@@ -17,6 +17,7 @@ from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import BaseStrategy
 from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.metric_dialects import MetricDialectName, OwnerResolutionName
 from robusta_krr.core.runner import Runner, publish_input_error
 from robusta_krr.utils.version import get_version
 
@@ -145,6 +146,30 @@ def load_commands() -> None:
                     None,
                     "--prometheus-label",
                     help="The label in prometheus used to differentiate clusters. (Only relevant for centralized prometheus)",
+                    rich_help_panel="Prometheus Settings",
+                ),
+                prometheus_metrics_dialect: MetricDialectName = typer.Option(
+                    MetricDialectName.AUTO.value,
+                    "--prometheus-metrics-dialect",
+                    help="Naming of the Kubernetes state metrics: 'kube-state-metrics' (kube_* metrics, cAdvisor and "
+                    "node-exporter), 'otel' (OpenTelemetry Collector k8s_cluster and hostmetrics receivers), or "
+                    "'auto' to detect it. Container usage metrics always use cAdvisor names.",
+                    rich_help_panel="Prometheus Settings",
+                ),
+                prometheus_owner_resolution: OwnerResolutionName = typer.Option(
+                    OwnerResolutionName.AUTO.value,
+                    "--prometheus-owner-resolution",
+                    help="How to find the pods of a workload: 'kube-state-metrics' walks the kube_*_owner chain, "
+                    "'recording-rule' uses a single pod owner recording rule, 'auto' prefers the owner chain and "
+                    "falls back to the recording rule.",
+                    rich_help_panel="Prometheus Settings",
+                ),
+                prometheus_workload_recording_rule: str = typer.Option(
+                    "namespace_workload_pod:kube_pod_owner:relabel",
+                    "--prometheus-workload-recording-rule",
+                    help="Recording rule used by the 'recording-rule' pod owner resolution. Must expose the "
+                    "'workload', 'workload_type', 'pod' and 'namespace' labels, plus the label passed to "
+                    "--prometheus-cluster-label when that flag is used.",
                     rich_help_panel="Prometheus Settings",
                 ),
                 eks_managed_prom: bool = typer.Option(
@@ -371,6 +396,9 @@ def load_commands() -> None:
                         prometheus_ssl_enabled=prometheus_ssl_enabled,
                         prometheus_cluster_label=prometheus_cluster_label,
                         prometheus_label=prometheus_label,
+                        prometheus_metrics_dialect=prometheus_metrics_dialect,
+                        prometheus_owner_resolution=prometheus_owner_resolution,
+                        prometheus_workload_recording_rule=prometheus_workload_recording_rule,
                         eks_managed_prom=eks_managed_prom,
                         eks_managed_prom_region=eks_managed_prom_region,
                         eks_assume_role=eks_assume_role,
