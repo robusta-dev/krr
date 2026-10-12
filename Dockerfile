@@ -22,6 +22,8 @@ COPY ./requirements.txt requirements.txt
 RUN pip install --no-cache-dir --upgrade pip
 # Install the project dependencies
 RUN python -m ensurepip --upgrade
+# Bundled pip 25.0.1 wheel carries CVE-2025-8869, CVE-2026-3219/6357/8643
+RUN rm -f /usr/local/lib/python3.12/ensurepip/_bundled/pip-*.whl
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
