@@ -19,6 +19,7 @@ import traceback
 from robusta_krr.core.abstract.strategies import ResourceRecommendation, RunResult
 from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
+from robusta_krr.core.integrations.prometheus.prometheus_utils import AMP_QUERY_RANGE_MAX_PERIOD
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
 from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
@@ -104,6 +105,30 @@ class Runner:
         if latest_version is not None and self.__check_newer_version_available(current_version, latest_version):
             custom_print(f"[yellow bold]A newer version of KRR is available: {latest_version}[/yellow bold]")
         custom_print("")
+
+    def _adjust_amp_query_limits(self) -> None:
+        if not settings.eks_managed_prom:
+            return
+
+        max_history_duration = AMP_QUERY_RANGE_MAX_PERIOD.total_seconds() / 3600
+        if self._strategy.settings.history_duration > max_history_duration:
+            logger.warning(
+                f"The history duration exceeds Amazon Managed Service for Prometheus's "
+                f"{max_history_duration:g}-hour query limit and will be overridden with "
+                f"{max_history_duration:g}. Kindly adjust --history_duration to a value equal "
+                f"to or less than {max_history_duration:g}."
+            )
+            self._strategy.settings.history_duration = max_history_duration
+
+        # AMP has a lower step limit than other Prometheus-compatible backends.
+        step_count = self._strategy.settings.history_duration * 60 / self._strategy.settings.timeframe_duration
+        if step_count > 11000:
+            min_step = self._strategy.settings.history_duration * 60 / 10000
+            logger.warning(
+                f"The timeframe duration provided is insufficient and will be overridden with {min_step}. "
+                f"Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}."
+            )
+            self._strategy.settings.timeframe_duration = min_step
 
     def _process_result(self, result: Result) -> None:
         result.errors = self.errors
@@ -482,15 +507,7 @@ class Runner:
 
         try:
             create_monkey_patches()
-            # eks has a lower step limit than other types of prometheus, it will throw an error
-            step_count = self._strategy.settings.history_duration * 60 / self._strategy.settings.timeframe_duration
-            if settings.eks_managed_prom and step_count > 11000:
-                min_step = self._strategy.settings.history_duration * 60 / 10000
-                logger.warning(
-                    f"The timeframe duration provided is insufficient and will be overridden with {min_step}. "
-                    f"Kindly adjust --timeframe_duration to a value equal to or greater than {min_step}."
-                )
-                self._strategy.settings.timeframe_duration = min_step
+            self._adjust_amp_query_limits()
 
             result = await self._collect_result()
             logger.info("Result collected, displaying...")
