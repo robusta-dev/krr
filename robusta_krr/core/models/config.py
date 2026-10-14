@@ -15,6 +15,7 @@ from rich.logging import RichHandler
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
 from robusta_krr.core.models.objects import KindLiteral
+from robusta_krr.core.models.severity import Severity
 
 logger = logging.getLogger("krr")
 
@@ -34,6 +35,10 @@ class Config(pd.BaseSettings):
     # Value settings
     cpu_min_value: int = pd.Field(10, ge=0)  # in millicores
     memory_min_value: int = pd.Field(100, ge=0)  # in megabytes
+
+    # Only report workloads whose recommendation is at least this severe.
+    # None means report everything (the default).
+    severity_threshold: Optional[Severity] = pd.Field(None)
 
     # Prometheus Settings
     prometheus_url: Optional[str] = pd.Field(None)
