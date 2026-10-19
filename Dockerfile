@@ -25,6 +25,9 @@ RUN python -m ensurepip --upgrade
 # Bundled pip 25.0.1 wheel carries CVE-2025-8869, CVE-2026-3219/6357/8643
 RUN rm -f /usr/local/lib/python3.12/ensurepip/_bundled/pip-*.whl
 RUN pip install --no-cache-dir -r requirements.txt
+# pip 26.2.1 (latest) vendors urllib3 2.7.0 (CVE-2026-97687, CVE-2026-97689) and
+# krr never calls pip at runtime, so drop it once dependencies are installed.
+RUN pip uninstall -y pip
 
 # Copy the rest of the application code
 COPY ./krr.py krr.py
