@@ -3,7 +3,7 @@ import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-from typing import Iterable, List, Optional, Dict, Any
+from typing import Any, Dict, Iterable, List, Optional
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
@@ -13,6 +13,14 @@ from tenacity import retry, stop_after_attempt, wait_random
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.integrations import openshift
 from robusta_krr.core.models.config import settings
+from robusta_krr.core.models.metric_dialects import (
+    DEFAULT_DIALECT,
+    DIALECTS,
+    MetricDialect,
+    MetricDialectName,
+    OwnerResolutionName,
+    get_dialect,
+)
 from robusta_krr.core.models.objects import K8sObjectData, PodData
 from robusta_krr.utils.batched import batched
 from robusta_krr.utils.service_discovery import MetricsServiceDiscovery
@@ -22,6 +30,13 @@ from ..prometheus_utils import ClusterNotSpecifiedException, generate_prometheus
 from .base_metric_service import MetricsService
 
 PROM_REFRESH_CREDS_SEC = int(os.environ.get("PROM_REFRESH_CREDS_SEC", "600"))  # 10 minutes
+
+# Workload types covered by the `namespace_workload_pod:kube_pod_owner:relabel`
+# recording rule. Any other kind falls back to owner metrics.
+RECORDING_RULE_WORKLOAD_TYPES = frozenset({"deployment", "daemonset", "statefulset", "job", "replicaset"})
+
+# Lookback used by dialect and owner resolution detection.
+DIALECT_PROBE_WINDOW = os.environ.get("KRR_DIALECT_PROBE_WINDOW", "1h")
 
 logger = logging.getLogger("krr")
 
@@ -110,6 +125,10 @@ class PrometheusMetricsService(MetricsService):
         self.prom_config = None
         self.prometheus = None
         self._last_init_at = None
+        self._dialect: Optional[MetricDialect] = None
+        self._dialect_lock = asyncio.Lock()
+        self._owner_resolution: Optional[OwnerResolutionName] = None
+        self._owner_resolution_lock = asyncio.Lock()
         self.get_prometheus()
 
     def get_prometheus(self):
@@ -199,6 +218,116 @@ class PrometheusMetricsService(MetricsService):
             logger.debug(f"Returned from get_history_range: {result}")
             raise ValueError("Error while getting history range") from e
 
+    def _single_cluster_label(self) -> str:
+        # use this for queries with no labels. turn ', cluster="xxx"' to 'cluster="xxx"'
+        return self.get_prometheus_cluster_label().replace(",", "")
+
+    @staticmethod
+    def _join_matchers(*matchers: str) -> str:
+        """Joins PromQL label matchers, skipping the empty ones."""
+
+        return ", ".join(matcher for matcher in matchers if matcher)
+
+    async def _metric_has_data(self, metric: str, selector: str = "") -> bool:
+        """
+        Checks whether a metric exists in this Prometheus within the probe window.
+        Used to auto-detect which metric naming dialect this cluster exposes.
+
+        The window matters: an instant vector only sees the Prometheus lookback
+        delta, so a scrape gap or a collector restart would report the metric as
+        absent and silently switch the whole scan to another dialect.
+        """
+
+        matchers = self._join_matchers(selector, self._single_cluster_label())
+        query = f"count(last_over_time({metric}{{ {matchers} }}[{DIALECT_PROBE_WINDOW}]))"
+        try:
+            return bool(await self.query(query))
+        except Exception as e:
+            logger.debug(f"Probe query for {metric} failed, assuming it is absent: {e}")
+            return False
+
+    async def get_dialect(self) -> MetricDialect:
+        """
+        Returns the metric naming dialect to use, detecting it once per service.
+        """
+
+        if self._dialect is not None:
+            return self._dialect
+
+        async with self._dialect_lock:
+            if self._dialect is None:
+                self._dialect = await self._detect_dialect()
+                logger.info(f"Using the '{self._dialect.name.value}' metrics dialect for cluster {self.cluster}")
+            return self._dialect
+
+    async def _detect_dialect(self) -> MetricDialect:
+        configured = settings.prometheus_metrics_dialect
+        if configured != MetricDialectName.AUTO:
+            return get_dialect(configured)
+
+        for dialect in DIALECTS:
+            if await self._metric_has_data(dialect.probe_metric, dialect.probe_selector):
+                return dialect
+
+        # A dialect whose metric is there but whose labels are not is a
+        # configuration mistake worth naming, rather than a missing metrics source.
+        for dialect in DIALECTS:
+            if dialect.probe_selector and await self._metric_has_data(dialect.probe_metric):
+                logger.warning(
+                    "%s exists but has no %s, so the '%s' dialect cannot be used. Map the Kubernetes resource "
+                    "attributes onto the namespace / pod / container labels in your metrics pipeline, see "
+                    "https://github.com/robusta-dev/krr#requirements",
+                    dialect.probe_metric,
+                    dialect.probe_selector,
+                    dialect.name.value,
+                )
+
+        logger.warning(
+            "Could not detect a metrics dialect (none of %s returned data in the last %s), falling back to '%s'. "
+            "Set --prometheus-metrics-dialect to select one explicitly.",
+            ", ".join(dialect.probe_metric for dialect in DIALECTS),
+            DIALECT_PROBE_WINDOW,
+            DEFAULT_DIALECT.name.value,
+        )
+        return DEFAULT_DIALECT
+
+    async def get_owner_resolution(self) -> OwnerResolutionName:
+        """
+        Returns the strategy used to map a workload to its pods, detecting it once per service.
+        """
+
+        if self._owner_resolution is not None:
+            return self._owner_resolution
+
+        async with self._owner_resolution_lock:
+            if self._owner_resolution is None:
+                self._owner_resolution = await self._detect_owner_resolution()
+                logger.info(
+                    f"Using the '{self._owner_resolution.value}' pod owner resolution for cluster {self.cluster}"
+                )
+            return self._owner_resolution
+
+    async def _detect_owner_resolution(self) -> OwnerResolutionName:
+        configured = settings.prometheus_owner_resolution
+        if configured != OwnerResolutionName.AUTO:
+            return configured
+
+        # kube-state-metrics owner metrics are the historical behaviour, so they win when present.
+        if await self._metric_has_data("kube_pod_owner"):
+            return OwnerResolutionName.KUBE_STATE_METRICS
+        if await self._metric_has_data(settings.prometheus_workload_recording_rule):
+            return OwnerResolutionName.RECORDING_RULE
+
+        logger.warning(
+            "Neither kube_pod_owner nor %s returned data in the last %s, so no workload can be mapped to its "
+            "historic pods and recommendations will only cover running pods. Falling back to '%s'. Set "
+            "--prometheus-owner-resolution and --prometheus-workload-recording-rule explicitly to override.",
+            settings.prometheus_workload_recording_rule,
+            DIALECT_PROBE_WINDOW,
+            OwnerResolutionName.KUBE_STATE_METRICS.value,
+        )
+        return OwnerResolutionName.KUBE_STATE_METRICS
+
     async def gather_data(
         self,
         object: K8sObjectData,
@@ -210,8 +339,9 @@ class PrometheusMetricsService(MetricsService):
         ResourceHistoryData: The gathered resource history data.
         """
         logger.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
+        dialect = await self.get_dialect()
         try:
-            metric_loader = LoaderClass(self.get_prometheus(), self.name(), self.executor)
+            metric_loader = LoaderClass(self.get_prometheus(), self.name(), self.executor, dialect)
             data = await metric_loader.load_data(object, period, step)
         except Exception:
             logger.exception("Failed to gather resource history data for %s", object)
@@ -224,9 +354,8 @@ class PrometheusMetricsService(MetricsService):
                 object.add_warning("NoPrometheusMemoryMetrics")
 
             if LoaderClass.warning_on_no_data:
-                logger.warning(
-                    f"{metric_loader.service_name} returned no {metric_loader.__class__.__name__} metrics for {object}"
-                )
+                # NOTE: not read off the loader, which is unbound when its constructor raised.
+                logger.warning(f"{self.name()} returned no {LoaderClass.__name__} metrics for {object}")
 
         return data
 
@@ -253,20 +382,23 @@ class PrometheusMetricsService(MetricsService):
 
     async def get_cluster_summary(self) -> Dict[str, Any]:
         cluster_label = self.get_prometheus_cluster_label()
+        single_cluster_label = self._single_cluster_label()
+        dialect = await self.get_dialect()
 
-        # use this for queries with no labels. turn ', cluster="xxx"' to 'cluster="xxx"'
-        single_cluster_label = cluster_label.replace(",", "")
+        node_memory_matchers = self._join_matchers(dialect.node_memory_selector, single_cluster_label)
+        node_cpu_matchers = self._join_matchers(dialect.node_cpu_selector, single_cluster_label)
+
         memory_query = f"""
-            sum(max by (instance) (machine_memory_bytes{{ {single_cluster_label} }}))
+            sum(max by ({dialect.node_group_by_label}) ({dialect.node_memory_total}{{ {node_memory_matchers} }}))
         """
         cpu_query = f"""
-            sum(max by (instance) (machine_cpu_cores{{ {single_cluster_label} }}))
+            sum(max by ({dialect.node_group_by_label}) ({dialect.node_cpu_total}{{ {node_cpu_matchers} }}))
         """
         kube_system_requests_mem = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='memory' {cluster_label} }})  by (job, pod, container) )
+            sum(max({dialect.container_memory_request}{{ {dialect.memory_resource_selector}namespace="kube-system" {cluster_label} }})  by (job, pod, container) )
         """
         kube_system_requests_cpu = f"""
-            sum(max(kube_pod_container_resource_requests{{ namespace='kube-system', resource='cpu' {cluster_label} }})  by (job, pod, container) )
+            sum(max({dialect.container_cpu_request}{{ {dialect.cpu_resource_selector}namespace="kube-system" {cluster_label} }})  by (job, pod, container) )
         """
         try:
             cluster_memory_result = await self.query_and_validate(memory_query)
@@ -284,26 +416,16 @@ class PrometheusMetricsService(MetricsService):
             logger.error(f"Exception occurred while getting cluster summary: {e}")
             return {}
 
-    async def load_pods(self, object: K8sObjectData, period: timedelta) -> list[PodData]:
+    async def _load_related_pods_by_owner_metrics(
+        self, object: K8sObjectData, period_literal: str, cluster_label: str
+    ) -> list[dict]:
         """
-        List pods related to the object and add them to the object's pods list.
-        Args:
-            object (K8sObjectData): The Kubernetes object.
-            period (timedelta): The time period for which to gather data.
+        Resolves the pods of a workload by walking the kube-state-metrics owner chain.
         """
 
-        logger.debug(f"Adding historic pods for {object}")
-
-        period_seconds = period.total_seconds()
-        if period_seconds <= 86400:  # one day
-            hours_literal = min(int(period.total_seconds()) // 3600, 32)
-            period_literal = f"{hours_literal}h"
-        else:
-            days_literal = min(int(period.total_seconds()) // 3600 // 24, 32)
-            period_literal = f"{days_literal}d"
         pod_owners: Iterable[str]
         pod_owner_kind: str
-        cluster_label = self.get_prometheus_cluster_label()
+
         if object.kind in ["Deployment", "Rollout"]:
             replicasets = await self.query(f"""
                     kube_replicaset_owner{{
@@ -358,7 +480,7 @@ class PrometheusMetricsService(MetricsService):
             pod_owners = [object.name]
             pod_owner_kind = object.kind
 
-        related_pods_result = []
+        related_pods_result: list[dict] = []
         batch_size = int(os.environ.get("KRR_OWNER_BATCH_SIZE", 100))
         for owner_group in batched(pod_owners, batch_size):
             owners_regex = "|".join(owner_group)
@@ -373,6 +495,68 @@ class PrometheusMetricsService(MetricsService):
                     )
                 """)
             related_pods_result.extend(related_pods_result_item)
+
+        return related_pods_result
+
+    async def _load_related_pods_by_recording_rule(
+        self, object: K8sObjectData, period_literal: str, cluster_label: str
+    ) -> list[dict]:
+        """
+        Resolves the pods of a workload with a single query against a pod owner
+        recording rule (`namespace_workload_pod:kube_pod_owner:relabel` by default).
+
+        This replaces the owner chain with one query, which matters on large
+        clusters, and it is the only option when raw owner metrics are not
+        available - for example when Kubernetes state metrics come from the
+        OpenTelemetry `k8s_cluster` receiver instead of kube-state-metrics.
+        """
+
+        return await self.query(f"""
+                last_over_time(
+                    {settings.prometheus_workload_recording_rule}{{
+                        workload="{object.name}",
+                        workload_type="{object.kind.lower()}",
+                        namespace="{object.namespace}"
+                        {cluster_label}
+                    }}[{period_literal}]
+                )
+            """)
+
+    async def load_pods(self, object: K8sObjectData, period: timedelta) -> list[PodData]:
+        """
+        List pods related to the object and add them to the object's pods list.
+        Args:
+            object (K8sObjectData): The Kubernetes object.
+            period (timedelta): The time period for which to gather data.
+        """
+
+        logger.debug(f"Adding historic pods for {object}")
+
+        period_seconds = int(period.total_seconds())
+        if period_seconds <= 86400:  # one day
+            hours_literal = min(period_seconds // 3600, 32)
+            period_literal = f"{hours_literal}h"
+        else:
+            days_literal = min(period_seconds // 3600 // 24, 32)
+            period_literal = f"{days_literal}d"
+
+        cluster_label = self.get_prometheus_cluster_label()
+        dialect = await self.get_dialect()
+        owner_resolution = await self.get_owner_resolution()
+
+        use_recording_rule = owner_resolution == OwnerResolutionName.RECORDING_RULE
+        if use_recording_rule and object.kind.lower() not in RECORDING_RULE_WORKLOAD_TYPES:
+            logger.debug(
+                f"{object.kind} is not covered by {settings.prometheus_workload_recording_rule}, "
+                "resolving its pods with owner metrics instead"
+            )
+            use_recording_rule = False
+
+        if use_recording_rule:
+            related_pods_result = await self._load_related_pods_by_recording_rule(object, period_literal, cluster_label)
+        else:
+            related_pods_result = await self._load_related_pods_by_owner_metrics(object, period_literal, cluster_label)
+
         if related_pods_result == []:
             return []
 
@@ -385,12 +569,11 @@ class PrometheusMetricsService(MetricsService):
         for pod_group in batched(related_pods, 100):
             group_regex = "|".join(pod_group)
             pods_status_result = await self.query(f"""
-                    kube_pod_status_phase{{
-                        phase="Running",
-                        {related_pod_label}=~"{group_regex}",
+                    {dialect.pod_phase_metric}{{
+                        {dialect.pod_phase_running_selector}{related_pod_label}=~"{group_regex}",
                         namespace="{object.namespace}"
                         {cluster_label}
-                    }} == 1
+                    }} == {dialect.pod_phase_running_value}
                 """)
             current_pods_set |= {pod["metric"][related_pod_label] for pod in pods_status_result}
             del pods_status_result

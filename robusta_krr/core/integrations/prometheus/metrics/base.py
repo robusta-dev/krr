@@ -16,6 +16,7 @@ from tenacity import retry, stop_after_attempt, wait_random
 from robusta_krr.core.abstract.metrics import BaseMetric
 from robusta_krr.core.abstract.strategies import PodsTimeData
 from robusta_krr.core.models.config import settings
+from robusta_krr.core.models.metric_dialects import DEFAULT_DIALECT, MetricDialect
 from robusta_krr.core.models.objects import K8sObjectData
 
 
@@ -55,6 +56,9 @@ class PrometheusMetric(BaseMetric):
     You can override this method to change the way the results are combined.
     This parameter specifies the maximum number of pods per query.
     Set to None to disable batching
+
+    `dialect`: the metric naming dialect to use for Kubernetes state metrics.
+    Defaults to kube-state-metrics naming.
     """
 
     query_type: QueryType = QueryType.Query
@@ -67,9 +71,11 @@ class PrometheusMetric(BaseMetric):
         prometheus: CustomPrometheusConnect,
         service_name: str,
         executor: Optional[ThreadPoolExecutor] = None,
+        dialect: MetricDialect = DEFAULT_DIALECT,
     ) -> None:
         self.prometheus = prometheus
         self.service_name = service_name
+        self.dialect = dialect
 
         self.executor = executor
 

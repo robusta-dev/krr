@@ -124,7 +124,7 @@ Read more about [how KRR works](#how-krr-works)
 
 ### Requirements
 
-KRR requires Prometheus 2.26+, [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) & [cAdvisor](https://github.com/google/cadvisor).
+KRR requires Prometheus 2.26+, [kube-state-metrics](https://github.com/kubernetes/kube-state-metrics) & [cAdvisor](https://github.com/google/cadvisor). cAdvisor is always required; kube-state-metrics can be replaced by an OpenTelemetry Collector, see [Using OpenTelemetry instead of kube-state-metrics](#requirements).
 
 <details>
   <summary>Which metrics does KRR need?</summary>
@@ -132,13 +132,53 @@ No setup is required if you use kube-prometheus-stack or <a href="https://docs.r
 
 If you have a different setup, make sure the following metrics exist:
 
-- `container_cpu_usage_seconds_total`
-- `container_memory_working_set_bytes`
-- `kube_replicaset_owner`
-- `kube_pod_owner`
-- `kube_pod_status_phase`
+- `container_cpu_usage_seconds_total` (cAdvisor)
+- `container_memory_working_set_bytes` (cAdvisor)
+- `kube_replicaset_owner` (kube-state-metrics)
+- `kube_pod_owner` (kube-state-metrics)
+- `kube_pod_status_phase` (kube-state-metrics)
 
-_Note: If one of last three metrics is absent KRR will still work, but it will only consider currently-running pods when calculating recommendations. Historic pods that no longer exist in the cluster will not be taken into consideration._
+The cluster summary additionally uses `kube_node_status_capacity` and `kube_pod_container_resource_requests`, and the OOMKill-aware strategies use `kube_pod_container_resource_limits` and `kube_pod_container_status_last_terminated_reason` (all kube-state-metrics). Scanning CronJobs also needs `kube_job_owner`, and DeploymentConfigs `kube_replicationcontroller_owner`.
+
+_Note: If `kube_replicaset_owner`, `kube_pod_owner` or `kube_pod_status_phase` is absent, KRR will still work, but it will only consider currently-running pods when calculating recommendations. Historic pods that no longer exist in the cluster will not be taken into consideration._
+</details>
+
+<details>
+  <summary>Using OpenTelemetry instead of kube-state-metrics</summary>
+
+If your Kubernetes state metrics come from an OpenTelemetry Collector rather than from kube-state-metrics, KRR can query the OpenTelemetry metric names instead. Pass `--prometheus-metrics-dialect otel`, or leave the default `auto` and KRR will detect it by probing for `kube_pod_status_phase` first and `k8s_pod_phase` second (over the last hour, so a scrape gap does not change the result).
+
+**The Kubernetes resource attributes have to be mapped onto the `namespace`, `pod` and `container` labels.** A Collector that exports them verbatim produces `k8s_namespace_name` / `k8s_pod_name` / `k8s_container_name`, which cannot be joined with the cAdvisor usage metrics. Detection checks for the mapped labels and logs what is missing rather than accepting such a pipeline. A `transform` processor in the metrics pipeline does the mapping:
+
+```yaml
+processors:
+  transform/krr:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["namespace"], resource.attributes["k8s.namespace.name"]) where resource.attributes["k8s.namespace.name"] != ""
+          - set(attributes["pod"], resource.attributes["k8s.pod.name"]) where resource.attributes["k8s.pod.name"] != ""
+          - set(attributes["container"], resource.attributes["k8s.container.name"]) where resource.attributes["k8s.container.name"] != ""
+          - set(attributes["node"], resource.attributes["k8s.node.name"]) where resource.attributes["k8s.node.name"] != ""
+```
+
+| What KRR needs | kube-state-metrics dialect | `otel` dialect | OpenTelemetry source |
+| --- | --- | --- | --- |
+| node memory | `kube_node_status_capacity{resource="memory"}` (by `node`) | `system_memory_limit_bytes` (by `host_name`) | `hostmetrics` receiver, `memory` scraper with `system.memory.limit` enabled |
+| node CPU | `kube_node_status_capacity{resource="cpu"}` (by `node`) | `system_cpu_logical_count` (by `host_name`) | `hostmetrics` receiver, `cpu` scraper with `system.cpu.logical.count` enabled |
+| memory requests | `kube_pod_container_resource_requests{resource="memory"}` | `k8s_container_memory_request_bytes` | `k8s_cluster` receiver |
+| CPU requests | `kube_pod_container_resource_requests{resource="cpu"}` | `k8s_container_cpu_request` | `k8s_cluster` receiver |
+| memory limits | `kube_pod_container_resource_limits{resource="memory"}` | `k8s_container_memory_limit_bytes` | `k8s_cluster` receiver |
+| pod phase | `kube_pod_status_phase{phase="Running"} == 1` | `k8s_pod_phase == 2` | `k8s_cluster` receiver |
+| OOMKills | `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}` | `k8s_container_status_reason{k8s_container_status_reason="OOMKilled"}` | `k8s_cluster` receiver, `k8s.container.status.reason` enabled (off by default) |
+
+Container **usage** metrics (`container_cpu_usage_seconds_total`, `container_memory_working_set_bytes`) are always queried under their cAdvisor names, in every dialect. An OpenTelemetry-only setup must therefore still scrape cAdvisor, for example with the Collector's `prometheus` receiver.
+
+Pod owners are resolved separately from the dialect, because the OpenTelemetry `k8s_cluster` receiver has no equivalent of the `kube_*_owner` metrics:
+
+- `--prometheus-owner-resolution kube-state-metrics` walks the `kube_replicaset_owner` / `kube_replicationcontroller_owner` / `kube_job_owner` / `kube_pod_owner` chain. This is what KRR has always done.
+- `--prometheus-owner-resolution recording-rule` resolves the pods of a workload with a single query against a pod owner recording rule, `namespace_workload_pod:kube_pod_owner:relabel` by default (override with `--prometheus-workload-recording-rule`). The rule must expose the `workload`, `workload_type`, `pod` and `namespace` labels, plus the label passed to `--prometheus-cluster-label` when that flag is used. It only covers Deployments, DaemonSets, StatefulSets, Jobs and ReplicaSets; any other kind falls back to the owner chain. This also cuts one query per workload on large clusters.
+- `--prometheus-owner-resolution auto` (the default) uses the owner chain when `kube_pod_owner` has data, the recording rule when it does not but the rule has data, and the owner chain otherwise.
 </details>
 
 

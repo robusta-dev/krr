@@ -14,6 +14,7 @@ from rich.logging import RichHandler
 
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import AnyStrategy, BaseStrategy
+from robusta_krr.core.models.metric_dialects import MetricDialectName, OwnerResolutionName
 from robusta_krr.core.models.objects import KindLiteral
 
 logger = logging.getLogger("krr")
@@ -42,6 +43,18 @@ class Config(pd.BaseSettings):
     prometheus_ssl_enabled: bool = pd.Field(False)
     prometheus_cluster_label: Optional[str] = pd.Field(None)
     prometheus_label: Optional[str] = pd.Field(None)
+    prometheus_metrics_dialect: MetricDialectName = pd.Field(
+        MetricDialectName.AUTO,
+        description="Naming dialect of the Kubernetes state metrics in Prometheus",
+    )
+    prometheus_owner_resolution: OwnerResolutionName = pd.Field(
+        OwnerResolutionName.AUTO,
+        description="How to map a workload to its pods",
+    )
+    prometheus_workload_recording_rule: str = pd.Field(
+        "namespace_workload_pod:kube_pod_owner:relabel",
+        description="Recording rule used by the 'recording-rule' pod owner resolution",
+    )
     eks_managed_prom: bool = pd.Field(False)
     eks_managed_prom_profile_name: Optional[str] = pd.Field(None)
     eks_access_key: Optional[str] = pd.Field(None)
