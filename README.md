@@ -150,7 +150,7 @@ _Note: If one of last three metrics is absent KRR will still work, but it will o
 1. Add our tap:
 
 ```sh
-brew tap robusta-dev/homebrew-krr
+brew tap robusta-dev/krr
 ```
 
 2. Install KRR:
