@@ -118,7 +118,8 @@ def load_commands() -> None:
                 prometheus_auth_header: Optional[str] = typer.Option(
                     None,
                     "--prometheus-auth-header",
-                    help="Prometheus authentication header.",
+                    envvar="PROMETHEUS_AUTH_HEADER",
+                    help="Prometheus authentication header. Can also be supplied via the PROMETHEUS_AUTH_HEADER environment variable.",
                     rich_help_panel="Prometheus Settings",
                 ),
                 prometheus_other_headers: Optional[List[str]] = typer.Option(
@@ -162,13 +163,15 @@ def load_commands() -> None:
                 eks_access_key: Optional[str] = typer.Option(
                     None,
                     "--eks-access-key",
-                    help="Sets the access key for eks prometheus connection.",
+                    envvar="EKS_ACCESS_KEY",
+                    help="Sets the access key for eks prometheus connection. Can also be supplied via the EKS_ACCESS_KEY environment variable.",
                     rich_help_panel="Prometheus EKS Settings",
                 ),
                 eks_secret_key: Optional[str] = typer.Option(
                     None,
                     "--eks-secret-key",
-                    help="Sets the secret key for eks prometheus connection.",
+                    envvar="EKS_SECRET_KEY",
+                    help="Sets the secret key for eks prometheus connection. Can also be supplied via the EKS_SECRET_KEY environment variable.",
                     rich_help_panel="Prometheus EKS Settings",
                 ),
                 eks_service_name: Optional[str] = typer.Option(
@@ -192,7 +195,8 @@ def load_commands() -> None:
                 coralogix_token: Optional[str] = typer.Option(
                     None,
                     "--coralogix-token",
-                    help="Adds the token needed to query Coralogix managed prometheus.",
+                    envvar="CORALOGIX_TOKEN",
+                    help="Adds the token needed to query Coralogix managed prometheus. Can also be supplied via the CORALOGIX_TOKEN environment variable.",
                     rich_help_panel="Prometheus Coralogix Settings",
                 ),
                 openshift: bool = typer.Option(
@@ -311,7 +315,8 @@ def load_commands() -> None:
                 teams_webhook: Optional[str] = typer.Option(
                     None,
                     "--teams-webhook",
-                    help="Microsoft Teams webhook URL to send notifications when files are uploaded to Azure Blob Storage",
+                    envvar="TEAMS_WEBHOOK",
+                    help="Microsoft Teams webhook URL to send notifications when files are uploaded to Azure Blob Storage. Can also be supplied via the TEAMS_WEBHOOK environment variable.",
                     rich_help_panel="Output Settings",
                 ),
                 azure_subscription_id: Optional[str] = typer.Option(
