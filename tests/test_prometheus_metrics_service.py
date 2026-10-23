@@ -17,6 +17,7 @@ TEST_PROMETHEUS_QUERY = "example_metric{}"
 
 @pytest.fixture
 def metrics_service() -> PrometheusMetricsService:
+    """Provide a metrics service with mocked queries and no cluster label filter."""
     service = PrometheusMetricsService.__new__(PrometheusMetricsService)
     service.query = AsyncMock()
     service.query_range = AsyncMock()
@@ -26,7 +27,10 @@ def metrics_service() -> PrometheusMetricsService:
 
 @pytest.fixture
 def configure_amp(monkeypatch):
+    """Provide a helper that toggles AMP mode without changing global configuration."""
+
     def configure(enabled: bool) -> None:
+        """Replace the metrics module settings with the requested AMP mode for this test."""
         monkeypatch.setattr(prometheus_metrics_service, "settings", MagicMock(eks_managed_prom=enabled))
 
     return configure
@@ -34,6 +38,7 @@ def configure_amp(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_load_pods_uses_range_queries_for_long_amp_history(configure_amp, metrics_service):
+    """Resolve Deployment owners and pods over 40 AMP days using hourly range queries."""
     configure_amp(True)
     metrics_service.query_range.side_effect = [
         [{"metric": {"replicaset": "example-abc"}}],
@@ -57,6 +62,7 @@ async def test_load_pods_uses_range_queries_for_long_amp_history(configure_amp, 
 
 @pytest.mark.asyncio
 async def test_load_pods_keeps_instant_queries_below_amp_limit(configure_amp, metrics_service):
+    """Preserve instant owner and pod lookups for AMP histories shorter than 32 days."""
     configure_amp(True)
     metrics_service.query.side_effect = [
         [{"metric": {"replicaset": "example-abc"}}],
@@ -76,6 +82,7 @@ async def test_load_pods_keeps_instant_queries_below_amp_limit(configure_amp, me
 
 @pytest.mark.asyncio
 async def test_load_pods_keeps_instant_queries_for_non_amp(configure_amp, metrics_service):
+    """Preserve capped instant owner and pod lookups for non-AMP backends."""
     configure_amp(False)
     metrics_service.query.side_effect = [
         [{"metric": {"replicaset": "example-abc"}}],
@@ -113,6 +120,7 @@ async def test_load_pods_keeps_instant_queries_for_non_amp(configure_amp, metric
 async def test_range_query_covers_fractional_history_duration(
     configure_amp, metrics_service, period, expected_covered_period
 ):
+    """Round evaluation counts up so hourly windows cover the entire requested history."""
     configure_amp(True)
     metrics_service.query_range.return_value = []
 
@@ -139,6 +147,7 @@ async def test_range_query_covers_fractional_history_duration(
     ids=["below", "at", "above"],
 )
 async def test_amp_query_type_boundary(configure_amp, metrics_service, period, uses_range_query):
+    """Switch AMP historical lookups to range queries exactly at the 32-day boundary."""
     configure_amp(True)
     metrics_service.query.return_value = []
     metrics_service.query_range.return_value = []
@@ -170,6 +179,7 @@ async def test_amp_query_type_boundary(configure_amp, metrics_service, period, u
     ids=["below", "at", "above"],
 )
 async def test_amp_query_range_limit_boundary(configure_amp, metrics_service, period, expected_period):
+    """Cap AMP historical query coverage at 95 days while preserving shorter periods."""
     configure_amp(True)
     metrics_service.query_range.return_value = []
 
@@ -186,6 +196,7 @@ async def test_amp_query_range_limit_boundary(configure_amp, metrics_service, pe
 
 @pytest.mark.asyncio
 async def test_query_range_uses_total_step_seconds():
+    """Serialize a one-day range-query step as 86400 seconds rather than zero."""
     service = PrometheusMetricsService.__new__(PrometheusMetricsService)
     service.executor = None
     prometheus = MagicMock()

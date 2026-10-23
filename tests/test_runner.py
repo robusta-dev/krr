@@ -48,6 +48,7 @@ def test_exclude_severity_option(args: list[str], expected_exit_code: int) -> No
 def test_adjust_amp_history_duration_limit(
     monkeypatch, caplog, history_duration, expected_history_duration, expects_warning
 ) -> None:
+    """Clamp AMP history and emit a warning only when the 95-day limit is exceeded."""
     monkeypatch.setattr(runner_module, "settings", MagicMock(eks_managed_prom=True))
     runner_instance = Runner.__new__(Runner)
     runner_instance._strategy = MagicMock()

@@ -107,6 +107,11 @@ class Runner:
         custom_print("")
 
     def _adjust_amp_query_limits(self) -> None:
+        """Cap AMP history at 95 days and increase the timeframe when its step limit is exceeded.
+
+        Update strategy settings before collection so all metrics use the same limits,
+        logging a warning for each adjustment. Leave non-AMP settings unchanged.
+        """
         if not settings.eks_managed_prom:
             return
 

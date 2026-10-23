@@ -141,6 +141,7 @@ class PrometheusMetricsService(MetricsService):
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query(self, query: str) -> list[dict]:
+        """Execute an instant PromQL query in the executor and return its result series."""
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
@@ -149,6 +150,7 @@ class PrometheusMetricsService(MetricsService):
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     async def query_range(self, query: str, start: datetime, end: datetime, step: timedelta) -> list[dict]:
+        """Return PromQL result series over a time range, expressing the step in total seconds."""
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
