@@ -11,4 +11,4 @@ kubernetes==26.1.0
 pyasn1>=0.6.2
 urllib3==2.8.0
 # GHSA-6q48-6c7w-9gw2, via requests
-certifi>=2026.10.18
+certifi>=2026.10.19
