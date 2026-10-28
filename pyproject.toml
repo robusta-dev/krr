@@ -27,10 +27,11 @@ python = ">=3.10,<=3.12.9"
 typer = { extras = ["all"], version = "^0.7.0" }
 pydantic = "^1.10.7"
 kubernetes = "^26.1.0"
-prometheus-api-client = "0.5.3"
+# prometrix 0.2.12 needs prometheus-api-client 0.7; together they drop Pillow (CVE-2026-112390 and 28 more, fixed only in 13.0.0)
+prometheus-api-client = "^0.7.0"
 numpy = ">=1.26.4,<1.27.0"
 alive-progress = "^3.1.2"
-prometrix = "0.2.11"
+prometrix = "0.2.12"
 slack-sdk = "^3.21.3"
 pandas = "2.2.2"
 requests = ">=2.33.0"
@@ -41,7 +42,8 @@ idna = "3.15"
 urllib3 = "^2.8.0"
 setuptools = "^83.0.0"
 # transitive deps pinned for CVE fixes
-pillow = "^12.3.0"
+# GHSA-6q48-6c7w-9gw2, via requests
+certifi = ">=2026.10.18"
 pyasn1 = "^0.6.4"
 zipp = "^3.19.1"
 tenacity = "^9.0.0"
