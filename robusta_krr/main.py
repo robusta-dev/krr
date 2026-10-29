@@ -150,7 +150,7 @@ def load_commands() -> None:
                 eks_managed_prom: bool = typer.Option(
                     False,
                     "--eks-managed-prom",
-                    help="Adds additional signitures for eks prometheus connection.",
+                    help="Adds additional signatures for eks prometheus connection.",
                     rich_help_panel="Prometheus EKS Settings",
                 ),
                 eks_managed_prom_profile_name: Optional[str] = typer.Option(
@@ -411,7 +411,7 @@ def load_commands() -> None:
                     )
                     Config.set_config(config)
                 except ValidationError as e:
-                    logger.exception("Error occured while parsing arguments")
+                    logger.exception("Error occurred while parsing arguments")
                     publish_input_error(publish_scan_url, scan_id, start_time, str(e), named_sinks)
                 else:
                     runner = Runner()
