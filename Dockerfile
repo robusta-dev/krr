@@ -19,10 +19,15 @@ WORKDIR /app
 
 COPY ./requirements.txt requirements.txt
 
-RUN pip install --no-cache-dir --upgrade pip
-# Install the project dependencies
-RUN python -m ensurepip --upgrade
-RUN pip install --no-cache-dir -r requirements.txt
+# Install the project dependencies, then drop pip: 26.2.1 (latest) vendors
+# urllib3 2.7.0 (CVE-2026-97687, CVE-2026-97689) and krr never calls pip at
+# runtime. One RUN so the upgraded pip never lands in an image layer.
+# The bundled pip 25.0.1 wheel carries CVE-2025-8869, CVE-2026-3219/6357/8643.
+RUN pip install --no-cache-dir --upgrade pip \
+    && python -m ensurepip --upgrade \
+    && rm -f /usr/local/lib/python3.12/ensurepip/_bundled/pip-*.whl \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y pip
 
 # Copy the rest of the application code
 COPY ./krr.py krr.py
