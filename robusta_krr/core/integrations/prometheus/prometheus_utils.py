@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import boto3
 from prometrix import AWSPrometheusConfig, CoralogixPrometheusConfig, PrometheusConfig, VictoriaMetricsPrometheusConfig
 
 from robusta_krr.core.models.config import settings
+
+# AMP rejects instant-query lookbacks of 32 days or more, so longer label
+# history queries must use the range-query API.
+AMP_QUERY_RANGE_MIN_PERIOD = timedelta(days=32)
+# AMP limits range queries to 95 days:
+# https://docs.aws.amazon.com/prometheus/latest/userguide/AMP_quotas.html
+AMP_QUERY_RANGE_MAX_PERIOD = timedelta(days=95)
+AMP_QUERY_RANGE_STEP = timedelta(hours=1)
 
 if TYPE_CHECKING:
     from robusta_krr.core.integrations.prometheus.metrics_service.prometheus_metrics_service import (
