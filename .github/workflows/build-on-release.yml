@@ -13,6 +13,10 @@ on:
       - pyproject.toml
       - poetry.lock
       - krr.py
+      - robusta_krr/**
+
+permissions:
+  contents: read
 
 env:
   # The release tag, or pr-<number> for a dry run (github.ref_name is "<number>/merge" on PRs).
@@ -20,15 +24,21 @@ env:
 
 jobs:
   build:
+    permissions:
+      contents: write  # upload release assets
     strategy:
       matrix:
-        # we build on macos-15-intel for x86 builds (macos-13 was retired by GitHub)
+        # we build on macos-15-intel for x86 builds (macos-13 was retired by GitHub).
+        # The Intel binary still runs on macOS 10.13+: minimum versions come from the prebuilt
+        # Python, wheels and PyInstaller bootloader, not from the runner's macOS version.
         os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -168,7 +178,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          excludes: prerelease, draft
+          # no spaces: v0.7.0 splits on "," without trimming
+          excludes: prerelease,draft
 
   # Define MacOS hash job
   mac-hash:
@@ -227,6 +238,7 @@ jobs:
         with:
           repository: robusta-dev/homebrew-krr
           path: homebrew-krr
+          persist-credentials: false
       - name: Install the formula from a local tap
         run: |
           ZIP="$PWD/krr-${{ matrix.os }}-$RELEASE_TAG.zip"
