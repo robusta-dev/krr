@@ -17,6 +17,7 @@ from robusta_krr import formatters as concrete_formatters  # noqa: F401
 from robusta_krr.core.abstract import formatters
 from robusta_krr.core.abstract.strategies import BaseStrategy
 from robusta_krr.core.models.config import Config
+from robusta_krr.core.models.severity import Severity
 from robusta_krr.core.runner import Runner, publish_input_error
 from robusta_krr.utils.version import get_version
 
@@ -263,6 +264,13 @@ def load_commands() -> None:
                     help="Whether to include the severity in the output or not",
                     rich_help_panel="Output Settings",
                 ),
+                severity_threshold: Optional[Severity] = typer.Option(
+                    None,
+                    "--severity-threshold",
+                    case_sensitive=False,
+                    help="Only report workloads whose recommendation is at least this severe (GOOD, OK, WARNING or CRITICAL). By default all workloads are reported.",
+                    rich_help_panel="Output Settings",
+                ),
                 verbose: bool = typer.Option(
                     False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
                 ),
@@ -390,6 +398,7 @@ def load_commands() -> None:
                         verbose=verbose,
                         cpu_min_value=cpu_min_value,
                         memory_min_value=memory_min_value,
+                        severity_threshold=severity_threshold,
                         quiet=quiet,
                         log_to_stderr=log_to_stderr,
                         width=width,

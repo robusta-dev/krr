@@ -11,6 +11,16 @@ from robusta_krr.core.models.severity import Severity
 from robusta_krr.core.models.config import Config
 
 
+def filter_scans_by_severity(scans: list[ResourceScan], threshold: Optional[Severity]) -> list[ResourceScan]:
+    """Keep only scans whose severity is at least `threshold`.
+
+    Returns the scans unchanged when no threshold is given.
+    """
+    if threshold is None:
+        return list(scans)
+    return [scan for scan in scans if scan.severity.is_at_least(threshold)]
+
+
 class Recommendation(pd.BaseModel):
     value: RecommendationValue
     severity: Severity
