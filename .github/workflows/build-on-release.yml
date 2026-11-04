@@ -3,17 +3,6 @@ name: Build and Release
 on:
   release:
     types: [created]
-  # Dry run on PRs that can break the release build: builds and smoke tests every binary,
-  # computes the hashes and prints the Homebrew formula diff, but uploads nothing to a
-  # release and pushes nothing to homebrew-krr.
-  pull_request:
-    paths:
-      - .github/workflows/build-on-release.yml
-      - requirements.txt
-      - pyproject.toml
-      - poetry.lock
-      - krr.py
-      - robusta_krr/**
 
 permissions:
   contents: read
