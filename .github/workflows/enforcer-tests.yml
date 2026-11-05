@@ -30,3 +30,6 @@ jobs:
       working-directory: enforcer
       run: |
         pytest
+
+    - name: Build Docker image
+      run: docker build -t krr-enforcer:test enforcer
