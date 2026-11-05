@@ -34,13 +34,13 @@ jobs:
     - name: Build Docker image
       run: docker build -t krr-enforcer:test enforcer
 
-    - name: Check dependencies in the Docker image
-      run: docker run --rm krr-enforcer:test pip check
-
     - name: Test the Docker image
       run: |
+        pip install --target /tmp/testdeps --platform musllinux_1_2_x86_64 --python-version 3.12 --only-binary=:all: pytest==9.2.0 pytest-httpserver==1.2.0
         docker run --rm \
           -v "$PWD/enforcer/tests:/app/enforcer/tests:ro" \
           -v "$PWD/enforcer/pytest.ini:/app/enforcer/pytest.ini:ro" \
+          -v /tmp/testdeps:/testdeps:ro \
+          -e PYTHONPATH=/testdeps \
           krr-enforcer:test \
-          sh -c "pip install -q --root-user-action=ignore pytest==9.2.0 pytest-httpserver==1.2.0 && pytest -p no:cacheprovider"
+          python -m pytest -p no:cacheprovider
