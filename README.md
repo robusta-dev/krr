@@ -18,7 +18,7 @@
     .
     <a href="#how-krr-works"><strong>How KRR works</strong></a>
     .
-    <a href="#free-krr-ui-on-robusta-saas"><strong>Free KRR UI</strong></a>
+    <a href="#krr-ui-on-robusta-saas"><strong>KRR UI</strong></a>
     <br />
     <a href="#usage">Usage</a>
     ·
@@ -77,16 +77,16 @@ _View Instructions for: [Prometheus](#prometheus-victoria-metrics-and-thanos-aut
 
 [![Used to receive information from KRR](./images/krr-other-integrations.svg)](#integrations)
 
-_View instructions for: [Seeing recommendations in a UI](#free-ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin), [Azure Blob Storage Export with Teams Notification](#azure-blob-teams-integration)_
+_View instructions for: [Seeing recommendations in a UI](#ui-for-krr-recommendations), [Sending recommendations to Slack](#slack-notification), [Setting up KRR as a k9s plugin](#k9s-plugin), [Azure Blob Storage Export with Teams Notification](#azure-blob-teams-integration)_
 
 ### Features
 
-- **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-integration).)
+- **No Agent Required**: Run a CLI tool on your local machine for immediate results. (Or run in-cluster for weekly [Slack reports](#slack-notification).)
 - **Prometheus Integration**: Get recommendations based on the data you already have
-- **Explainability**: [Understand how recommendations were calculated with explanation graphs](#free-krr-ui-on-robusta-saas)
+- **Explainability**: [Understand how recommendations were calculated with explanation graphs](#krr-ui-on-robusta-saas)
 - **Extensible Strategies**: Easily create and use your own strategies for calculating resource recommendations.
-- **Free SaaS Platform**: See why KRR recommends what it does, by using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-free-saas-platform).
-- **Agentic Cost Savings**: Go beyond KRR's rule-based recommendations with [HolmesGPT](#free-krr-ui-on-robusta-saas) — an AI agent that investigates your cluster to find and fix cost-saving opportunities, and generates fixes for KRR's recommendations.
+- **SaaS Platform**: See why KRR recommends what it does, by using the [Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=features-saas-platform).
+- **Agentic Cost Savings**: Go beyond KRR's rule-based recommendations with [HolmesGPT](#krr-ui-on-robusta-saas) — an AI agent that investigates your cluster to find and fix cost-saving opportunities, and generates fixes for KRR's recommendations.
 - **Future Support**: Upcoming versions will support custom resources (e.g. GPUs) and custom metrics.
 
 ### How Much Can I Expect to Save with KRR?
@@ -108,9 +108,9 @@ Read more about [how KRR works](#how-krr-works)
 | Installation Location 🌍    | ✅ Not required to be installed inside the cluster, can be used on your own device, connected to a cluster | ❌ Must be installed inside the cluster                     |
 | Workload Configuration 🔧   | ✅ No need to configure a VPA object for each workload                                                     | ❌ Requires VPA object configuration for each workload      |
 | Immediate Results ⚡         | ✅ Gets results immediately (given Prometheus is running)                                                  | ❌ Requires time to gather data and provide recommendations |
-| Reporting 📊                | ✅ Json, CSV, Markdown, [Web UI](#free-ui-for-krr-recommendations), and more!                              | ❌ Not supported                                            |
+| Reporting 📊                | ✅ Json, CSV, Markdown, [Web UI](#ui-for-krr-recommendations), and more!                                   | ❌ Not supported                                            |
 | Extensibility 🔧            | ✅ Add your own strategies with few lines of Python                                                        | :warning: Limited extensibility                             |
-| Explainability 📖           | ✅ [See graphs explaining the recommendations](#free-krr-ui-on-robusta-saas)                               | ❌ Not supported                                            |
+| Explainability 📖           | ✅ [See graphs explaining the recommendations](#krr-ui-on-robusta-saas)                                    | ❌ Not supported                                            |
 | Custom Metrics 📏           | 🔄 Support in future versions                                                                              | ❌ Not supported                                            |
 | Custom Resources 🎛️         | 🔄 Support in future versions (e.g., GPU)                                                                  | ❌ Not supported                                            |
 | Autoscaling 🔀              | 🔄 Support in future versions                                                                              | ✅ Automatic application of recommendations                 |
@@ -194,7 +194,7 @@ We do **not** recommend installing KRR from source in airgapped environments due
   <summary>In-Cluster</summary>
 
 Apart from running KRR as a CLI tool you can also run KRR inside your cluster. We suggest installing KRR via the <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-robusta-platform">Robusta Platform</a>
-. It gives you a <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-free-ui">free UI</a> with some features like the following
+. It gives you a <a href="https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=in-cluster-ui">UI</a> with some features like the following
 * View application usage history graphs on which recommendations are based.
 * Get application, namespace and cluster level recommendations.
 * YAML configuration to apply the suggested recommendation and more
@@ -242,7 +242,7 @@ All above examples show running command as `krr ...`, replace it with `python kr
 
 ### Additional Options
 
-- [View KRR Reports in a Web UI](#free-ui-for-krr-recommendations)
+- [View KRR Reports in a Web UI](#ui-for-krr-recommendations)
 - [Receive KRR Reports Weekly in Slack](#slack-notification)
 
 ### Environment-Specific Instructions
@@ -261,9 +261,9 @@ Setup KRR for...
 
 If your llm provider url uses a certificate from a custom CA, in order to trust it, base-64 encode the certificate, and store it in an environment variable named ``CERTIFICATE``
 
-## Free KRR UI on Robusta SaaS
+## KRR UI on Robusta SaaS
 
-We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=free-krr-ui-robusta-saas-platform). You can:
+We highly recommend using the [Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=krr-ui-robusta-saas-platform). You can:
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
@@ -473,7 +473,7 @@ Robusta KRR uses the following Prometheus queries to gather usage data:
 
 [_Need to customize the metrics? Tell us and we'll add support._](https://github.com/robusta-dev/krr/issues/new)
 
-Get a free breakdown of KRR recommendations in the [Robusta SaaS](#free-krr-ui-on-robusta-saas).
+Get a breakdown of KRR recommendations in the [Robusta SaaS](#krr-ui-on-robusta-saas).
 
 ### Algorithm
 
@@ -653,10 +653,10 @@ For discovering Prometheus it scans services for those labels:
 
 ## Integrations
 
-<details id="free-ui-for-krr-recommendations">
-<summary>Free UI for KRR recommendations</summary>
+<details id="ui-for-krr-recommendations">
+<summary>UI for KRR recommendations</summary>
 
-We highly recommend using the [free Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=integrations-free-robusta-saas-platform). You can:
+We highly recommend using the [Robusta SaaS platform](https://platform.robusta.dev/signup/?benefits=krr&utm_source=github&utm_medium=krr-readme&utm_content=integrations-robusta-saas-platform). You can:
 
 - Understand individual app recommendations with app usage history
 - Sort and filter recommendations by namespace, priority, and more
@@ -858,7 +858,7 @@ Distributed under the MIT License. See [LICENSE.txt](https://github.com/robusta-
 
 ## Support
 
-If you have any questions, feel free to contact **support@robusta.dev** or message us on [robustacommunity.slack.com](https://bit.ly/robusta-slack)
+If you have any questions, contact **support@robusta.dev** or message us on [robustacommunity.slack.com](https://bit.ly/robusta-slack)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

@@ -4,23 +4,36 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: read
+
+env:
+  # The release tag, or pr-<number> for a dry run (github.ref_name is "<number>/merge" on PRs).
+  RELEASE_TAG: ${{ github.event_name == 'release' && github.ref_name || format('pr-{0}', github.event.pull_request.number) }}
+
 jobs:
   build:
+    permissions:
+      contents: write  # upload release assets
     strategy:
       matrix:
-        # we build on macos-13 for x86 builds
-        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
+        # we build on macos-15-intel for x86 builds (macos-13 was retired by GitHub).
+        # The Intel binary still runs on macOS 10.13+: minimum versions come from the prebuilt
+        # Python, wheels and PyInstaller bootloader, not from the runner's macOS version.
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -33,7 +46,7 @@ jobs:
         sudo apt-get install -y binutils
 
     - name: Install the Apple certificate and provisioning profile
-      if: matrix.os == 'macos-latest' || matrix.os == 'macos-13' 
+      if: github.event_name == 'release' && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel')
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -63,27 +76,29 @@ jobs:
         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
 
     - name: Set version in code (Unix)
-      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-13' 
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-15-intel'
       run: |
-        awk 'NR==3{$0="__version__ = \"'${{ github.ref_name }}'\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
+        awk -v ver="$RELEASE_TAG" 'NR==3{$0="__version__ = \"" ver "\""}1' ./robusta_krr/__init__.py > temp && mv temp ./robusta_krr/__init__.py
         cat ./robusta_krr/__init__.py
 
     - name: Set version in code (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         $content = Get-Content -Path .\robusta_krr\__init__.py
-        $content[2] = "__version__=`"$($env:GITHUB_REF_NAME)`""
+        $content[2] = "__version__=`"$($env:RELEASE_TAG)`""
         $content | Out-File -FilePath .\robusta_krr\__init__.py -Encoding ascii
         Get-Content .\robusta_krr\__init__.py
       shell: pwsh
-      env:
-        GITHUB_REF_NAME: ${{ github.ref_name }}
 
     - name: Build with PyInstaller
-      if: matrix.os == 'macos-latest' 
+      if: matrix.os == 'macos-latest'
       shell: bash
       run: |
-        pyinstaller --target-architecture arm64 krr.py
+        # setuptools >= 81 no longer ships pkg_resources, but upgrading the runner's preinstalled
+        # setuptools leaves an empty pkg_resources/ dir behind. PyInstaller then bundles it as a
+        # namespace package plus its pyi_rth_pkgres hook, which crashes the binary on startup.
+        # Nothing krr uses needs pkg_resources, so keep it out of the bundle.
+        pyinstaller --target-architecture arm64 --exclude-module pkg_resources krr.py
         mkdir -p ./dist/krr/grapheme/data
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
         cp ./intro.txt ./dist/krr/intro.txt
@@ -92,45 +107,51 @@ jobs:
       if: matrix.os != 'macos-latest'
       shell: bash
       run: |
-        pyinstaller krr.py
+        # see the macos-latest build step for why pkg_resources is excluded
+        pyinstaller --exclude-module pkg_resources krr.py
         mkdir -p ./dist/krr/grapheme/data
         cp $(python -c "import grapheme; print(grapheme.__path__[0] + '/data/grapheme_break_property.json')") ./dist/krr/grapheme/data/grapheme_break_property.json
         cp ./intro.txt ./dist/krr/intro.txt
 
+    - name: Smoke test the binary
+      shell: bash
+      run: ./dist/krr/krr version
+
     - name: Zip the application (Unix)
-      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-13'
+      if: matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' || matrix.os == 'macos-15-intel'
       run: |
         cd dist
-        zip -r krr-${{ matrix.os }}-${{ github.ref_name }}.zip krr
-        mv krr-${{ matrix.os }}-${{ github.ref_name }}.zip ../
+        zip -r "krr-${{ matrix.os }}-$RELEASE_TAG.zip" krr
+        mv "krr-${{ matrix.os }}-$RELEASE_TAG.zip" ../
         cd ..
 
     - name: Zip the application (Windows)
       if: matrix.os == 'windows-latest'
       run: |
         Set-Location -Path dist
-        Compress-Archive -Path krr -DestinationPath krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Force
-        Move-Item -Path krr-${{ matrix.os }}-${{ github.ref_name }}.zip -Destination ..\
+        Compress-Archive -Path krr -DestinationPath "krr-${{ matrix.os }}-$($env:RELEASE_TAG).zip" -Force
+        Move-Item -Path "krr-${{ matrix.os }}-$($env:RELEASE_TAG).zip" -Destination ..\
         Set-Location -Path ..
 
     - name: Upload Release Asset
+      if: github.event_name == 'release'
       uses: actions/upload-release-asset@v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ github.event.release.upload_url }} 
-        asset_path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
-        asset_name: krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./krr-${{ matrix.os }}-${{ env.RELEASE_TAG }}.zip
+        asset_name: krr-${{ matrix.os }}-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/octet-stream
 
     - name: Upload build as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: krr-${{ matrix.os }}-${{ github.ref_name }}
-        path: ./krr-${{ matrix.os }}-${{ github.ref_name }}.zip
+        name: krr-${{ matrix.os }}-${{ env.RELEASE_TAG }}
+        path: ./krr-${{ matrix.os }}-${{ env.RELEASE_TAG }}.zip
 
     - name: Clean up keychain and provisioning profile
-      if: (matrix.os == 'macos-latest' || matrix.os == 'macos-13') && always()
+      if: github.event_name == 'release' && (matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel') && always()
       run: |
         security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
         rm ~/Library/MobileDevice/Provisioning\ Profiles/build_pp.mobileprovision
@@ -138,7 +159,7 @@ jobs:
   check-latest:
     needs: build
     runs-on: ubuntu-latest
-    outputs: 
+    outputs:
       IS_LATEST: ${{ steps.check-latest.outputs.release == github.ref_name }}
     steps:
       - id: check-latest
@@ -146,66 +167,119 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          excludes: prerelease, draft
+          # no spaces: v0.7.0 splits on "," without trimming
+          excludes: prerelease,draft
 
   # Define MacOS hash job
   mac-hash:
     needs: check-latest
     runs-on: ubuntu-latest
-    if: needs.check-latest.outputs.IS_LATEST
+    # job outputs are strings, so compare to 'true': a bare "false" string is truthy
+    if: github.event_name == 'pull_request' || needs.check-latest.outputs.IS_LATEST == 'true'
     outputs:
       MAC_BUILD_HASH: ${{ steps.calc-hash.outputs.MAC_BUILD_HASH }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
       - name: Download MacOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: krr-macos-latest-${{ github.ref_name }}
+          name: krr-macos-latest-${{ env.RELEASE_TAG }}
       - name: Calculate hash
         id: calc-hash
-        run: echo "::set-output name=MAC_BUILD_HASH::$(sha256sum krr-macos-latest-${{ github.ref_name }}.zip | awk '{print $1}')"
+        run: echo "MAC_BUILD_HASH=$(sha256sum "krr-macos-latest-$RELEASE_TAG.zip" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
   # Define Linux hash job
   linux-hash:
     needs: check-latest
     runs-on: ubuntu-latest
-    if: needs.check-latest.outputs.IS_LATEST
+    # job outputs are strings, so compare to 'true': a bare "false" string is truthy
+    if: github.event_name == 'pull_request' || needs.check-latest.outputs.IS_LATEST == 'true'
     outputs:
       LINUX_BUILD_HASH: ${{ steps.calc-hash.outputs.LINUX_BUILD_HASH }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: krr-ubuntu-latest-${{ github.ref_name }}
+          name: krr-ubuntu-latest-${{ env.RELEASE_TAG }}
       - name: Calculate hash
         id: calc-hash
-        run: echo "::set-output name=LINUX_BUILD_HASH::$(sha256sum krr-ubuntu-latest-${{ github.ref_name }}.zip | awk '{print $1}')"
+        run: echo "LINUX_BUILD_HASH=$(sha256sum "krr-ubuntu-latest-$RELEASE_TAG.zip" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+  # Install the new formula with the binaries built above, before anything is pushed to the tap.
+  brew-test:
+    needs: build
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+    steps:
+      - name: Put brew on PATH (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: echo "/home/linuxbrew/.linuxbrew/bin" >> "$GITHUB_PATH"
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: krr-${{ matrix.os }}-${{ env.RELEASE_TAG }}
+      - name: Checkout homebrew-krr repository
+        uses: actions/checkout@v4
+        with:
+          repository: robusta-dev/homebrew-krr
+          path: homebrew-krr
+          persist-credentials: false
+      - name: Install the formula from a local tap
+        run: |
+          ZIP="$PWD/krr-${{ matrix.os }}-$RELEASE_TAG.zip"
+          HASH=$(shasum -a 256 "$ZIP" | awk '{print $1}')
+          brew tap-new --no-git krr-ci/local
+          TAP_DIR="$(brew --repository)/Library/Taps/krr-ci/homebrew-local"
+          # same line edits as update-formula, but pointing both platforms at the local zip
+          awk 'NR==6||NR==9{$0="        url \"file://'"$ZIP"'\""} NR==7||NR==10{$0="        sha256 \"'"$HASH"'\""}1' homebrew-krr/Formula/krr.rb > "$TAP_DIR/Formula/krr.rb"
+          cat "$TAP_DIR/Formula/krr.rb"
+          brew install krr-ci/local/krr
+      - name: Check the installed krr
+        run: |
+          brew test krr-ci/local/krr
+          VERSION=$(krr version)
+          echo "krr version: $VERSION"
+          if [ "$VERSION" != "$RELEASE_TAG" ]; then
+            echo "::error::brew-installed krr reports '$VERSION', expected '$RELEASE_TAG'"
+            exit 1
+          fi
 
   # Define job to update homebrew formula
   update-formula:
-    needs: [mac-hash, linux-hash]
+    needs: [mac-hash, linux-hash, brew-test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout homebrew-krr repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: robusta-dev/homebrew-krr
-          token: ${{ secrets.MULTIREPO_GITHUB_TOKEN }}
+          # the dry run only reads the (public) tap, so it doesn't need the cross-repo token
+          token: ${{ github.event_name == 'release' && secrets.MULTIREPO_GITHUB_TOKEN || github.token }}
       - name: Update krr.rb formula
+        env:
+          MAC_BUILD_HASH: ${{ needs.mac-hash.outputs.MAC_BUILD_HASH }}
+          LINUX_BUILD_HASH: ${{ needs.linux-hash.outputs.LINUX_BUILD_HASH }}
         run: |
-          MAC_BUILD_HASH=${{ needs.mac-hash.outputs.MAC_BUILD_HASH }}
-          LINUX_BUILD_HASH=${{ needs.linux-hash.outputs.LINUX_BUILD_HASH }}
-          TAG_NAME=${{ github.ref_name }}
-          awk 'NR==6{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-macos-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          # never write a formula with a missing or malformed hash
+          for h in "$MAC_BUILD_HASH" "$LINUX_BUILD_HASH"; do
+            if ! [[ "$h" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "::error::Invalid build hash '$h'"
+              exit 1
+            fi
+          done
+          awk 'NR==6{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$RELEASE_TAG"'/krr-macos-latest-'"$RELEASE_TAG"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
           awk 'NR==7{$0="        sha256 \"'$MAC_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
-          awk 'NR==9{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$TAG_NAME"'/krr-ubuntu-latest-'"$TAG_NAME"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          awk 'NR==9{$0="        url \"https://github.com/robusta-dev/krr/releases/download/'"$RELEASE_TAG"'/krr-ubuntu-latest-'"$RELEASE_TAG"'.zip\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
           awk 'NR==10{$0="        sha256 \"'$LINUX_BUILD_HASH'\""}1' ./Formula/krr.rb > temp && mv temp ./Formula/krr.rb
+          git diff
       - name: Commit and push changes
+        if: github.event_name == 'release'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "Update formula for release ${TAG_NAME}"
+          git commit -am "Update formula for release ${RELEASE_TAG}"
           git push
