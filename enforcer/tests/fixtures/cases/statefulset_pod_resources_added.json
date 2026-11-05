@@ -1,0 +1,26 @@
+{
+  "review": {
+    "apiVersion": "admission.k8s.io/v1",
+    "kind": "AdmissionReview",
+    "request": {
+      "uid": "case-statefulset-pod",
+      "kind": {"group": "", "version": "v1", "kind": "Pod"},
+      "operation": "CREATE",
+      "object": {
+        "metadata": {
+          "name": "inventory-db-0",
+          "namespace": "shop",
+          "ownerReferences": [{"apiVersion": "apps/v1", "kind": "StatefulSet", "name": "inventory-db", "uid": "b1", "controller": true}]
+        },
+        "spec": {"containers": [{"name": "postgres"}]}
+      }
+    }
+  },
+  "expected_patch": [
+    {
+      "op": "add",
+      "path": "/spec/containers/0/resources",
+      "value": {"requests": {"cpu": "0.5", "memory": "536870912.0"}, "limits": {"cpu": "1.0", "memory": "536870912.0"}}
+    }
+  ]
+}

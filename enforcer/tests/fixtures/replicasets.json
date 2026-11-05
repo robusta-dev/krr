@@ -1,0 +1,16 @@
+{
+  "kind": "ReplicaSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {"resourceVersion": "1"},
+  "items": [
+    {
+      "metadata": {
+        "name": "checkout-api-7d9f8b6c5",
+        "namespace": "shop",
+        "ownerReferences": [
+          {"apiVersion": "apps/v1", "kind": "Deployment", "name": "checkout-api", "uid": "4b1e6a52-0d4f-4c1a-9f0e-2f6f3c1d7a10", "controller": true}
+        ]
+      }
+    }
+  ]
+}

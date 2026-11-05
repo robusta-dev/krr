@@ -20,8 +20,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -e .
-        pip install pytest
+        pip install pytest pytest-asyncio==1.4.0
+        pip check
 
     - name: Test with pytest
       run: |
-        pytest
+        pytest tests
