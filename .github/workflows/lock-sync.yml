@@ -1,0 +1,35 @@
+name: Lock Sync
+
+on:
+  pull_request:
+    paths:
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'requirements.txt'
+
+jobs:
+  check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Poetry
+      run: pip install poetry==1.8.5
+
+    - name: Check poetry.lock matches pyproject.toml
+      run: poetry check --lock
+
+    - name: Check requirements.txt matches poetry.lock
+      run: |
+        poetry config warnings.export false
+        diff -u \
+          <(poetry export -f requirements.txt --without-hashes | sed -E 's/\[[^]]*\]//; s/ *;.*//' | sort) \
+          <(grep -vE '^\s*(#|$)' requirements.txt | sed -E 's/\[[^]]*\]//; s/ *;.*//' | sort) \
+          || { echo "requirements.txt is out of sync with poetry.lock - regenerate it with 'poetry export'"; exit 1; }

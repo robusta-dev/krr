@@ -1,0 +1,38 @@
+{
+  "review": {
+    "apiVersion": "admission.k8s.io/v1",
+    "kind": "AdmissionReview",
+    "request": {
+      "uid": "case-unknown-rs",
+      "kind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Pod"
+      },
+      "operation": "CREATE",
+      "object": {
+        "metadata": {
+          "name": "orders-api-6f7a8b9c0-x1",
+          "namespace": "shop",
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "orders-api-6f7a8b9c0",
+              "uid": "u1",
+              "controller": true
+            }
+          ]
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "app"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected_patch": null
+}

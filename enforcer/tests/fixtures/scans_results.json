@@ -1,0 +1,135 @@
+[
+  {
+    "name": "checkout-api",
+    "namespace": "shop",
+    "kind": "Deployment",
+    "container": "app",
+    "content": [
+      {
+        "resource": "cpu",
+        "recommended": {
+          "request": 0.25,
+          "limit": null
+        }
+      },
+      {
+        "resource": "memory",
+        "recommended": {
+          "request": 268435456,
+          "limit": 268435456
+        }
+      }
+    ]
+  },
+  {
+    "name": "checkout-api",
+    "namespace": "shop",
+    "kind": "Deployment",
+    "container": "istio-proxy",
+    "content": [
+      {
+        "resource": "cpu",
+        "recommended": {
+          "request": 0.05,
+          "limit": null
+        }
+      },
+      {
+        "resource": "memory",
+        "recommended": {
+          "request": 67108864,
+          "limit": 67108864
+        }
+      }
+    ]
+  },
+  {
+    "name": "inventory-db",
+    "namespace": "shop",
+    "kind": "StatefulSet",
+    "container": "postgres",
+    "content": [
+      {
+        "resource": "cpu",
+        "recommended": {
+          "request": 0.5,
+          "limit": 1.0
+        }
+      },
+      {
+        "resource": "memory",
+        "recommended": {
+          "request": 536870912,
+          "limit": 536870912
+        }
+      }
+    ]
+  },
+  {
+    "name": "payments-worker",
+    "namespace": "shop",
+    "kind": "Deployment",
+    "container": "worker",
+    "content": [
+      {
+        "resource": "cpu",
+        "recommended": {
+          "request": 0.1,
+          "limit": null
+        }
+      },
+      {
+        "resource": "memory",
+        "recommended": {
+          "request": 134217728,
+          "limit": 134217728
+        }
+      }
+    ]
+  },
+  {
+    "name": "report-builder",
+    "namespace": "shop",
+    "kind": "Job",
+    "container": "builder",
+    "content": [
+      {
+        "resource": "cpu",
+        "recommended": {
+          "request": "?",
+          "limit": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "nightly-export",
+    "namespace": "shop",
+    "kind": "Job",
+    "container": "exporter",
+    "content": [
+      {
+        "resource": "cpu",
+        "recommended": {
+          "request": 0.0,
+          "limit": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "audit-logger",
+    "namespace": "shop",
+    "kind": "StatefulSet",
+    "container": "logger",
+    "content": [
+      {
+        "resource": "cpu",
+        "recommended": {
+          "request": 0.9,
+          "limit": 0.5
+        }
+      }
+    ]
+  }
+]

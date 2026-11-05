@@ -122,7 +122,7 @@ additionalEnvVars:
 ## Running Locally
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.10+
 - Access to a Kubernetes cluster
 - KRR recommendations data from Robusta UI
 

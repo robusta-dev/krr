@@ -1,0 +1,22 @@
+{
+  "review": {
+    "apiVersion": "admission.k8s.io/v1",
+    "kind": "AdmissionReview",
+    "request": {
+      "uid": "case-non-pod",
+      "kind": {
+        "group": "apps",
+        "version": "v1",
+        "kind": "Deployment"
+      },
+      "operation": "CREATE",
+      "object": {
+        "metadata": {
+          "name": "checkout-api",
+          "namespace": "shop"
+        }
+      }
+    }
+  },
+  "expected_patch": null
+}

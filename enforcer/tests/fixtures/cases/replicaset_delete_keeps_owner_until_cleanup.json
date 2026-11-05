@@ -1,0 +1,76 @@
+{
+  "setup": [
+    {
+      "apiVersion": "admission.k8s.io/v1",
+      "kind": "AdmissionReview",
+      "request": {
+        "uid": "case-rs-delete",
+        "kind": {
+          "group": "apps",
+          "version": "v1",
+          "kind": "ReplicaSet"
+        },
+        "operation": "DELETE",
+        "oldObject": {
+          "metadata": {
+            "name": "checkout-api-7d9f8b6c5",
+            "namespace": "shop"
+          }
+        }
+      }
+    }
+  ],
+  "review": {
+    "apiVersion": "admission.k8s.io/v1",
+    "kind": "AdmissionReview",
+    "request": {
+      "uid": "case-after-rs-delete",
+      "kind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Pod"
+      },
+      "operation": "CREATE",
+      "object": {
+        "metadata": {
+          "name": "checkout-api-7d9f8b6c5-x6",
+          "namespace": "shop",
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "ReplicaSet",
+              "name": "checkout-api-7d9f8b6c5",
+              "uid": "u1",
+              "controller": true
+            }
+          ]
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "log-shipper"
+            },
+            {
+              "name": "app"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected_patch": [
+    {
+      "op": "add",
+      "path": "/spec/containers/1/resources",
+      "value": {
+        "requests": {
+          "cpu": "0.25",
+          "memory": "268435456.0"
+        },
+        "limits": {
+          "memory": "268435456.0"
+        }
+      }
+    }
+  ]
+}

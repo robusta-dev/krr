@@ -1,0 +1,44 @@
+{
+  "setup": [
+    {
+      "apiVersion": "admission.k8s.io/v1",
+      "kind": "AdmissionReview",
+      "request": {
+        "uid": "case-rs-create",
+        "kind": {"group": "apps", "version": "v1", "kind": "ReplicaSet"},
+        "operation": "CREATE",
+        "object": {
+          "metadata": {
+            "name": "payments-worker-5c6d7e8f9",
+            "namespace": "shop",
+            "ownerReferences": [{"apiVersion": "apps/v1", "kind": "Deployment", "name": "payments-worker", "uid": "c1", "controller": true}]
+          }
+        }
+      }
+    }
+  ],
+  "review": {
+    "apiVersion": "admission.k8s.io/v1",
+    "kind": "AdmissionReview",
+    "request": {
+      "uid": "case-rs-pod",
+      "kind": {"group": "", "version": "v1", "kind": "Pod"},
+      "operation": "CREATE",
+      "object": {
+        "metadata": {
+          "generateName": "payments-worker-5c6d7e8f9-",
+          "namespace": "shop",
+          "ownerReferences": [{"apiVersion": "apps/v1", "kind": "ReplicaSet", "name": "payments-worker-5c6d7e8f9", "uid": "c2", "controller": true}]
+        },
+        "spec": {"containers": [{"name": "worker", "resources": {"requests": {"cpu": "1"}}}]}
+      }
+    }
+  },
+  "expected_patch": [
+    {
+      "op": "replace",
+      "path": "/spec/containers/0/resources",
+      "value": {"requests": {"cpu": "0.1", "memory": "134217728.0"}, "limits": {"memory": "134217728.0"}}
+    }
+  ]
+}

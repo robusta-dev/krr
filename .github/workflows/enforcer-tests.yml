@@ -1,0 +1,46 @@
+name: Enforcer Tests
+
+on:
+  pull_request:
+    paths:
+      - 'enforcer/**'
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      working-directory: enforcer
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest==9.2.0 pytest-httpserver==1.2.0
+        pip check
+
+    - name: Test with pytest
+      working-directory: enforcer
+      run: |
+        pytest
+
+    - name: Build Docker image
+      run: docker build -t krr-enforcer:test enforcer
+
+    - name: Test the Docker image
+      run: |
+        pip install --target /tmp/testdeps --platform musllinux_1_2_x86_64 --python-version 3.12 --only-binary=:all: pytest==9.2.0 pytest-httpserver==1.2.0
+        docker run --rm \
+          -v "$PWD/enforcer/tests:/app/enforcer/tests:ro" \
+          -v "$PWD/enforcer/pytest.ini:/app/enforcer/pytest.ini:ro" \
+          -v /tmp/testdeps:/testdeps:ro \
+          -e PYTHONPATH=/testdeps \
+          krr-enforcer:test \
+          python -m pytest -p no:cacheprovider

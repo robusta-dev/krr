@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Root PRs need requirements.txt re-exported to pass lock-sync
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "pip"
+    directory: "/enforcer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/enforcer"
+    schedule:
+      interval: "weekly"
