@@ -53,6 +53,24 @@ def test_recommendations_endpoint_unknown_workload(enforcer):
     assert response.status_code == 404
 
 
+def test_recommendations_endpoint_skips_unknown_values(enforcer):
+    response = requests.get(f"{enforcer}/recommendations/shop/Job/report-builder", timeout=5)
+
+    assert response.status_code == 404
+
+
+def test_mutate_rejects_review_without_request(enforcer):
+    response = requests.post(f"{enforcer}/mutate", json={"apiVersion": "admission.k8s.io/v1", "kind": "AdmissionReview"}, timeout=5)
+
+    assert response.status_code == 422
+
+
+def test_health_endpoint(enforcer):
+    response = requests.get(f"{enforcer}/health", timeout=5)
+
+    assert response.json() == {"status": "healthy"}
+
+
 def test_metrics_endpoint(enforcer):
     response = requests.get(f"{enforcer}/metrics", timeout=5)
 

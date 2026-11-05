@@ -89,6 +89,12 @@ def wait_until_healthy(process: subprocess.Popen) -> None:
     raise RuntimeError("enforcer did not become healthy within 30 seconds")
 
 
+def start_enforcer(enforcer_env: dict, kubeconfig: Path) -> subprocess.Popen:
+    env = {**os.environ, **enforcer_env, "KUBECONFIG": str(kubeconfig)}
+    env.pop("KUBERNETES_SERVICE_HOST", None)
+    return subprocess.Popen([sys.executable, "enforcer_main.py"], cwd=ENFORCER_DIR, env=env)
+
+
 @pytest.fixture(scope="session")
 def fake_backend():
     server = HTTPServer()
@@ -111,15 +117,15 @@ def enforcer(fake_backend, tmp_path_factory):
         "email": USER["email"],
         "password": "test-password",
     }
-    env = {
-        **os.environ,
-        "KUBECONFIG": str(kubeconfig),
+    enforcer_env = {
         "ROBUSTA_UI_TOKEN": base64.b64encode(json.dumps(token).encode()).decode(),
         "CLUSTER_NAME": CLUSTER_NAME,
         "EXCLUDED_CONTAINERS": "istio-proxy",
+        "KRR_MUTATION_MODE_DEFAULT": "enforce",
+        "ENFORCER_SSL_KEY_FILE": "",
+        "ENFORCER_SSL_CERT_FILE": "",
     }
-    env.pop("KUBERNETES_SERVICE_HOST", None)
-    process = subprocess.Popen([sys.executable, "enforcer_main.py"], cwd=ENFORCER_DIR, env=env)
+    process = start_enforcer(enforcer_env, kubeconfig)
     try:
         wait_until_healthy(process)
         yield ENFORCER_URL

@@ -33,3 +33,14 @@ jobs:
 
     - name: Build Docker image
       run: docker build -t krr-enforcer:test enforcer
+
+    - name: Check dependencies in the Docker image
+      run: docker run --rm krr-enforcer:test pip check
+
+    - name: Test the Docker image
+      run: |
+        docker run --rm \
+          -v "$PWD/enforcer/tests:/app/enforcer/tests:ro" \
+          -v "$PWD/enforcer/pytest.ini:/app/enforcer/pytest.ini:ro" \
+          krr-enforcer:test \
+          sh -c "pip install -q --root-user-action=ignore pytest==9.2.0 pytest-httpserver==1.2.0 && pytest -p no:cacheprovider"

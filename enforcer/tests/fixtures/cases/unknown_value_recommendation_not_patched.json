@@ -1,0 +1,38 @@
+{
+  "review": {
+    "apiVersion": "admission.k8s.io/v1",
+    "kind": "AdmissionReview",
+    "request": {
+      "uid": "case-unknown-value",
+      "kind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Pod"
+      },
+      "operation": "CREATE",
+      "object": {
+        "metadata": {
+          "name": "report-builder-x4",
+          "namespace": "shop",
+          "ownerReferences": [
+            {
+              "apiVersion": "apps/v1",
+              "kind": "Job",
+              "name": "report-builder",
+              "uid": "u1",
+              "controller": true
+            }
+          ]
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "builder"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "expected_patch": null
+}

@@ -1,7 +1,8 @@
 fastapi==0.139.0
 uvicorn==0.27.1
 pydantic==2.13.4
-starlette==1.10.0
+starlette==1.10.0 ; python_version >= "3.11"
+starlette==1.7.0 ; python_version < "3.11"
 supabase==2.5
 PyYAML==6.0.1
 cachetools==5.3.3
