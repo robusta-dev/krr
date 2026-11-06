@@ -107,10 +107,32 @@ class PrometheusMetricsService(MetricsService):
         elif not settings.inside_cluster and self.api_client is not None:
             self.api_client.update_params_for_auth(headers, {}, ["BearerToken"])
         self.headers = headers
+        self.client_cert = self._get_apiserver_client_cert()
         self.prom_config = None
         self.prometheus = None
         self._last_init_at = None
         self.get_prometheus()
+
+    def _get_apiserver_client_cert(self) -> Optional[tuple[str, str]]:
+        """
+        Returns the kubeconfig's client certificate when Prometheus is reached through the apiserver service proxy.
+
+        Kubeconfigs that authenticate with a client certificate have no bearer token to forward, so without the
+        certificate the apiserver rejects the proxied requests with 401. The certificate is only sent to the
+        apiserver, never to a Prometheus URL on another host.
+        """
+        if settings.inside_cluster or self.api_client is None:
+            return None
+
+        configuration = self.api_client.configuration
+        if not (configuration.cert_file and configuration.key_file and configuration.host):
+            return None
+
+        apiserver_url = configuration.host.rstrip("/") + "/"
+        if not self.url.startswith(apiserver_url):
+            return None
+
+        return (configuration.cert_file, configuration.key_file)
 
     def get_prometheus(self):
         now = datetime.utcnow()
@@ -121,6 +143,9 @@ class PrometheusMetricsService(MetricsService):
         ):
             self.prom_config = generate_prometheus_config(url=self.url, headers=self.headers, metrics_service=self)  # type: ignore
             self.prometheus = get_custom_prometheus_connect(self.prom_config)
+            if self.client_cert:
+                # Every request goes through this session, so the cert is presented on all of them.
+                self.prometheus._session.cert = self.client_cert
             self._last_init_at = now
         return self.prometheus
 
