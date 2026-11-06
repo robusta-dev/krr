@@ -204,6 +204,7 @@ class PrometheusMetricsService(MetricsService):
         object: K8sObjectData,
         LoaderClass: type[PrometheusMetric],
         period: timedelta,
+        end_time: datetime,
         step: timedelta = timedelta(minutes=30),
     ) -> PodsTimeData:
         """
@@ -212,7 +213,7 @@ class PrometheusMetricsService(MetricsService):
         logger.debug(f"Gathering {LoaderClass.__name__} metric for {object}")
         try:
             metric_loader = LoaderClass(self.get_prometheus(), self.name(), self.executor)
-            data = await metric_loader.load_data(object, period, step)
+            data = await metric_loader.load_data(object, period, step, end_time)
         except Exception:
             logger.exception("Failed to gather resource history data for %s", object)
             data = {}
