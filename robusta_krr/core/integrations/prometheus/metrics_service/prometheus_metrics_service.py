@@ -4,10 +4,12 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Iterable, List, Optional, Dict, Any
+from urllib.parse import SplitResult, urlsplit
 
 from kubernetes.client import ApiClient
 from prometheus_api_client import PrometheusApiClientException
 from prometrix import PrometheusNotFound, get_custom_prometheus_connect
+from requests.adapters import HTTPAdapter
 from tenacity import retry, stop_after_attempt, wait_random
 
 from robusta_krr.core.abstract.strategies import PodsTimeData
@@ -24,6 +26,30 @@ from .base_metric_service import MetricsService
 PROM_REFRESH_CREDS_SEC = int(os.environ.get("PROM_REFRESH_CREDS_SEC", "600"))  # 10 minutes
 
 logger = logging.getLogger("krr")
+
+DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+class ClientCertAdapter(HTTPAdapter):
+    """
+    An HTTPAdapter that presents a TLS client certificate on every request it sends.
+
+    Requests picks an adapter by URL prefix, so mounting this on a URL limits the certificate to that URL. A
+    redirect to another host goes through the session's default adapter and gets no certificate.
+    """
+
+    def __init__(self, cert: tuple[str, str], **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.client_cert = cert
+
+    def send(self, request, cert=None, **kwargs):  # type: ignore[override]
+        return super().send(request, cert=self.client_cert, **kwargs)
+
+
+def _url_origin(url: SplitResult) -> tuple[str, str, Optional[int]]:
+    """Returns the scheme, hostname and port of a URL, normalised so equivalent spellings compare equal."""
+    scheme = url.scheme.lower()
+    return scheme, (url.hostname or "").lower(), url.port or DEFAULT_PORTS.get(scheme)
 
 
 class PrometheusDiscovery(MetricsServiceDiscovery):
@@ -128,8 +154,19 @@ class PrometheusMetricsService(MetricsService):
         if not (configuration.cert_file and configuration.key_file and configuration.host):
             return None
 
-        apiserver_url = configuration.host.rstrip("/") + "/"
-        if not self.url.startswith(apiserver_url):
+        try:
+            apiserver_url = urlsplit(configuration.host)
+            prometheus_url = urlsplit(self.url)
+            if _url_origin(apiserver_url) != _url_origin(prometheus_url):
+                return None
+        except ValueError:  # e.g. a port that isn't a number
+            return None
+
+        # The apiserver may be served under a path prefix, e.g. behind Rancher's proxy.
+        apiserver_path = apiserver_url.path.rstrip("/")
+        if apiserver_path and not (
+            prometheus_url.path == apiserver_path or prometheus_url.path.startswith(apiserver_path + "/")
+        ):
             return None
 
         return (configuration.cert_file, configuration.key_file)
@@ -144,8 +181,11 @@ class PrometheusMetricsService(MetricsService):
             self.prom_config = generate_prometheus_config(url=self.url, headers=self.headers, metrics_service=self)  # type: ignore
             self.prometheus = get_custom_prometheus_connect(self.prom_config)
             if self.client_cert:
-                # Every request goes through this session, so the cert is presented on all of them.
-                self.prometheus._session.cert = self.client_cert
+                # Replaces the adapter the Prometheus client mounts on its URL, with the same pool settings.
+                self.prometheus._session.mount(
+                    self.prometheus.url,
+                    ClientCertAdapter(self.client_cert, pool_maxsize=10, pool_block=True),
+                )
             self._last_init_at = now
         return self.prometheus
 
