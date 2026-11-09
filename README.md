@@ -481,7 +481,7 @@ By default, we use a _simple_ strategy to calculate resource recommendations. It
 
 - For CPU, we set a request at the 95th percentile with no limit. Meaning, in 95% of the cases, your CPU request will be sufficient. For the remaining 5%, we set no limit. This means your pod can burst and use any CPU available on the node - e.g. CPU that other pods requested but aren’t using right now.
 
-- For memory, we take the maximum value over the past week and add a 15% buffer.
+- For memory requests and limits, we take the maximum value over the configured history period (14 days by default) and add a configurable buffer (15% by default).
 
 ### Prometheus connection
 
