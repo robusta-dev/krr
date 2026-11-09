@@ -1,6 +1,6 @@
 from datetime import timedelta
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -25,11 +25,13 @@ def test_duration_preserves_seconds(seconds):
 async def test_load_data_uses_full_36_hour_query_window(loader_type):
     loader = loader_type(prometheus=None, service_name="test")
     loader.query_prometheus = AsyncMock(return_value=[])
-    obj = SimpleNamespace(
-        namespace="default", container="app", pods=[SimpleNamespace(name="app-1")], pods_count=1
-    )
+    obj = SimpleNamespace(namespace="default", container="app", pods=[SimpleNamespace(name="app-1")], pods_count=1)
 
-    await loader.load_data(obj, timedelta(hours=36), timedelta(minutes=1))
+    with patch(
+        "robusta_krr.core.integrations.prometheus.metrics.base.settings",
+        SimpleNamespace(prometheus_cluster_label=None, prometheus_label=None),
+    ):
+        await loader.load_data(obj, timedelta(hours=36), timedelta(minutes=1))
 
     data = loader.query_prometheus.call_args.args[0]
     assert "[129600s:60s]" in data.query
