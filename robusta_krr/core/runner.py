@@ -352,7 +352,7 @@ class Runner:
             )
 
             # NOTE: We run this in a threadpool as the strategy calculation might be CPU intensive
-            # But keep in mind that numpy calcluations will not block the GIL
+            # But keep in mind that numpy calculations will not block the GIL
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(self._executor, self._strategy.run, metrics, object)
 
@@ -423,7 +423,7 @@ class Runner:
         if clusters and len(clusters) > 1 and settings.prometheus_url:
             # this can only happen for multi-cluster querying a single centeralized prometheus
             # In this scenario we dont yet support determining
-            # which metrics belong to which cluster so the reccomendation can be incorrect
+            # which metrics belong to which cluster so the recommendation can be incorrect
             raise ClusterNotSpecifiedException(
                 f"Cannot scan multiple clusters for this prometheus, "
                 f"Rerun with the flag `-c <cluster>` where <cluster> is one of {clusters}"
