@@ -348,6 +348,7 @@ class Runner:
                 object,
                 self._strategy,
                 self._strategy.settings.history_timedelta,
+                self._strategy.settings.end_datetime,
                 step=self._strategy.settings.timeframe_timedelta,
             )
 
