@@ -113,9 +113,7 @@ class PrometheusMetric(BaseMetric):
         Returns:
         str: Step size in string format used by Prometheus.
         """
-        if step.total_seconds() > 60 * 60 * 24:
-            return f"{int(step.total_seconds()) // (60 * 60 * 24)}d"
-        return f"{int(step.total_seconds()) // 60}m"
+        return f"{int(step.total_seconds())}s"
 
     @retry(wait=wait_random(min=2, max=10), stop=stop_after_attempt(5))
     def _query_prometheus_sync(self, data: PrometheusMetricData) -> list[PrometheusSeries]:
