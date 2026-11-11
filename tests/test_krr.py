@@ -31,8 +31,10 @@ def test_run(log_flag: str):
         raise e from result.exception
 
 
-def test_run_without_prometheus(caplog: pytest.LogCaptureFixture):
+def test_run_without_prometheus(caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch):
     """If no Prometheus is found, the run fails with the regular error and not with an AttributeError."""
+    # JSON logging replaces the root handlers, which would remove pytest's log capture
+    monkeypatch.delenv("ENABLE_JSON_LOGS_FORMAT", raising=False)
     with patch(
         "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.__init__",
         side_effect=PrometheusNotFound("Wasn't able to connect to any Prometheus service"),
