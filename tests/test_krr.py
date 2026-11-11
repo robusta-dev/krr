@@ -5,6 +5,7 @@ from typer.testing import CliRunner
 
 from robusta_krr.main import app, load_commands
 from robusta_krr.core.integrations.kubernetes import ClusterLoader
+from robusta_krr.core.integrations.prometheus import PrometheusNotFound
 from robusta_krr.core.models.config import settings
 
 runner = CliRunner(mix_stderr=False)
@@ -28,6 +29,20 @@ def test_run(log_flag: str):
         assert result.exit_code == 0, result.stdout
     except AssertionError as e:
         raise e from result.exception
+
+
+def test_run_without_prometheus(caplog: pytest.LogCaptureFixture):
+    """If no Prometheus is found, the run fails with the regular error and not with an AttributeError."""
+    with patch(
+        "robusta_krr.core.integrations.prometheus.loader.PrometheusMetricsLoader.__init__",
+        side_effect=PrometheusNotFound("Wasn't able to connect to any Prometheus service"),
+    ):
+        result = runner.invoke(app, [STRATEGY_NAME, "--namespace", "default"])
+
+    assert result.exit_code == 1
+    assert "Wasn't able to connect to any Prometheus service" in caplog.text
+    assert "No successful scans were made" in caplog.text
+    assert "AttributeError" not in caplog.text
 
 
 @pytest.mark.parametrize("format", ["json", "yaml", "table", "pprint", "csv"])
