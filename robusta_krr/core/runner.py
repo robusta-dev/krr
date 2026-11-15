@@ -21,7 +21,14 @@ from robusta_krr.core.integrations.kubernetes import KubernetesLoader
 from robusta_krr.core.integrations.prometheus import ClusterNotSpecifiedException, PrometheusMetricsLoader
 from robusta_krr.core.models.config import settings
 from robusta_krr.core.models.objects import K8sObjectData
-from robusta_krr.core.models.result import ResourceAllocations, ResourceScan, ResourceType, Result, StrategyData
+from robusta_krr.core.models.result import (
+    Recommendation,
+    ResourceAllocations,
+    ResourceScan,
+    ResourceType,
+    Result,
+    StrategyData,
+)
 from robusta_krr.utils.intro import load_intro_message
 from robusta_krr.utils.progress_bar import ProgressBar
 from robusta_krr.utils.version import get_version, load_latest_version
@@ -40,6 +47,19 @@ def custom_print(*objects, rich: bool = True, force: bool = False) -> None:
 
 
 class CriticalRunnerException(Exception): ...
+
+
+def has_recommendation_data(scan: ResourceScan) -> bool:
+    """Whether the scan produced at least one actual recommendation value.
+
+    Workloads without metrics end up with "?" (or "unset") recommendations for every
+    resource, which only adds noise to the report.
+    """
+    return any(
+        isinstance(recommendation, Recommendation) and isinstance(recommendation.value, (int, float))
+        for selector in ("requests", "limits")
+        for recommendation in getattr(scan.recommended, selector).values()
+    )
 
 
 class Runner:
@@ -458,6 +478,15 @@ class Runner:
             raise CriticalRunnerException("No objects available to scan.")
         elif len(successful_scans) == 0:
             raise CriticalRunnerException("No successful scans were made. Check the logs for more information.")
+
+        if settings.hide_no_data:
+            scans_with_data = [scan for scan in successful_scans if has_recommendation_data(scan)]
+            hidden_count = len(successful_scans) - len(scans_with_data)
+            if hidden_count:
+                logger.info(f"Hiding {hidden_count} workload(s) without recommendation data (--hide-no-data)")
+            if not scans_with_data:
+                logger.warning("All scanned workloads were hidden, as none of them has recommendation data.")
+            successful_scans = scans_with_data
 
         return Result(
             scans=successful_scans,
