@@ -53,6 +53,11 @@ class Runner:
 
         self.errors: list[dict] = []
 
+        # Scan progress reporting, so a long scan does not look like a frozen process
+        self._scan_objects_total = 0
+        self._scan_objects_done = 0
+        self._scan_progress_step = 1
+
         # This executor will be running calculations for recommendations
         self._executor = ThreadPoolExecutor(settings.max_workers)
 
@@ -401,10 +406,22 @@ class Runner:
                 }
             )
 
+    def _report_scan_progress(self) -> None:
+        """Log how many objects have been processed so far."""
+
+        self._scan_objects_done += 1
+
+        if (
+            self._scan_objects_done % self._scan_progress_step == 0
+            or self._scan_objects_done == self._scan_objects_total
+        ):
+            logger.info(f"Scanned {self._scan_objects_done}/{self._scan_objects_total} objects")
+
     async def _gather_object_allocations(self, k8s_object: K8sObjectData) -> Optional[ResourceScan]:
         recommendation = await self._calculate_object_recommendations(k8s_object)
 
         self.__progressbar.progress()
+        self._report_scan_progress()
 
         if recommendation is None:
             return None
@@ -438,6 +455,9 @@ class Runner:
 
         with ProgressBar(title="Calculating Recommendation") as self.__progressbar:
             workloads = await self._k8s_loader.list_scannable_objects(clusters)
+            self._scan_objects_total = len(workloads)
+            self._scan_progress_step = max(1, self._scan_objects_total // 10)
+            logger.info(f"Found {self._scan_objects_total} objects to scan")
             if not clusters or len(clusters) == 1:
                 cluster_name = clusters[0] if clusters else None  # its none if krr is running inside cluster
                 prometheus_loader = self._get_prometheus_loader(cluster_name)
