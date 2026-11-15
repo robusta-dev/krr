@@ -76,6 +76,7 @@ class Config(pd.BaseSettings):
     log_to_stderr: bool
     width: Optional[int] = pd.Field(None, ge=1)
     show_severity: bool = True
+    hide_no_data: bool = False
 
     # Publishing to url settings
     publish_scan_url: Optional[str] = pd.Field(None)

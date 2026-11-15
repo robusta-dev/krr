@@ -263,6 +263,12 @@ def load_commands() -> None:
                     help="Whether to include the severity in the output or not",
                     rich_help_panel="Output Settings",
                 ),
+                hide_no_data: bool = typer.Option(
+                    False,
+                    "--hide-no-data",
+                    help="Do not show workloads that have no recommendation data, for example workloads without metrics",
+                    rich_help_panel="Output Settings",
+                ),
                 verbose: bool = typer.Option(
                     False, "--verbose", "-v", help="Enable verbose mode", rich_help_panel="Logging Settings"
                 ),
@@ -402,6 +408,7 @@ def load_commands() -> None:
                         azure_subscription_id=azure_subscription_id,
                         azure_resource_group=azure_resource_group,
                         show_severity=show_severity,
+                        hide_no_data=hide_no_data,
                         strategy=_strategy_name,
                         other_args=strategy_args,
                         publish_scan_url=publish_scan_url,
