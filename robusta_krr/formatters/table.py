@@ -63,6 +63,24 @@ def _format_total_diff(item: ResourceScan, resource: ResourceType, pods_current:
     return f"{format_diff(allocated, recommended, selector, pods_current, colored=True)}{pods_info}"
 
 
+def _resources_with_data(scans: list[ResourceScan]) -> list[ResourceType]:
+    """Return the resources that have at least one computed recommendation.
+
+    When no recommendation is available for a resource (e.g. Prometheus returned
+    no data for it), its columns only render `unset` and the `(No data)` note,
+    so there is nothing useful to show.
+    """
+    return [
+        resource
+        for resource in ResourceType
+        if any(
+            getattr(scan.recommended, selector)[resource].value is not None
+            for scan in scans
+            for selector in ("requests", "limits")
+        )
+    ]
+
+
 @formatters.register(rich_console=True)
 def table(result: Result) -> Table:
     """Format the result as text.
@@ -93,7 +111,8 @@ def table(result: Result) -> Table:
     table.add_column("Old Pods", style="cyan")
     table.add_column("Type", style="cyan")
     table.add_column("Container", style="cyan")
-    for resource in ResourceType:
+    resources = _resources_with_data(result.scans)
+    for resource in resources:
         table.add_column(f"{resource.name} Diff")
         table.add_column(f"{resource.name} Requests")
         table.add_column(f"{resource.name} Limits")
@@ -119,7 +138,7 @@ def table(result: Result) -> Table:
                 item.object.container,
             ]
 
-            for resource in ResourceType:
+            for resource in resources:
                 cells.append(_format_total_diff(item, resource, item.object.current_pods_count))
                 cells += [_format_request_str(item, resource, selector) for selector in ["requests", "limits"]]
 
