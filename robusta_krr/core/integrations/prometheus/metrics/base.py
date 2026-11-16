@@ -128,7 +128,7 @@ class PrometheusMetric(BaseMetric):
             )
             return response["result"]
         else:
-            # regular query, lighter on preformance
+            # regular query, lighter on performance
             try:
                 response = self.prometheus.safe_custom_query(query=data.query)
             except Exception as e:
