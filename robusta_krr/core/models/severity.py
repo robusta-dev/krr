@@ -30,6 +30,20 @@ class Severity(str, enum.Enum):
             self.CRITICAL: "red",
         }[self]
 
+    def is_at_least(self, threshold: Severity) -> bool:
+        """Whether this severity represents a change at least as large as `threshold`.
+
+        Severities are ordered by the size of the underlying change
+        (GOOD < OK < WARNING < CRITICAL). UNKNOWN means we could not compare the
+        current and recommended values, so it is always considered significant
+        enough to keep (we don't want to silently drop something we couldn't
+        measure). A threshold of UNKNOWN keeps everything.
+        """
+        order = [Severity.GOOD, Severity.OK, Severity.WARNING, Severity.CRITICAL]
+        if self is Severity.UNKNOWN or threshold not in order:
+            return True
+        return order.index(self) >= order.index(threshold)
+
     @classmethod
     def calculate(
         cls, current: RecommendationValue, recommended: RecommendationValue, resource_type: ResourceType
